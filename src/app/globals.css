@@ -24,3 +24,23 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+
+
+.shadow-sketch {
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+}
+
+.shadow-sketch-lg {
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+}
+
+.shadow-sketch-xl {
+    box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
