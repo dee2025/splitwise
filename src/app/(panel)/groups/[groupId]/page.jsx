@@ -3,25 +3,26 @@
 import AddExpenseForm from "@/components/dashboard/expenses/AddExpenseForm";
 import DashboardLayout from "@/components/DashboardLayout";
 import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  Activity,
   ArrowLeft,
-  Bell,
+  BarChart3,
   Calendar,
   IndianRupee,
-  MoreHorizontal,
+  Music,
+  Plane,
+  Plug,
   Plus,
+  Receipt,
+  ShoppingBag,
   Users,
-  UserPlus,
-  BarChart3,
-  Activity,
-  Settings,
-  Share2
+  UtensilsCrossed,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function GroupPage() {
   const params = useParams();
@@ -33,7 +34,6 @@ export default function GroupPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("expenses");
   const [showAddExpense, setShowAddExpense] = useState(false);
-  const [showAddMember, setShowAddMember] = useState(false);
 
   const groupId = params.groupId;
 
@@ -76,10 +76,10 @@ export default function GroupPage() {
 
   if (!isAuthenticated || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-gray-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading group...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center border-2 border-black">
+        <div className="text-center p-6 border-2 border-gray-400 bg-white shadow-sketch">
+          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-700 font-medium">Loading group...</p>
         </div>
       </div>
     );
@@ -87,15 +87,18 @@ export default function GroupPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Group not found</p>
-          <button
+      <div className="min-h-screen bg-white flex items-center justify-center border-2 border-black">
+        <div className="text-center p-6 border-2 border-gray-400 bg-white shadow-sketch">
+          <p className="text-gray-700 font-medium mb-4">Group not found</p>
+          <motion.button
+            whileHover={{ y: -1 }}
+            whileTap={{ y: 1 }}
             onClick={() => router.push("/groups")}
-            className="text-gray-900 hover:text-gray-700 font-medium transition-colors"
+            className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm mx-auto"
           >
+            <ArrowLeft size={16} />
             Back to Groups
-          </button>
+          </motion.button>
         </div>
       </div>
     );
@@ -103,78 +106,82 @@ export default function GroupPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 border-b-2 border-dashed border-gray-300 pb-6"
         >
           <div className="flex items-center gap-4 mb-6">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ y: -1 }}
+              whileTap={{ y: 1 }}
               onClick={() => router.push("/groups")}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              className="p-2 border-2 border-gray-400 bg-white rounded hover:border-black transition-all duration-150 shadow-sketch-sm"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-700" />
             </motion.button>
-            
+
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{group.name}</h1>
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 border-b-2 border-black pb-1 inline-block">
+                {group.name}
+              </h1>
               {group.description && (
-                <p className="text-gray-600 text-lg">{group.description}</p>
+                <p className="text-gray-600 text-sm mt-2 border-l-2 border-gray-300 pl-2">
+                  {group.description}
+                </p>
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ y: -1 }}
+                whileTap={{ y: 1 }}
                 onClick={() => setShowAddExpense(true)}
-                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium"
+                className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm"
               >
                 <Plus size={18} />
                 Add Expense
               </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              {/* <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ y: 1 }}
+                className="p-2 border-2 border-gray-400 bg-white rounded hover:border-black transition-all duration-150 shadow-sketch-sm"
               >
-                <MoreHorizontal size={18} className="text-gray-600" />
-              </motion.button>
+                <MoreHorizontal size={18} className="text-gray-700" />
+              </motion.button> */}
             </div>
           </div>
 
           {/* Group Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
             {[
               {
                 label: "Total Expenses",
-                value: `${group.currency === "INR" ? "₹" : "$"}${(group.totalExpenses || 0).toLocaleString()}`,
+                value: `₹${(group.totalExpenses || 0).toLocaleString()}`,
                 icon: IndianRupee,
-                color: "text-blue-600"
+                border: "border-gray-400",
               },
               {
                 label: "Members",
                 value: group.members?.length || 0,
                 icon: Users,
-                color: "text-green-600"
+                border: "border-gray-400",
               },
               {
                 label: "Active Expenses",
                 value: expenses.filter((e) => !e.isSettled).length,
                 icon: Activity,
-                color: "text-orange-600"
+                border: "border-gray-400",
               },
               {
                 label: "Currency",
                 value: group.currency,
                 icon: BarChart3,
-                color: "text-purple-600"
-              }
+                border: "border-gray-400",
+              },
             ].map((stat, index) => {
               const IconComponent = stat.icon;
               return (
@@ -183,15 +190,22 @@ export default function GroupPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white p-5 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                  whileHover={{ y: -2 }}
+                  className="bg-white p-4 rounded-lg border-2 border-gray-400 hover:border-gray-600 transition-all duration-150 shadow-sketch-sm"
                 >
+                  {/* Corner accents */}
+                  <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-400"></div>
+                  <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-400"></div>
+
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-gray-50 ${stat.color}`}>
-                      <IconComponent size={20} />
+                    <div className="p-2 border-2 border-gray-400 bg-white rounded">
+                      <IconComponent size={18} className="text-gray-700" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                      <p className="text-gray-600 text-sm">{stat.label}</p>
+                      <p className="text-xl font-bold text-gray-900">
+                        {stat.value}
+                      </p>
+                      <p className="text-gray-600 text-xs">{stat.label}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -200,11 +214,21 @@ export default function GroupPage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
+          <div className="border-b-2 overflow-scroll border-dashed border-gray-300">
+            <nav className="flex space-x-2 overflow-x-auto pb-1">
               {[
-                { id: "expenses", label: "Expenses", icon: IndianRupee, count: expenses.length },
-                { id: "members", label: "Members", icon: Users, count: group.members?.length },
+                {
+                  id: "expenses",
+                  label: "Expenses",
+                  icon: IndianRupee,
+                  count: expenses.length,
+                },
+                {
+                  id: "members",
+                  label: "Members",
+                  icon: Users,
+                  count: group.members?.length,
+                },
                 { id: "balances", label: "Balances", icon: BarChart3 },
                 { id: "activity", label: "Activity", icon: Activity },
               ].map((tab) => {
@@ -212,19 +236,19 @@ export default function GroupPage() {
                 return (
                   <motion.button
                     key={tab.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ y: -1 }}
+                    whileTap={{ y: 1 }}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    className={`flex items-center gap-2 py-3 px-4 border-b-2 font-medium text-sm transition-all duration-150 flex-shrink-0 ${
                       activeTab === tab.id
-                        ? "border-gray-900 text-gray-900"
-                        : "border-transparent text-gray-500 hover:text-gray-700"
+                        ? "border-black text-gray-900 bg-gray-50"
+                        : "border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                     }`}
                   >
                     <IconComponent size={16} />
                     {tab.label}
                     {tab.count !== undefined && (
-                      <span className="bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs font-medium">
+                      <span className="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs font-medium border border-gray-400">
                         {tab.count}
                       </span>
                     )}
@@ -244,14 +268,24 @@ export default function GroupPage() {
           className="mt-6"
         >
           {activeTab === "expenses" && (
-            <ExpensesTab expenses={expenses} group={group} onRefresh={fetchGroupData} />
+            <ExpensesTab
+              expenses={expenses}
+              group={group}
+              onRefresh={fetchGroupData}
+            />
           )}
 
           {activeTab === "members" && (
-            <MembersTab members={group.members} group={group} onRefresh={fetchGroupData} />
+            <MembersTab
+              members={group.members}
+              group={group}
+              onRefresh={fetchGroupData}
+            />
           )}
 
-          {activeTab === "balances" && <BalancesTab group={group} expenses={expenses} />}
+          {activeTab === "balances" && (
+            <BalancesTab group={group} expenses={expenses} />
+          )}
 
           {activeTab === "activity" && <ActivityTab group={group} />}
         </motion.div>
@@ -273,19 +307,56 @@ export default function GroupPage() {
 
 // Expenses Tab Component
 function ExpensesTab({ expenses, group, onRefresh }) {
+  const getCategoryIcon = (category) => {
+    const cls = "w-4 h-4";
+    switch (category) {
+      case "food":
+        return <UtensilsCrossed className={cls} />;
+      case "travel":
+        return <Plane className={cls} />;
+      case "entertainment":
+        return <Music className={cls} />;
+      case "shopping":
+        return <ShoppingBag className={cls} />;
+      case "utilities":
+        return <Plug className={cls} />;
+      default:
+        return <Receipt className={cls} />;
+    }
+  };
+
+  const catBorderColor = (category) => {
+    switch (category) {
+      case "food":
+        return "border-orange-500";
+      case "travel":
+        return "border-blue-500";
+      case "entertainment":
+        return "border-purple-500";
+      case "shopping":
+        return "border-pink-500";
+      case "utilities":
+        return "border-green-500";
+      default:
+        return "border-gray-500";
+    }
+  };
+
   if (expenses.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-16 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50/50"
+        className="text-center py-16 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
       >
-        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <IndianRupee className="w-8 h-8 text-gray-400" />
+        <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
+          <IndianRupee className="w-8 h-8 text-gray-500" />
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-3">No expenses yet</h3>
-        <p className="text-gray-600 mb-6 max-w-md mx-auto">
-          Start by adding your first expense to track shared costs in this group
+        <h3 className="text-lg font-bold text-gray-900 mb-3 border-b-2 border-black pb-1 inline-block">
+          No expenses yet
+        </h3>
+        <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
+          Start by adding your first expense to track shared costs
         </p>
       </motion.div>
     );
@@ -301,31 +372,48 @@ function ExpensesTab({ expenses, group, onRefresh }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ delay: index * 0.05 }}
-            whileHover={{ y: -2 }}
-            className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
+            whileHover={{ y: -1 }}
+            className="group bg-white rounded-lg border-2 border-gray-400 hover:border-gray-600 hover:shadow-sketch-hover transition-all duration-150 cursor-pointer"
           >
-            <div className="p-5">
+            {/* Corner accents */}
+            <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+            <div className="p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                    <IndianRupee className="w-5 h-5 text-gray-600" />
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div
+                    className={`w-10 h-10 rounded border-2 bg-white flex items-center justify-center ${catBorderColor(
+                      expense.category
+                    )}`}
+                  >
+                    {getCategoryIcon(expense.category)}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">
-                      {expense.description}
-                    </h4>
-                    <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                      <span className="flex items-center gap-1">
-                        <Users size={14} />
-                        Paid by {expense.paidBy?.fullName || 'Unknown'}
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold text-gray-900 text-sm truncate">
+                        {expense.description}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium border ${catBorderColor(
+                          expense.category
+                        )} bg-white`}
+                      >
+                        {expense.category}
                       </span>
-                      <span>•</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
                       <span className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        {new Date(expense.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
+                        <Users size={12} />
+                        Paid by {expense.paidBy?.fullName || "Unknown"}
+                      </span>
+                      <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                      <span className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        {new Date(expense.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
                         })}
                       </span>
                     </div>
@@ -333,11 +421,10 @@ function ExpensesTab({ expenses, group, onRefresh }) {
                 </div>
 
                 <div className="text-right">
-                  <p className="text-lg font-bold text-gray-900">
-                    {group.currency === "INR" ? "₹" : "$"}
-                    {expense.amount.toLocaleString()}
+                  <p className="text-base font-bold text-gray-900">
+                    ₹{expense.amount.toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-gray-500 text-xs">
                     {expense.splitBetween?.length || 0} people
                   </p>
                 </div>
@@ -361,30 +448,34 @@ function MembersTab({ members, group, onRefresh }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ y: -2 }}
-            className="flex items-center justify-between p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200"
+            whileHover={{ y: -1 }}
+            className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-400 hover:border-gray-600 hover:shadow-sketch-hover transition-all duration-150"
           >
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center text-white font-medium text-lg">
+            {/* Corner accents */}
+            <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded border-2 border-gray-400 bg-gray-200 flex items-center justify-center text-gray-700 font-medium text-sm">
                 {member.name?.charAt(0).toUpperCase()}
               </div>
-              
+
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-gray-900 truncate">
+                <h4 className="font-semibold text-gray-900 text-sm truncate">
                   {member.name}
                 </h4>
-                <p className="text-gray-600 text-sm truncate">
-                  {member.email}
-                </p>
+                <p className="text-gray-600 text-xs truncate">{member.email}</p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                member.role === "admin"
-                  ? "bg-blue-50 text-blue-700 border border-blue-200"
-                  : "bg-gray-50 text-gray-700 border border-gray-200"
-              }`}>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-3 py-1 rounded text-xs font-medium border ${
+                  member.role === "admin"
+                    ? "border-blue-500 text-blue-600 bg-white"
+                    : "border-gray-400 text-gray-600 bg-white"
+                }`}
+              >
                 {member.role}
               </span>
             </div>
@@ -401,13 +492,15 @@ function BalancesTab({ group, expenses }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="text-center py-16 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50/50"
+      className="text-center py-16 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
     >
-      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <BarChart3 className="w-8 h-8 text-gray-400" />
+      <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
+        <BarChart3 className="w-8 h-8 text-gray-500" />
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">Balance Overview</h3>
-      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+      <h3 className="text-lg font-bold text-gray-900 mb-3 border-b-2 border-black pb-1 inline-block">
+        Balance Overview
+      </h3>
+      <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
         View who owes whom and track settlements in the group
       </p>
       <div className="text-sm text-gray-500">
@@ -423,14 +516,16 @@ function ActivityTab({ group }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="text-center py-16 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50/50"
+      className="text-center py-16 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
     >
-      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <Activity className="w-8 h-8 text-gray-400" />
+      <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
+        <Activity className="w-8 h-8 text-gray-500" />
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">Group Activity</h3>
-      <p className="text-gray-600 mb-6 max-w-md mx-auto">
-        Track all activities, expenses, and member actions in this group
+      <h3 className="text-lg font-bold text-gray-900 mb-3 border-b-2 border-black pb-1 inline-block">
+        Group Activity
+      </h3>
+      <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
+        Track all activities, expenses, and member actions
       </p>
       <div className="text-sm text-gray-500">
         Activity feed will show recent actions and updates

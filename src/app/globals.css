@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -22,13 +23,31 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Montserrat", sans-serif;
+}
+
+@layer utilities {
+  .shadow-sketch {
+    box-shadow: 
+      4px 4px 0px 0px #000,
+      4px 4px 0px 1px #000;
+  }
+  
+  .shadow-sketch-sm {
+    box-shadow: 
+      2px 2px 0px 0px #000,
+      2px 2px 0px 1px #000;
+  }
+  
+  .shadow-sketch-hover {
+    box-shadow: 
+      6px 6px 0px 0px #000,
+      6px 6px 0px 1px #000;
+  }
 }
 
 
-
-
-.shadow-sketch {
+/* .shadow-sketch {
     box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
 }
 
@@ -40,7 +59,6 @@ body {
     box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
 }
 
-/* Smooth scrolling */
 html {
     scroll-behavior: smooth;
-}
+} */
