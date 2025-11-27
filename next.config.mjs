@@ -1,7 +1,10 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  /* config options here */
-  matcher: ["/dashboard/:path*"],
+export const config = {
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/signup",
+    "/api/user/:path*",
+    "/api/expenses/:path*",
+    "/api/groups/:path*",
+  ],
 };
-
-export default nextConfig;
