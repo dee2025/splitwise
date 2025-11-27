@@ -1,10 +1,6 @@
-export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/login",
-    "/signup",
-    "/api/user/:path*",
-    "/api/expenses/:path*",
-    "/api/groups/:path*",
-  ],
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // your next settings
 };
+
+export default nextConfig;
