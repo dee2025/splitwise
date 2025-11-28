@@ -1,6 +1,7 @@
 "use client";
 
-import { logoutUser } from "@/redux/slices/userSlice";
+import { logout } from "@/redux/slices/authSlice";
+import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle,
@@ -31,9 +32,16 @@ export default function BottomNav() {
     { name: "Settled", icon: CheckCircle, path: "/settled" },
   ];
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await axios.post("/api/auth/logout");
+    } catch (error) {
+      console.error("Logout API error:", error);
+    } finally {
+      dispatch(logout());
+      toast.success("Logged out successfully");
+      router.push("/");
+    }
   };
 
   return (
@@ -56,8 +64,8 @@ export default function BottomNav() {
                 <motion.div
                   animate={{ scale: active ? 1.1 : 1 }}
                   className={`p-2 rounded-lg cursor-pointer border-2 transition-all duration-150 ${
-                    active 
-                      ? "bg-black border-black text-white" 
+                    active
+                      ? "bg-black border-black text-white"
                       : "border-gray-400 text-gray-700 hover:border-gray-600"
                   }`}
                 >
@@ -128,7 +136,9 @@ export default function BottomNav() {
                   <p className="text-sm font-semibold text-gray-900 truncate">
                     {user?.fullName}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">@{user?.username}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    @{user?.username}
+                  </p>
                 </div>
               </div>
 

@@ -5,10 +5,12 @@ const authSlice = createSlice({
   initialState: {
     isAuthenticated: false,
     user: {
+      id: "",
       fullName: "",
       username: "",
       email: "",
       contact: "",
+      role: "",
     },
     loading: false,
     error: null,
@@ -22,10 +24,12 @@ const authSlice = createSlice({
       state.loading = false;
       state.isAuthenticated = true;
       state.user = {
+        id: action.payload.user?.id || "",
         fullName: action.payload.user?.fullName || "",
         username: action.payload.user?.username || "",
         email: action.payload.user?.email || "",
         contact: action.payload.user?.contact || "",
+        role: action.payload.user?.role || "",
       };
       state.error = null;
     },
@@ -43,10 +47,12 @@ const authSlice = createSlice({
     logout(state) {
       state.isAuthenticated = false;
       state.user = {
+        id: "",
         fullName: "",
         username: "",
         email: "",
         contact: "",
+        role: "",
       };
       state.loading = false;
       state.error = null;

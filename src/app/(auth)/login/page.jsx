@@ -30,7 +30,7 @@ export default function LoginPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear field-specific error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -71,47 +71,51 @@ export default function LoginPage() {
     setErrors(newErrors);
   };
 
-// app/login/page.js - Update the handleLogin function
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+  // app/login/page.js - Update the handleLogin function
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  try {
-    const res = await axios.post("/api/auth/login", form);
-    
-    if (res.data.success) {
-      dispatch(loginSuccess({ 
-        user: res.data.user 
-      }));
-      
-      toast.success(res.data.message || "Login successful");
-      
-      // Wait a bit for the cookie to be set, then redirect
-      setTimeout(() => {
-        console.log('🔄 Redirecting to dashboard after login');
-        // Use window.location.href for a full page reload to ensure middleware runs
-        window.location.href = "/dashboard";
-      }, 500);
+    try {
+      const res = await axios.post("/api/auth/login", form);
+
+      if (res.data.success) {
+        dispatch(
+          loginSuccess({
+            user: res.data.user,
+          })
+        );
+
+        toast.success(res.data.message || "Login successful");
+
+        // Wait a bit for the cookie to be set, then redirect
+        setTimeout(() => {
+          // Use window.location.href for a full page reload to ensure middleware runs
+          window.location.href = "/dashboard";
+        }, 500);
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || "Login failed";
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (err) {
-    const errorMessage = err.response?.data?.error || "Login failed";
-    toast.error(errorMessage);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const getInputClassName = (fieldName) => {
-    const baseClasses = "w-full border-2 p-3 rounded-lg focus:outline-none transition-colors shadow-sm pl-12 ";
-    
+    const baseClasses =
+      "w-full border-2 p-3 rounded-lg focus:outline-none transition-colors shadow-sm pl-12 ";
+
     if (errors[fieldName]) {
       return baseClasses + "border-red-500 focus:border-red-500 bg-red-50";
     }
-    
+
     if (touched[fieldName] && !errors[fieldName] && form[fieldName]) {
-      return baseClasses + "border-green-500 focus:border-green-500 bg-green-50";
+      return (
+        baseClasses + "border-green-500 focus:border-green-500 bg-green-50"
+      );
     }
-    
+
     return baseClasses + "border-gray-300 focus:border-black";
   };
 
@@ -269,7 +273,8 @@ const handleLogin = async (e) => {
           {/* Demo Credentials Hint */}
           <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
             <p className="text-xs text-gray-600 text-center">
-              <strong>Demo:</strong> Use your registered email and password to sign in
+              <strong>Demo:</strong> Use your registered email and password to
+              sign in
             </p>
           </div>
         </motion.div>

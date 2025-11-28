@@ -9,37 +9,45 @@ export async function GET(request) {
   try {
     await connectDB();
     
-    // Get token from cookies
     const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Verify token
     const decoded = await verifyToken(token);
     const user = await User.findById(decoded.userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    // Find groups where user is a member
-    const groups = await Group.find({
+    let groups = await Group.find({
       "members.userId": user._id,
       isActive: true
     })
-    .populate('createdBy', 'fullName username email')
-    .populate('members.userId', 'fullName username email contact')
+    .populate("createdBy", "fullName username email")
+    .populate("members.userId", "fullName username email contact")
     .sort({ createdAt: -1 });
 
+    // 🔥 FIX: clean member structure
+    groups = groups.map(group => ({
+      ...group.toObject(),
+      members: group.members.map(m => ({
+        _id: m._id,
+        userId: m.userId?._id || null,
+        fullName: m.userId?.fullName || m.name,
+        username: m.userId?.username || null,
+        email: m.userId?.email || m.email,
+        contact: m.userId?.contact || m.contact,
+        role: m.role,
+        type: m.type,
+        joinedAt: m.joinedAt
+      }))
+    }));
+
     return NextResponse.json({ groups });
+
   } catch (error) {
     console.error("Groups fetch error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
 
 export async function POST(request) {
   try {

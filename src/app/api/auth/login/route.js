@@ -60,6 +60,7 @@ export async function POST(req) {
       fullName: user.fullName,
       username: user.username,
       email: user.email,
+      role: user.role,
       contact: user.contact,
       createdAt: user.createdAt,
     };
