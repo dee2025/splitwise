@@ -33,16 +33,16 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       {/* Header Section */}
-      <div className="mb-8 border-b-2 border-dashed border-gray-300 pb-6">
+      <div className="mb-8 border-b-2 border-dashed border-gray-300 pb-2">
         <div className="flex items-center gap-3 ">
           <div className="w-10 h-10 border-2 border-black bg-white flex items-center justify-center shadow-sketch">
             <Pencil className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 border-b-2 border-black pb-1">
+            <h1 className="text-lg md:text-3xl font-bold text-gray-900 border-b-2 border-black pb-1">
               Welcome back, {user?.fullName || "User"}!
             </h1>
-            <p className="text-gray-600 mt-2 text-sm">
+            <p className="text-gray-600 mt-2 text-[10px] md:text-sm">
               Your expense dashboard - clean, simple, and drama-free
             </p>
           </div>

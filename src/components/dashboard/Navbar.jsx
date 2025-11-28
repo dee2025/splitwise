@@ -3,29 +3,29 @@
 
 import { logout } from "@/redux/slices/authSlice";
 import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  Bell,
   ChevronDown,
   Home,
   LogOut,
   Menu,
+  Moon,
   Plus,
   Search,
   Settings,
-  User,
-  X,
-  Users,
-  Bell,
-  Wallet,
-  Moon,
   Sun,
+  User,
+  Users,
+  Wallet,
+  X,
 } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import NotificationBell from "./NotificationBell";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
   const dispatch = useDispatch();
@@ -42,23 +42,25 @@ export default function Navbar() {
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
       setDarkMode(true);
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     }
   }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     if (!darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     }
   };
 
@@ -68,7 +70,10 @@ export default function Navbar() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
         setShowMobileMenu(false);
       }
     };
@@ -130,7 +135,7 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.header 
+      <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -140,7 +145,7 @@ export default function Navbar() {
           {/* Left Section - Logo & Mobile Menu */}
           <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
-            <motion.button 
+            <motion.button
               whileTap={{ scale: 0.95 }}
               className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 lg:hidden"
               onClick={() => setShowMobileMenu(true)}
@@ -150,15 +155,12 @@ export default function Navbar() {
 
             {/* Logo/Brand */}
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Link 
-                href="/dashboard" 
-                className="flex items-center gap-3 group"
-              >
+              <Link href="/dashboard" className="flex items-center gap-3 group">
                 <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm">
                   <Wallet size={20} className="text-white" />
                 </div>
                 <span className="hidden sm:block text-xl font-semibold text-gray-900 dark:text-white">
-                  Splitwise
+                  splitzy
                 </span>
               </Link>
             </motion.div>
@@ -182,7 +184,7 @@ export default function Navbar() {
           {/* Right Section - Actions & User */}
           <div className="flex items-center gap-3">
             {/* Mobile Search Button */}
-            <motion.button 
+            <motion.button
               whileTap={{ scale: 0.95 }}
               className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 md:hidden"
               onClick={() => setShowSearch(true)}
@@ -191,7 +193,7 @@ export default function Navbar() {
             </motion.button>
 
             {/* Theme Toggle */}
-            <motion.button 
+            <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={toggleDarkMode}
               className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all duration-200"
@@ -204,7 +206,7 @@ export default function Navbar() {
             </motion.button>
 
             {/* Create Group Button */}
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleCreateGroup}
@@ -215,7 +217,7 @@ export default function Navbar() {
             </motion.button>
 
             {/* Mobile Create Button */}
-            <motion.button 
+            <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleCreateGroup}
               className="sm:hidden p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all duration-200 shadow-sm"
@@ -321,7 +323,7 @@ export default function Navbar() {
                 className="p-4 border-b border-gray-200 dark:border-gray-800"
               >
                 <div className="flex items-center gap-3">
-                  <motion.button 
+                  <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowSearch(false)}
                     className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
@@ -356,7 +358,7 @@ export default function Navbar() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/30 dark:bg-black/50 z-50 lg:hidden backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               ref={mobileMenuRef}
               initial={{ x: -300 }}
               animate={{ x: 0 }}
@@ -372,11 +374,15 @@ export default function Navbar() {
                       <Wallet size={20} className="text-white" />
                     </div>
                     <div>
-                      <h1 className="font-semibold text-gray-900 dark:text-white">Splitwise</h1>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Expense Tracker</p>
+                      <h1 className="font-semibold text-gray-900 dark:text-white">
+                        splitzy
+                      </h1>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Expense Tracker
+                      </p>
                     </div>
                   </div>
-                  <motion.button 
+                  <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowMobileMenu(false)}
                     className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl"
@@ -386,7 +392,7 @@ export default function Navbar() {
                 </div>
 
                 {/* User Info */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
@@ -412,28 +418,28 @@ export default function Navbar() {
                   icon={<Home size={20} />}
                   label="Dashboard"
                   onClick={handleDashboard}
-                  active={pathname === '/dashboard'}
+                  active={pathname === "/dashboard"}
                   delay={0.1}
                 />
                 <MobileMenuItem
                   icon={<Users size={20} />}
                   label="My Groups"
                   onClick={handleGroups}
-                  active={pathname === '/groups'}
+                  active={pathname === "/groups"}
                   delay={0.15}
                 />
                 <MobileMenuItem
                   icon={<User size={20} />}
                   label="Profile"
                   onClick={handleProfile}
-                  active={pathname === '/profile'}
+                  active={pathname === "/profile"}
                   delay={0.2}
                 />
                 <MobileMenuItem
                   icon={<Settings size={20} />}
                   label="Settings"
                   onClick={handleSettings}
-                  active={pathname === '/settings'}
+                  active={pathname === "/settings"}
                   delay={0.25}
                 />
                 <MobileMenuItem
@@ -452,12 +458,18 @@ export default function Navbar() {
                   className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all duration-200 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {darkMode ? (
-                    <Sun size={20} className="text-gray-400 dark:text-gray-500" />
+                    <Sun
+                      size={20}
+                      className="text-gray-400 dark:text-gray-500"
+                    />
                   ) : (
-                    <Moon size={20} className="text-gray-400 dark:text-gray-500" />
+                    <Moon
+                      size={20}
+                      className="text-gray-400 dark:text-gray-500"
+                    />
                   )}
                   <span className="font-medium">
-                    {darkMode ? 'Light Mode' : 'Dark Mode'}
+                    {darkMode ? "Light Mode" : "Dark Mode"}
                   </span>
                 </motion.button>
 
@@ -500,7 +512,11 @@ function UserMenuItem({ icon, label, onClick, isDanger = false }) {
           : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
       }`}
     >
-      <div className={`${isDanger ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+      <div
+        className={`${
+          isDanger ? "text-red-500" : "text-gray-400 dark:text-gray-500"
+        }`}
+      >
         {icon}
       </div>
       <span className="font-medium">{label}</span>
@@ -508,7 +524,15 @@ function UserMenuItem({ icon, label, onClick, isDanger = false }) {
   );
 }
 
-function MobileMenuItem({ icon, label, onClick, active = false, isPrimary = false, isDanger = false, delay = 0 }) {
+function MobileMenuItem({
+  icon,
+  label,
+  onClick,
+  active = false,
+  isPrimary = false,
+  isDanger = false,
+  delay = 0,
+}) {
   return (
     <motion.button
       initial={{ opacity: 0, x: -20 }}
@@ -518,19 +542,27 @@ function MobileMenuItem({ icon, label, onClick, active = false, isPrimary = fals
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all duration-200 ${
         isPrimary
-          ? 'bg-green-500 hover:bg-green-600 text-white'
+          ? "bg-green-500 hover:bg-green-600 text-white"
           : isDanger
-          ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+          ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
           : active
-          ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+          ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
+          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
       }`}
     >
-      <div className={`
-        ${isPrimary ? 'text-white' : 
-          isDanger ? 'text-red-500' : 
-          active ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}
-      `}>
+      <div
+        className={`
+        ${
+          isPrimary
+            ? "text-white"
+            : isDanger
+            ? "text-red-500"
+            : active
+            ? "text-green-600 dark:text-green-400"
+            : "text-gray-400 dark:text-gray-500"
+        }
+      `}
+      >
         {icon}
       </div>
       <span className="font-medium">{label}</span>

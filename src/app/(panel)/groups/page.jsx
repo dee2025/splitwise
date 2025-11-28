@@ -225,7 +225,7 @@ export default function GroupsPage() {
         </AnimatePresence>
 
         {/* Floating Action Button for Mobile */}
-        <motion.button
+        {/* <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.1 }}
@@ -234,7 +234,7 @@ export default function GroupsPage() {
           className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-black text-white rounded border-2 border-black flex items-center justify-center shadow-sketch z-50"
         >
           <Plus size={24} />
-        </motion.button>
+        </motion.button> */}
       </div>
     </DashboardLayout>
   );

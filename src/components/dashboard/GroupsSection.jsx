@@ -4,23 +4,24 @@ import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  Loader2,
+  Briefcase,
+  Home,
+  MapPin,
   Plus,
   UserPlus,
   Users,
-  MapPin,
   Utensils,
-  Home,
-  Briefcase
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import CreateGroupForm from "./groups/CreateGroupForm";
 
 export default function GroupsSection() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creatingGroup, setCreatingGroup] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -40,49 +41,52 @@ export default function GroupsSection() {
     }
   };
 
-  const handleCreateGroup = async () => {
-    setCreatingGroup(true);
-    try {
-      router.push("/groups/create");
-    } catch (error) {
-      console.error("Error creating group:", error);
-    } finally {
-      setCreatingGroup(false);
-    }
+  const handleGroupCreated = (newGroup) => {
+    setGroups((prev) => [newGroup, ...prev]);
+    setShowCreateGroup(false);
+    toast.success("Group created successfully!");
   };
 
   const getGroupTypeConfig = (group) => {
     const groupName = group.name?.toLowerCase() || "";
-    
+
     if (groupName.includes("trip") || groupName.includes("travel")) {
       return {
         icon: MapPin,
         label: "Trip",
-        border: "border-blue-400"
+        border: "border-blue-400",
       };
-    } else if (groupName.includes("lunch") || groupName.includes("food") || groupName.includes("dinner")) {
+    } else if (
+      groupName.includes("lunch") ||
+      groupName.includes("food") ||
+      groupName.includes("dinner")
+    ) {
       return {
         icon: Utensils,
         label: "Food",
-        border: "border-green-400"
+        border: "border-green-400",
       };
-    } else if (groupName.includes("room") || groupName.includes("home") || groupName.includes("flat")) {
+    } else if (
+      groupName.includes("room") ||
+      groupName.includes("home") ||
+      groupName.includes("flat")
+    ) {
       return {
         icon: Home,
         label: "Home",
-        border: "border-purple-400"
+        border: "border-purple-400",
       };
     } else if (groupName.includes("office") || groupName.includes("work")) {
       return {
         icon: Briefcase,
         label: "Work",
-        border: "border-orange-400"
+        border: "border-orange-400",
       };
     } else {
       return {
         icon: Users,
         label: "General",
-        border: "border-gray-400"
+        border: "border-gray-400",
       };
     }
   };
@@ -92,7 +96,7 @@ export default function GroupsSection() {
     const mockBalance = Math.random() > 0.5 ? 1250 : -750;
     return {
       amount: `₹ ${Math.abs(mockBalance).toLocaleString()}`,
-      isPositive: mockBalance >= 0
+      isPositive: mockBalance >= 0,
     };
   };
 
@@ -139,7 +143,7 @@ export default function GroupsSection() {
             Your Groups
           </h2>
           <p className="text-gray-600 text-sm mt-2">
-            {groups.length} active group{groups.length !== 1 ? 's' : ''}
+            {groups.length} active group{groups.length !== 1 ? "s" : ""}
           </p>
         </div>
 
@@ -147,14 +151,14 @@ export default function GroupsSection() {
           <motion.button
             whileHover={{ y: -1 }}
             whileTap={{ y: 1 }}
-            onClick={() => router.push('/groups')}
+            onClick={() => router.push("/groups")}
             className="flex items-center gap-2 bg-white text-gray-700 text-sm px-3 py-2 rounded border-2 border-gray-400 hover:border-black transition-all duration-150 font-medium shadow-sketch-sm"
           >
             View All
             <ArrowRight size={14} />
           </motion.button>
 
-          <motion.button
+          {/* <motion.button
             whileHover={{ y: -1 }}
             whileTap={{ y: 1 }}
             onClick={handleCreateGroup}
@@ -167,6 +171,15 @@ export default function GroupsSection() {
               <Plus size={14} />
             )}
             New
+          </motion.button> */}
+          <motion.button
+            whileHover={{ y: -1 }}
+            whileTap={{ y: 1 }}
+            onClick={() => setShowCreateGroup(true)}
+            className="flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-4 py-2 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm w-full sm:w-auto"
+          >
+            <Plus size={20} />
+            <span>New Group</span>
           </motion.button>
         </div>
       </div>
@@ -183,9 +196,7 @@ export default function GroupsSection() {
               <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
                 <Users size={24} className="text-gray-500" />
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                No groups yet
-              </h3>
+              <h3 className="font-bold text-gray-900 mb-2">No groups yet</h3>
               <p className="text-gray-600 text-sm mb-4 max-w-sm mx-auto">
                 Create your first group to start splitting expenses
               </p>
@@ -204,7 +215,7 @@ export default function GroupsSection() {
               const config = getGroupTypeConfig(group);
               const memberCount = group.members?.length || 0;
               const balance = calculateGroupBalance(group);
-              
+
               return (
                 <motion.div
                   key={group._id}
@@ -225,7 +236,9 @@ export default function GroupsSection() {
                   {/* Left Content */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {/* Group Icon */}
-                    <div className={`w-12 h-12 rounded border-2 bg-white flex items-center justify-center ${config.border}`}>
+                    <div
+                      className={`w-12 h-12 rounded border-2 bg-white flex items-center justify-center ${config.border}`}
+                    >
                       <config.icon size={20} className="text-gray-700" />
                     </div>
 
@@ -240,7 +253,7 @@ export default function GroupsSection() {
                         </span>
                       </div>
                       <p className="text-gray-600 text-xs">
-                        {memberCount} member{memberCount !== 1 ? 's' : ''}
+                        {memberCount} member{memberCount !== 1 ? "s" : ""}
                         {group.description && ` • ${group.description}`}
                       </p>
                     </div>
@@ -250,19 +263,24 @@ export default function GroupsSection() {
                   <div className="flex items-center gap-3">
                     {/* Balance */}
                     <div className="text-right">
-                      <p className={`font-bold text-sm ${
-                        balance.isPositive ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <p
+                        className={`font-bold text-sm ${
+                          balance.isPositive ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
                         {balance.amount}
                       </p>
                       <p className="text-gray-400 text-xs">
-                        {balance.isPositive ? 'You get' : 'You owe'}
+                        {balance.isPositive ? "You get" : "You owe"}
                       </p>
                     </div>
 
                     {/* Arrow */}
                     <div className="p-1 border border-gray-400 rounded group-hover:border-black transition-colors">
-                      <ArrowRight size={14} className="text-gray-600 group-hover:text-black" />
+                      <ArrowRight
+                        size={14}
+                        className="text-gray-600 group-hover:text-black"
+                      />
                     </div>
                   </div>
                 </motion.div>
@@ -273,12 +291,12 @@ export default function GroupsSection() {
       </div>
 
       {/* View All Groups Button */}
-      {groups.length > 5 && (
+      {groups.length > 2 && (
         <div className="mt-4 text-center border-t-2 border-dashed border-gray-300 pt-4">
           <motion.button
             whileHover={{ y: -1 }}
             whileTap={{ y: 1 }}
-            onClick={() => router.push('/groups')}
+            onClick={() => router.push("/groups")}
             className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors duration-150 flex items-center gap-1 mx-auto"
           >
             View all {groups.length} groups
@@ -286,6 +304,16 @@ export default function GroupsSection() {
           </motion.button>
         </div>
       )}
+
+      {/* Create Group Modal */}
+      <AnimatePresence>
+        {showCreateGroup && (
+          <CreateGroupForm
+            onClose={() => setShowCreateGroup(false)}
+            onGroupCreated={handleGroupCreated}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }) {
     <div className="min-h-screen flex">
       <div className="flex-1 flex flex-col">
         {/* <Navbar /> */}
-        <main className="flex-1 p-8 pb-24 overflow-auto">{children}</main>
+        <main className=" p-4 pb-24 ">{children}</main>
 
         {/* Bottom Navigation */}
         <BottomNav />

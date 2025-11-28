@@ -76,7 +76,7 @@ export default function GroupPage() {
 
   if (!isAuthenticated || loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center border-2 border-black">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center p-6 border-2 border-gray-400 bg-white shadow-sketch">
           <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-700 font-medium">Loading group...</p>
@@ -87,7 +87,7 @@ export default function GroupPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center border-2 border-black">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center p-6 border-2 border-gray-400 bg-white shadow-sketch">
           <p className="text-gray-700 font-medium mb-4">Group not found</p>
           <motion.button
@@ -111,52 +111,47 @@ export default function GroupPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 border-b-2 border-dashed border-gray-300 pb-6"
+          className=" "
         >
-          <div className="flex items-center gap-4 mb-6">
-            <motion.button
-              whileHover={{ y: -1 }}
-              whileTap={{ y: 1 }}
-              onClick={() => router.push("/groups")}
-              className="p-2 border-2 border-gray-400 bg-white rounded hover:border-black transition-all duration-150 shadow-sketch-sm"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-700" />
-            </motion.button>
+          <div className="flex sm:items-center gap-4 mb-6">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ y: 1 }}
+                onClick={() => router.push("/groups")}
+                className="flex-shrink-0 p-2 border-2 border-gray-400 bg-white rounded hover:border-black transition-all duration-150 shadow-sketch-sm"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-700" />
+              </motion.button>
 
-            <div className="flex-1">
-              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 border-b-2 border-black pb-1 inline-block">
-                {group.name}
-              </h1>
-              {group.description && (
-                <p className="text-gray-600 text-sm mt-2 border-l-2 border-gray-300 pl-2">
-                  {group.description}
-                </p>
-              )}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 border-b-2 border-black pb-1 inline-block max-w-full truncate">
+                  {group.name}
+                </h1>
+                {group.description && (
+                  <p className="text-gray-600 text-sm mt-2 border-l-2 border-gray-300 pl-2 max-w-full truncate">
+                    {group.description}
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <motion.button
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 1 }}
                 onClick={() => setShowAddExpense(true)}
-                className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm"
+                className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm text-sm sm:text-base"
               >
                 <Plus size={18} />
-                Add Expense
+                <span className="hidden sm:inline">Add Expense</span>
+                <span className="sm:hidden">Add</span>
               </motion.button>
-
-              {/* <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ y: 1 }}
-                className="p-2 border-2 border-gray-400 bg-white rounded hover:border-black transition-all duration-150 shadow-sketch-sm"
-              >
-                <MoreHorizontal size={18} className="text-gray-700" />
-              </motion.button> */}
             </div>
           </div>
 
           {/* Group Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
             {[
               {
                 label: "Total Expenses",
@@ -191,21 +186,23 @@ export default function GroupPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ y: -2 }}
-                  className="bg-white p-4 rounded-lg border-2 border-gray-400 hover:border-gray-600 transition-all duration-150 shadow-sketch-sm"
+                  className="bg-white p-3 rounded-lg border-2 border-gray-400 hover:border-gray-600 transition-all duration-150 shadow-sketch-sm"
                 >
                   {/* Corner accents */}
                   <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-400"></div>
                   <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-400"></div>
 
                   <div className="flex items-center gap-3">
-                    <div className="p-2 border-2 border-gray-400 bg-white rounded">
-                      <IconComponent size={18} className="text-gray-700" />
+                    <div className="p-2 border-2 border-gray-400 bg-white rounded flex-shrink-0">
+                      <IconComponent size={16} className="text-gray-700" />
                     </div>
-                    <div>
-                      <p className="text-xl font-bold text-gray-900">
+                    <div className="min-w-0">
+                      <p className="text-lg font-bold text-gray-900 truncate">
                         {stat.value}
                       </p>
-                      <p className="text-gray-600 text-xs">{stat.label}</p>
+                      <p className="text-gray-600 text-xs truncate">
+                        {stat.label}
+                      </p>
                     </div>
                   </div>
                 </motion.div>
@@ -214,8 +211,8 @@ export default function GroupPage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="border-b-2 overflow-scroll border-dashed border-gray-300">
-            <nav className="flex space-x-2 overflow-x-auto pb-1">
+          {/* <div className="w-full overflow-x-auto scrollbar-none"> */}
+            <nav className="overflow-x-scroll flex gap-2 pb-1 px-1 ">
               {[
                 {
                   id: "expenses",
@@ -233,22 +230,26 @@ export default function GroupPage() {
                 { id: "activity", label: "Activity", icon: Activity },
               ].map((tab) => {
                 const IconComponent = tab.icon;
+
                 return (
                   <motion.button
                     key={tab.id}
-                    whileHover={{ y: -1 }}
-                    whileTap={{ y: 1 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 py-3 px-4 border-b-2 font-medium text-sm transition-all duration-150 flex-shrink-0 ${
-                      activeTab === tab.id
-                        ? "border-black text-gray-900 bg-gray-50"
-                        : "border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2
+                      shrink-0 transition-all duration-150 whitespace-nowrap
+                      ${
+                        activeTab === tab.id
+                          ? "border-black bg-gray-100 text-black"
+                          : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                      }
+                    `}
                   >
-                    <IconComponent size={16} />
-                    {tab.label}
+                    <IconComponent size={16} className="shrink-0" />
+                    <span className="text-sm">{tab.label}</span>
+
                     {tab.count !== undefined && (
-                      <span className="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs font-medium border border-gray-400">
+                      <span className="bg-gray-200 text-gray-800 text-xs px-2 py-0.5 rounded border border-gray-400">
                         {tab.count}
                       </span>
                     )}
@@ -256,7 +257,7 @@ export default function GroupPage() {
                 );
               })}
             </nav>
-          </div>
+          {/* </div> */}
         </motion.div>
 
         {/* Tab Content */}
@@ -347,15 +348,15 @@ function ExpensesTab({ expenses, group, onRefresh }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-16 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
+        className="text-center py-12 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
       >
-        <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
-          <IndianRupee className="w-8 h-8 text-gray-500" />
+        <div className="w-14 h-14 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
+          <IndianRupee className="w-6 h-6 text-gray-500" />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-3 border-b-2 border-black pb-1 inline-block">
+        <h3 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-black pb-1 inline-block">
           No expenses yet
         </h3>
-        <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
+        <p className="text-gray-600 text-xs mb-4 max-w-md mx-auto">
           Start by adding your first expense to track shared costs
         </p>
       </motion.div>
@@ -379,13 +380,13 @@ function ExpensesTab({ expenses, group, onRefresh }) {
             <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-            <div className="p-4">
+            <div className="p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div
-                    className={`w-10 h-10 rounded border-2 bg-white flex items-center justify-center ${catBorderColor(
+                    className={`w-9 h-9 rounded border-2 bg-white flex items-center justify-center ${catBorderColor(
                       expense.category
-                    )}`}
+                    )} flex-shrink-0`}
                   >
                     {getCategoryIcon(expense.category)}
                   </div>
@@ -396,21 +397,23 @@ function ExpensesTab({ expenses, group, onRefresh }) {
                         {expense.description}
                       </h4>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium border ${catBorderColor(
+                        className={`px-1.5 py-0.5 rounded text-xs font-medium border ${catBorderColor(
                           expense.category
-                        )} bg-white`}
+                        )} bg-white flex-shrink-0`}
                       >
                         {expense.category}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Users size={12} />
-                        Paid by {expense.paidBy?.fullName || "Unknown"}
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="flex items-center gap-1 truncate">
+                        <Users size={10} />
+                        <span className="truncate">
+                          Paid by {expense.paidBy?.fullName || "Unknown"}
+                        </span>
                       </span>
-                      <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                      <span className="flex items-center gap-1">
-                        <Calendar size={12} />
+                      <div className="w-1 h-1 bg-gray-400 rounded-full flex-shrink-0"></div>
+                      <span className="flex items-center gap-1 flex-shrink-0">
+                        <Calendar size={10} />
                         {new Date(expense.date).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -420,8 +423,8 @@ function ExpensesTab({ expenses, group, onRefresh }) {
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <p className="text-base font-bold text-gray-900">
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="text-sm font-bold text-gray-900">
                     ₹{expense.amount.toLocaleString()}
                   </p>
                   <p className="text-gray-500 text-xs">
@@ -449,14 +452,14 @@ function MembersTab({ members, group, onRefresh }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             whileHover={{ y: -1 }}
-            className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-400 hover:border-gray-600 hover:shadow-sketch-hover transition-all duration-150"
+            className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-400 hover:border-gray-600 hover:shadow-sketch-hover transition-all duration-150"
           >
             {/* Corner accents */}
             <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded border-2 border-gray-400 bg-gray-200 flex items-center justify-center text-gray-700 font-medium text-sm">
+              <div className="w-9 h-9 rounded border-2 border-gray-400 bg-gray-200 flex items-center justify-center text-gray-700 font-medium text-sm flex-shrink-0">
                 {member.name?.charAt(0).toUpperCase()}
               </div>
 
@@ -468,9 +471,9 @@ function MembersTab({ members, group, onRefresh }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <span
-                className={`px-3 py-1 rounded text-xs font-medium border ${
+                className={`px-2 py-0.5 rounded text-xs font-medium border ${
                   member.role === "admin"
                     ? "border-blue-500 text-blue-600 bg-white"
                     : "border-gray-400 text-gray-600 bg-white"
@@ -492,18 +495,18 @@ function BalancesTab({ group, expenses }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="text-center py-16 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
+      className="text-center py-12 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
     >
-      <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
-        <BarChart3 className="w-8 h-8 text-gray-500" />
+      <div className="w-14 h-14 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
+        <BarChart3 className="w-6 h-6 text-gray-500" />
       </div>
-      <h3 className="text-lg font-bold text-gray-900 mb-3 border-b-2 border-black pb-1 inline-block">
+      <h3 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-black pb-1 inline-block">
         Balance Overview
       </h3>
-      <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
+      <p className="text-gray-600 text-xs mb-4 max-w-md mx-auto">
         View who owes whom and track settlements in the group
       </p>
-      <div className="text-sm text-gray-500">
+      <div className="text-xs text-gray-500">
         Balance calculations will appear here as you add expenses
       </div>
     </motion.div>
@@ -516,18 +519,18 @@ function ActivityTab({ group }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="text-center py-16 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
+      className="text-center py-12 border-2 border-dashed border-gray-400 rounded-lg bg-white shadow-sketch"
     >
-      <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
-        <Activity className="w-8 h-8 text-gray-500" />
+      <div className="w-14 h-14 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
+        <Activity className="w-6 h-6 text-gray-500" />
       </div>
-      <h3 className="text-lg font-bold text-gray-900 mb-3 border-b-2 border-black pb-1 inline-block">
+      <h3 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-black pb-1 inline-block">
         Group Activity
       </h3>
-      <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
+      <p className="text-gray-600 text-xs mb-4 max-w-md mx-auto">
         Track all activities, expenses, and member actions
       </p>
-      <div className="text-sm text-gray-500">
+      <div className="text-xs text-gray-500">
         Activity feed will show recent actions and updates
       </div>
     </motion.div>

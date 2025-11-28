@@ -1,21 +1,19 @@
 // components/groups/CreateGroupForm.js
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Users, 
-  Search, 
-  X, 
-  Plus, 
-  Mail, 
-  UserPlus, 
-  Loader2,
-  Shield,
-  Globe,
-  Lock
-} from "lucide-react";
 import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Globe,
+  Loader2,
+  Lock,
+  Plus,
+  Search,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function CreateGroupForm({ onClose, onGroupCreated }) {
@@ -23,9 +21,9 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
     name: "",
     description: "",
     currency: "INR",
-    privacy: "private"
+    privacy: "private",
   });
-  
+
   const [members, setMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -35,7 +33,7 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
   const [customUser, setCustomUser] = useState({
     name: "",
     email: "",
-    contact: ""
+    contact: "",
   });
 
   const searchRef = useRef(null);
@@ -49,7 +47,9 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
 
     setIsSearching(true);
     try {
-      const res = await axios.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+      const res = await axios.get(
+        `/api/users/search?q=${encodeURIComponent(query)}`
+      );
       setSearchResults(res.data.users || []);
     } catch (error) {
       console.error("Search error:", error);
@@ -70,8 +70,8 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
 
   // Add member from search results
   const addMember = (user) => {
-    if (!members.find(m => m.id === user.id)) {
-      setMembers(prev => [...prev, { ...user, type: 'registered' }]);
+    if (!members.find((m) => m.id === user.id)) {
+      setMembers((prev) => [...prev, { ...user, type: "registered" }]);
       setSearchQuery("");
       setSearchResults([]);
       toast.success(`Added ${user.name}`);
@@ -80,7 +80,7 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
 
   // Remove member
   const removeMember = (memberId) => {
-    setMembers(prev => prev.filter(m => m.id !== memberId));
+    setMembers((prev) => prev.filter((m) => m.id !== memberId));
   };
 
   // Add custom user
@@ -95,10 +95,10 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
       name: customUser.name,
       email: customUser.email || null,
       contact: customUser.contact || null,
-      type: 'custom'
+      type: "custom",
     };
 
-    setMembers(prev => [...prev, newCustomUser]);
+    setMembers((prev) => [...prev, newCustomUser]);
     setCustomUser({ name: "", email: "", contact: "" });
     setShowCustomUser(false);
     toast.success(`Added ${customUser.name}`);
@@ -107,7 +107,7 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error("Please enter a group name");
       return;
@@ -122,13 +122,13 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
     try {
       const res = await axios.post("/api/groups", {
         ...formData,
-        members: members.map(m => ({
-          userId: m.type === 'registered' ? m.id : null,
+        members: members.map((m) => ({
+          userId: m.type === "registered" ? m.id : null,
           name: m.name,
           email: m.email,
           contact: m.contact,
-          type: m.type
-        }))
+          type: m.type,
+        })),
       });
 
       toast.success("Group created successfully!");
@@ -158,8 +158,12 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Create New Group</h2>
-                <p className="text-gray-600">Start splitting expenses with friends</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Create New Group
+                </h2>
+                <p className="text-gray-600">
+                  Start splitting expenses with friends
+                </p>
               </div>
             </div>
             <button
@@ -172,7 +176,10 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]"
+        >
           {/* Group Details */}
           <div className="space-y-6">
             {/* Group Name */}
@@ -183,7 +190,9 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="e.g., Goa Trip, Roommates, Office Lunch"
                 className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                 required
@@ -197,7 +206,12 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="What's this group for?"
                 rows={3}
                 className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors resize-none"
@@ -213,7 +227,12 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                 </label>
                 <select
                   value={formData.currency}
-                  onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      currency: e.target.value,
+                    }))
+                  }
                   className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                 >
                   <option value="INR">Indian Rupee (₹)</option>
@@ -230,7 +249,12 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                 </label>
                 <select
                   value={formData.privacy}
-                  onChange={(e) => setFormData(prev => ({ ...prev, privacy: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      privacy: e.target.value,
+                    }))
+                  }
                   className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors"
                 >
                   <option value="private">
@@ -293,7 +317,9 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{user.name}</p>
+                            <p className="font-medium text-gray-900">
+                              {user.name}
+                            </p>
                             <p className="text-sm text-gray-500">
                               {user.email} • {user.contact}
                             </p>
@@ -314,7 +340,7 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                   className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
                 >
                   <UserPlus className="w-4 h-4" />
-                  Add custom user (not on SplitWise)
+                  Add custom user (not on splitzy)
                 </button>
               )}
 
@@ -332,21 +358,36 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                         type="text"
                         placeholder="Full Name *"
                         value={customUser.name}
-                        onChange={(e) => setCustomUser(prev => ({ ...prev, name: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomUser((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
                         className="p-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                       />
                       <input
                         type="email"
                         placeholder="Email (optional)"
                         value={customUser.email}
-                        onChange={(e) => setCustomUser(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomUser((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
                         className="p-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                       />
                       <input
                         type="tel"
                         placeholder="Contact (optional)"
                         value={customUser.contact}
-                        onChange={(e) => setCustomUser(prev => ({ ...prev, contact: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomUser((prev) => ({
+                            ...prev,
+                            contact: e.target.value,
+                          }))
+                        }
                         className="p-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                       />
                       <div className="flex gap-2">
@@ -387,7 +428,7 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
                       <div>
                         <p className="font-medium text-gray-900">
                           {member.name}
-                          {member.type === 'custom' && (
+                          {member.type === "custom" && (
                             <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
                               External
                             </span>

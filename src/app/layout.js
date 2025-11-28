@@ -1,8 +1,8 @@
 // app/layout.js
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import { Providers } from "@/redux/Providers";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
 
 const geistSans = Geist({
@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "SplitWise - Split bills without drama",
+  title: "splitzy - Split bills without drama",
   description: "Track shared expenses and settle up smoothly",
 };
 
@@ -28,9 +28,7 @@ export default function RootLayout({ children }) {
       >
         <Toaster position="top-right" />
         <Providers>
-          <ThemeProvider>
-          {children}
-          </ThemeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </Providers>
       </body>
     </html>

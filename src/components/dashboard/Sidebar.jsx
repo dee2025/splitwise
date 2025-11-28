@@ -1,7 +1,7 @@
 "use client";
 
+import { LogOut, Receipt, Settings, User, Users, Wallet } from "lucide-react";
 import { useState } from "react";
-import { User, Users, Receipt, Wallet, LogOut, Settings } from "lucide-react";
 
 export default function Sidebar() {
   const [activeItem, setActiveItem] = useState("Dashboard");
@@ -18,7 +18,7 @@ export default function Sidebar() {
     <aside className="w-64 bg-white shadow-sm border-r flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b">
-        <h2 className="text-2xl font-bold text-black">SplitWise Web</h2>
+        <h2 className="text-2xl font-bold text-black">splitzy Web</h2>
       </div>
 
       {/* Navigation */}

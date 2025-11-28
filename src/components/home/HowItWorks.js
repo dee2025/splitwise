@@ -1,47 +1,50 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users, PlusCircle, Calculator, IndianRupee, CheckCircle2 } from "lucide-react";
+import { Calculator, CheckCircle2, PlusCircle, Users } from "lucide-react";
 
 export default function HowItWorks() {
   const steps = [
     {
       number: "01",
       title: "Create Your Group",
-      description: "Start a new group for your trip, event, or shared expenses. Give it a memorable name that reflects your adventure.",
+      description:
+        "Start a new group for your trip, event, or shared expenses. Give it a memorable name that reflects your adventure.",
       icon: <Users className="w-5 h-5" />,
       visual: {
         title: "Goa Trip 2024",
         members: "5 friends",
         type: "Travel",
-        color: "bg-blue-50"
-      }
+        color: "bg-blue-50",
+      },
     },
     {
       number: "02",
       title: "Add & Split Expenses",
-      description: "Easily add expenses for food, travel, accommodation, or anything else. Select participants and let us handle the math.",
+      description:
+        "Easily add expenses for food, travel, accommodation, or anything else. Select participants and let us handle the math.",
       icon: <PlusCircle className="w-5 h-5" />,
       visual: {
         title: "Beachside Dinner",
         amount: "₹2,800",
         split: "5 people",
         paidBy: "You",
-        color: "bg-green-50"
-      }
+        color: "bg-green-50",
+      },
     },
     {
       number: "03",
       title: "Settle Up Effortlessly",
-      description: "Get clear settlement suggestions showing who owes whom. No awkward conversations—just quick, fair resolutions.",
+      description:
+        "Get clear settlement suggestions showing who owes whom. No awkward conversations—just quick, fair resolutions.",
       icon: <Calculator className="w-5 h-5" />,
       visual: {
         title: "All Settled Up!",
         amount: "₹0.00",
         status: "Balanced",
-        color: "bg-purple-50"
-      }
-    }
+        color: "bg-purple-50",
+      },
+    },
   ];
 
   return (
@@ -59,8 +62,8 @@ export default function HowItWorks() {
             How It Works
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Split expenses with friends and colleagues in three simple steps. 
-            No complicated math, no forgotten payments.
+            Split expenses with friends and colleagues in three simple steps. No
+            complicated math, no forgotten payments.
           </p>
         </motion.div>
 
@@ -84,7 +87,15 @@ export default function HowItWorks() {
   );
 }
 
-function StepWithVisual({ number, title, description, icon, visual, index, delay = 0 }) {
+function StepWithVisual({
+  number,
+  title,
+  description,
+  icon,
+  visual,
+  index,
+  delay = 0,
+}) {
   const isEven = index % 2 === 0;
 
   return (
@@ -93,7 +104,9 @@ function StepWithVisual({ number, title, description, icon, visual, index, delay
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay }}
       viewport={{ once: true }}
-      className={`flex flex-col lg:flex-row gap-8 items-center ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}
+      className={`flex flex-col lg:flex-row gap-8 items-center ${
+        isEven ? "lg:flex-row" : "lg:flex-row-reverse"
+      }`}
     >
       {/* Left Side - Content */}
       <div className="flex-1">
@@ -110,9 +123,7 @@ function StepWithVisual({ number, title, description, icon, visual, index, delay
           <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
             {title}
           </h3>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            {description}
-          </p>
+          <p className="text-lg text-gray-600 leading-relaxed">{description}</p>
         </div>
       </div>
 
@@ -124,7 +135,17 @@ function StepWithVisual({ number, title, description, icon, visual, index, delay
   );
 }
 
-function VisualCard({ title, amount, split, paidBy, members, type, status, color, index }) {
+function VisualCard({
+  title,
+  amount,
+  split,
+  paidBy,
+  members,
+  type,
+  status,
+  color,
+  index,
+}) {
   const getCardContent = (index) => {
     switch (index) {
       case 0: // Group Creation
@@ -222,11 +243,11 @@ function VisualCard({ title, amount, split, paidBy, members, type, status, color
     >
       <div className="rounded-2xl border-2 border-gray-300 bg-white shadow-sketch-lg hover:shadow-sketch-xl transition-all duration-300 hover:border-black">
         {getCardContent(index)}
-        
+
         {/* Card Footer */}
         <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-2xl">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">SplitWise</span>
+            <span className="text-gray-600">splitzy</span>
             <span className="text-gray-400">Live</span>
           </div>
         </div>

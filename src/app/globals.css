@@ -3,7 +3,6 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
 }
 
 @theme inline {
@@ -11,13 +10,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -45,20 +37,3 @@ body {
       6px 6px 0px 1px #000;
   }
 }
-
-
-/* .shadow-sketch {
-    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-}
-
-.shadow-sketch-lg {
-    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
-}
-
-.shadow-sketch-xl {
-    box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
-}
-
-html {
-    scroll-behavior: smooth;
-} */

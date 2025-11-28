@@ -39,7 +39,7 @@ export default function BottomNav() {
   return (
     <>
       {/* BOTTOM NAV */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
         <div className="bg-black/30 backdrop-blur-xl shadow-xl rounded-full flex items-center gap-6 px-6 py-3 border border-white/20">
           {tabs.map((tab) => {
             const Icon = tab.icon;
