@@ -112,22 +112,35 @@ export default function GroupsPage() {
               </p>
             </div>
 
-            <motion.button
-              whileHover={{ y: -1 }}
-              whileTap={{ y: 1 }}
-              onClick={() => setShowCreateGroup(true)}
-              className="flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-3 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm w-full sm:w-auto"
-            >
-              <Plus size={20} />
-              <span>New Group</span>
-            </motion.button>
+            <div className="flex gap-4">
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ y: 1 }}
+                onClick={() => setShowCreateGroup(true)}
+                className="flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-3 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm w-full sm:w-auto"
+              >
+                <Plus size={20} />
+                <span>New Group</span>
+              </motion.button>
+
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search groups..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-400 rounded focus:outline-none focus:border-black transition-all duration-150 text-base shadow-sketch-sm"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Search and Filter */}
-        <div className="mb-8 space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
+        {/* <div className="mb-8 space-y-4 flex w-full"> */}
+        {/* Search Bar */}
+        {/* <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
@@ -136,10 +149,10 @@ export default function GroupsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-400 rounded focus:outline-none focus:border-black transition-all duration-150 text-base shadow-sketch-sm"
             />
-          </div>
+          </div> */}
 
-          {/* Filter Chips */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        {/* Filter Chips */}
+        {/* <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
             {[
               { key: "all", label: "All" },
               { key: "active", label: "Active" },
@@ -161,8 +174,8 @@ export default function GroupsPage() {
                 {filter.label}
               </motion.button>
             ))}
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
 
         {/* Groups Grid */}
         {loading ? (

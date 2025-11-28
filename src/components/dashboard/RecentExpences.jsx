@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  UtensilsCrossed,
-  Plane,
-  Music,
-  ShoppingBag,
-  Plug,
-  Receipt,
-  User,
-  Calendar,
-  Loader2,
-  Plus,
-  ArrowRight,
-} from "lucide-react";
 import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowRight,
+  Calendar,
+  Music,
+  Plane,
+  Plug,
+  Plus,
+  Receipt,
+  ShoppingBag,
+  User,
+  UtensilsCrossed,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function RecentExpenses() {
@@ -42,7 +41,9 @@ export default function RecentExpenses() {
 
   const handleClick = (expense) => {
     if (expense.groupId?.$oid) {
-      router.push(`/groups/${expense.groupId.$oid}/expenses/${expense._id.$oid}`);
+      router.push(
+        `/groups/${expense.groupId.$oid}/expenses/${expense._id.$oid}`
+      );
     } else {
       router.push(`/expenses/${expense._id.$oid}`);
     }
@@ -118,25 +119,15 @@ export default function RecentExpenses() {
   return (
     <div className="bg-white rounded-lg border-2 border-gray-400 p-5 shadow-sketch">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 border-b-2 border-dashed border-gray-300 pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 border-b-2 border-black pb-1 inline-block">
-            Recent Expenses
-          </h2>
-          <p className="text-gray-600 text-sm mt-2">
-            {expenses.length} expense{expenses.length !== 1 ? 's' : ''} tracked
-          </p>
-        </div>
-
-        <motion.button
+      <div>
+        <motion.div
           whileHover={{ y: -1 }}
           whileTap={{ y: 1 }}
-          onClick={() => router.push("/expenses/create")}
-          className="flex items-center gap-2 bg-black text-white px-3 py-2 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium text-sm shadow-sketch-sm"
+          className="flex items-center gap-2 text-gray-800 hover:text-gray-900  text-xl font-bold transition-colors duration-150 cursor-pointer mb-6 border-b-2 border-dashed border-gray-300 pb-2"
         >
-          <Plus className="w-4 h-4" />
-          Add
-        </motion.button>
+          Recent Expenses
+          <ArrowRight size={14} />
+        </motion.div>
       </div>
 
       {loading ? (
@@ -203,7 +194,11 @@ export default function RecentExpenses() {
                 >
                   <div className="flex items-center gap-3">
                     {/* Category Icon */}
-                    <div className={`w-10 h-10 rounded border-2 bg-white flex items-center justify-center ${catBorderColor(exp.category)}`}>
+                    <div
+                      className={`w-10 h-10 rounded border-2 bg-white flex items-center justify-center ${catBorderColor(
+                        exp.category
+                      )}`}
+                    >
                       {getCategoryIcon(exp.category)}
                     </div>
 
@@ -213,7 +208,11 @@ export default function RecentExpenses() {
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {exp.description}
                         </p>
-                        <span className={`px-2 py-1 rounded text-xs font-medium border ${catBorderColor(exp.category)} ${catTextColor(exp.category)} bg-white`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium border ${catBorderColor(
+                            exp.category
+                          )} ${catTextColor(exp.category)} bg-white`}
+                        >
                           {exp.category}
                         </span>
                       </div>
@@ -226,7 +225,9 @@ export default function RecentExpenses() {
                         <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
                         <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />
-                          <span>Paid by {exp.paidBy?.$oid?.slice(-4) || 'You'}</span>
+                          <span>
+                            Paid by {exp.paidBy?.$oid?.slice(-4) || "You"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -237,7 +238,10 @@ export default function RecentExpenses() {
                         {formatAmount(exp.amount)}
                       </p>
                       <div className="p-1 border border-gray-400 rounded group-hover:border-black transition-colors">
-                        <ArrowRight size={12} className="text-gray-600 group-hover:text-black" />
+                        <ArrowRight
+                          size={12}
+                          className="text-gray-600 group-hover:text-black"
+                        />
                       </div>
                     </div>
                   </div>
@@ -258,7 +262,7 @@ export default function RecentExpenses() {
           <motion.button
             whileHover={{ y: -1 }}
             whileTap={{ y: 1 }}
-            onClick={() => router.push('/expenses')}
+            onClick={() => router.push("/expenses")}
             className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors duration-150 flex items-center gap-1 mx-auto"
           >
             View all {expenses.length} expenses

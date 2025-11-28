@@ -7,7 +7,6 @@ import {
   Briefcase,
   Home,
   MapPin,
-  Plus,
   UserPlus,
   Users,
   Utensils,
@@ -136,52 +135,15 @@ export default function GroupsSection() {
 
   return (
     <div className="bg-white rounded-lg border-2 border-gray-400 p-5 shadow-sketch">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 border-b-2 border-dashed border-gray-300 pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 border-b-2 border-black pb-1 inline-block">
-            Your Groups
-          </h2>
-          <p className="text-gray-600 text-sm mt-2">
-            {groups.length} active group{groups.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ y: 1 }}
-            onClick={() => router.push("/groups")}
-            className="flex items-center gap-2 bg-white text-gray-700 text-sm px-3 py-2 rounded border-2 border-gray-400 hover:border-black transition-all duration-150 font-medium shadow-sketch-sm"
-          >
-            View All
-            <ArrowRight size={14} />
-          </motion.button>
-
-          {/* <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ y: 1 }}
-            onClick={handleCreateGroup}
-            disabled={creatingGroup}
-            className="flex items-center gap-1 bg-black text-white text-sm px-3 py-2 rounded border-2 border-black hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 font-medium shadow-sketch-sm"
-          >
-            {creatingGroup ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Plus size={14} />
-            )}
-            New
-          </motion.button> */}
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ y: 1 }}
-            onClick={() => setShowCreateGroup(true)}
-            className="flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-4 py-2 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm w-full sm:w-auto"
-          >
-            <Plus size={20} />
-            <span>New Group</span>
-          </motion.button>
-        </div>
+      <div>
+        <motion.div
+          whileHover={{ y: -1 }}
+          whileTap={{ y: 1 }}
+          className="flex items-center gap-2 text-gray-800 hover:text-gray-900  text-xl font-bold transition-colors duration-150 cursor-pointer mb-6 border-b-2 border-dashed border-gray-300 pb-2"
+        >
+          Recent Groups
+          <ArrowRight size={14} />
+        </motion.div>
       </div>
 
       {/* Groups List */}
@@ -291,7 +253,7 @@ export default function GroupsSection() {
       </div>
 
       {/* View All Groups Button */}
-      {groups.length > 2 && (
+      {groups.length > 5 && (
         <div className="mt-4 text-center border-t-2 border-dashed border-gray-300 pt-4">
           <motion.button
             whileHover={{ y: -1 }}
