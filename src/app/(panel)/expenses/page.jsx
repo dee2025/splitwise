@@ -76,7 +76,7 @@ const CATEGORY_CONFIG = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getCurrencySymbol(currency) {
-  return { INR: "₹", USD: "$", EUR: "€", GBP: "£" }[currency] ?? "₹";
+  return "₹";
 }
 
 function getUserShare(expense, userId) {

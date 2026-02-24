@@ -17,7 +17,7 @@ import { NextResponse } from "next/server";
  *   reason?: string (for cancellation/dispute)
  * }
  */
-export async function PUT(request) {
+async function handleVerify(request) {
   try {
     await connectDB();
 
@@ -51,6 +51,10 @@ export async function PUT(request) {
       );
     }
 
+    const settlementAmount = Number(
+      settlement.amount ?? settlement.totalAmount ?? 0,
+    );
+
     // Authorization checks based on action
     if (action === "confirm") {
       // Payer confirms they sent the payment
@@ -60,12 +64,24 @@ export async function PUT(request) {
           { status: 403 },
         );
       }
+      if (settlement.status !== "pending") {
+        return NextResponse.json(
+          { error: "Only pending settlements can be confirmed" },
+          { status: 400 },
+        );
+      }
     } else if (action === "complete") {
       // Receiver confirms they received the payment
       if (settlement.toUser._id.toString() !== user._id.toString()) {
         return NextResponse.json(
           { error: "Only receiver can complete" },
           { status: 403 },
+        );
+      }
+      if (settlement.status !== "confirmed") {
+        return NextResponse.json(
+          { error: "Settlement must be marked sent before completion" },
+          { status: 400 },
         );
       }
     } else if (action === "cancel" || action === "dispute") {
@@ -78,6 +94,13 @@ export async function PUT(request) {
       ) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
       }
+
+      if (!["pending", "confirmed"].includes(settlement.status)) {
+        return NextResponse.json(
+          { error: "Only open settlements can be cancelled or disputed" },
+          { status: 400 },
+        );
+      }
     }
 
     // Process action
@@ -89,6 +112,21 @@ export async function PUT(request) {
         if (paymentDetails) {
           settlement.paymentDetails = paymentDetails;
         }
+
+        await Notification.create({
+          userId: settlement.toUser._id,
+          type: "settlement_confirmed",
+          title: "Payment Marked as Sent",
+          message: `${settlement.fromUser.fullName} marked ₹${settlementAmount} as sent in ${settlement.groupId.name}`,
+          data: {
+            settlementId: settlement._id,
+            groupId: settlement.groupId._id,
+            amount: settlementAmount,
+            fromUser: settlement.fromUser.fullName,
+            type: "settlement_confirmed",
+          },
+          isRead: false,
+        });
         break;
 
       case "complete":
@@ -106,11 +144,11 @@ export async function PUT(request) {
           userId: settlement.fromUser._id,
           type: "settlement_completed",
           title: "Payment Received",
-          message: `${settlement.toUser.fullName} has confirmed receiving ₹${settlement.amount} payment in ${settlement.groupId.name}`,
+          message: `${settlement.toUser.fullName} has confirmed receiving ₹${settlementAmount} payment in ${settlement.groupId.name}`,
           data: {
             settlementId: settlement._id,
             groupId: settlement.groupId._id,
-            amount: settlement.amount,
+            amount: settlementAmount,
             toUser: settlement.toUser.fullName,
             type: "settlement_completed",
           },
@@ -132,11 +170,11 @@ export async function PUT(request) {
           userId: cancelledToNotify,
           type: "settlement_cancelled",
           title: "Settlement Cancelled",
-          message: `${user.fullName} has cancelled the settlement of ₹${settlement.amount}`,
+          message: `${user.fullName} has cancelled the settlement of ₹${settlementAmount}`,
           data: {
             settlementId: settlement._id,
             groupId: settlement.groupId._id,
-            amount: settlement.amount,
+            amount: settlementAmount,
             reason: reason,
           },
           isRead: false,
@@ -160,7 +198,7 @@ export async function PUT(request) {
           userId: otherUser,
           type: "settlement_disputed",
           title: "Settlement Dispute",
-          message: `${user.fullName} has disputed the settlement of ₹${settlement.amount}`,
+          message: `${user.fullName} has disputed the settlement of ₹${settlementAmount}`,
           data: {
             settlementId: settlement._id,
             groupId: settlement.groupId._id,
@@ -189,4 +227,12 @@ export async function PUT(request) {
       { status: 500 },
     );
   }
+}
+
+export async function PUT(request) {
+  return handleVerify(request);
+}
+
+export async function POST(request) {
+  return handleVerify(request);
 }

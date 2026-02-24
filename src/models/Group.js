@@ -14,7 +14,7 @@ const groupSchema = new mongoose.Schema(
     currency: {
       type: String,
       default: "INR",
-      enum: ["INR", "USD", "EUR", "GBP"],
+      enum: ["INR"],
     },
     privacy: {
       type: String,
@@ -77,5 +77,10 @@ const groupSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+groupSchema.pre("validate", function (next) {
+  this.currency = "INR";
+  next();
+});
 
 export default mongoose.models.Group || mongoose.model("Group", groupSchema);

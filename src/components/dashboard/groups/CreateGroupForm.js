@@ -46,7 +46,6 @@ export default function CreateGroupForm({ onClose }) {
       const res = await axios.post("/api/groups", {
         name: groupName.trim(),
         type: selectedType,
-        currency: "INR",
       });
 
       toast.success("Group created! Add members to get started.");

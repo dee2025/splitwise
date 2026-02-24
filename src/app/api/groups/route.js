@@ -70,7 +70,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, currency, privacy, members, type } = body;
+    const { name, description, privacy, members, type } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -110,7 +110,7 @@ export async function POST(request) {
     const group = await Group.create({
       name: name.trim(),
       description: description?.trim(),
-      currency: currency || "INR",
+      currency: "INR",
       privacy: privacy || "private",
       type: type || "other",
       createdBy: currentUser._id,

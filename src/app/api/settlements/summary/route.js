@@ -38,6 +38,16 @@ export async function GET(request) {
       .populate("groupId", "name currency")
       .sort({ createdAt: -1 });
 
+    const normalizedSettlements = settlements.map((settlement) => {
+      const normalized = settlement.toObject();
+      normalized.amount = Number(
+        normalized.amount ?? normalized.totalAmount ?? 0,
+      );
+      normalized.status =
+        normalized.status === "paid" ? "completed" : normalized.status;
+      return normalized;
+    });
+
     // Calculate summary statistics
     const summary = {
       totalSettlements: settlements.length,
@@ -52,25 +62,31 @@ export async function GET(request) {
       },
     };
 
-    settlements.forEach((settlement) => {
+    normalizedSettlements.forEach((settlement) => {
+      const settlementAmount = Number(
+        settlement.amount ?? settlement.totalAmount ?? 0,
+      );
+      const normalizedStatus =
+        settlement.status === "paid" ? "completed" : settlement.status;
+
       // Calculate amount owed/to receive
       if (settlement.fromUser._id.toString() === user._id.toString()) {
-        summary.userOweAmount += settlement.amount;
+        summary.userOweAmount += settlementAmount;
       } else {
-        summary.userGetAmount += settlement.amount;
+        summary.userGetAmount += settlementAmount;
       }
 
       // Group by status
-      if (!summary.breakdown.byStatus[settlement.status]) {
-        summary.breakdown.byStatus[settlement.status] = {
+      if (!summary.breakdown.byStatus[normalizedStatus]) {
+        summary.breakdown.byStatus[normalizedStatus] = {
           count: 0,
           amount: 0,
           settlements: [],
         };
       }
-      summary.breakdown.byStatus[settlement.status].count++;
-      summary.breakdown.byStatus[settlement.status].amount += settlement.amount;
-      summary.breakdown.byStatus[settlement.status].settlements.push(
+      summary.breakdown.byStatus[normalizedStatus].count++;
+      summary.breakdown.byStatus[normalizedStatus].amount += settlementAmount;
+      summary.breakdown.byStatus[normalizedStatus].settlements.push(
         settlement,
       );
 
@@ -82,19 +98,19 @@ export async function GET(request) {
         };
       }
       summary.breakdown.byMethod[settlement.method].count++;
-      summary.breakdown.byMethod[settlement.method].amount += settlement.amount;
+      summary.breakdown.byMethod[settlement.method].amount += settlementAmount;
 
       // Categorize by status
-      if (["pending", "confirmed"].includes(settlement.status)) {
+      if (["pending", "confirmed"].includes(normalizedStatus)) {
         summary.pendingSettlements.push(settlement);
-      } else if (settlement.status === "completed") {
+      } else if (normalizedStatus === "completed") {
         summary.completedSettlements.push(settlement);
       }
     });
 
     return NextResponse.json({
       summary,
-      settlements,
+      settlements: normalizedSettlements,
       user: {
         id: user._id,
         name: user.fullName,

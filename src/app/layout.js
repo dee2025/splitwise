@@ -1,5 +1,6 @@
 // app/layout.js
 import { Providers } from "@/redux/Providers";
+import GlobalAddExpenseModal from "@/components/global/GlobalAddExpenseModal";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
@@ -28,7 +29,10 @@ export default function RootLayout({ children }) {
       >
         <Toaster position="top-right" />
         <Providers>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            {children}
+            <GlobalAddExpenseModal />
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

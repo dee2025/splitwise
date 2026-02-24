@@ -66,6 +66,7 @@ export async function POST(request) {
         fromUser: fromUser._id,
         toUser: toUser._id,
         amount,
+        totalAmount: amount,
         method: method || "cash",
         notes,
         status: "pending",

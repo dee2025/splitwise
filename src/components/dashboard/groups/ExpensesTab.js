@@ -63,7 +63,7 @@ export default function ExpensesTab({ expenses = [], group, onExpenseUpdated }) 
                                 <div className="mt-3 text-sm text-gray-700 flex flex-wrap gap-2">
                                     {(exp.splitBetween || []).slice(0, 4).map((s) => (
                                         <div key={s.userId?._id || s.userId} className="bg-gray-50 px-2 py-1 rounded text-xs">
-                                            {s.userId?.fullName || s.userId?.username || "User"}: {group.currency === "INR" ? "₹" : "$"}{(s.amount).toFixed(2)}
+                                            {s.userId?.fullName || s.userId?.username || "User"}: ₹{(s.amount).toFixed(2)}
                                             {s.settled ? <span className="ml-2 text-green-600">●</span> : null}
                                         </div>
                                     ))}

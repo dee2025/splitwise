@@ -17,7 +17,7 @@ export default function Dashboard() {
   const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
   const router = useRouter();
 
-  const [showAddExpense, setShowAddExpense] = useState(false);
+  // const [showAddExpense, setShowAddExpense] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsKey, setGroupsKey] = useState(0);
 
@@ -75,13 +75,13 @@ export default function Dashboard() {
               <span className="hidden sm:inline">New Group</span>
             </button>
 
-            <button
+            {/* <button
               onClick={() => setShowAddExpense(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 active:scale-95 transition-all shadow-lg shadow-indigo-950/60"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
               Add Expense
-            </button>
+            </button> */}
           </div>
         </motion.div>
 
@@ -103,11 +103,11 @@ export default function Dashboard() {
       </div>
 
       {/* ── Modals ── */}
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {showAddExpense && (
           <AddExpenseModal onClose={() => setShowAddExpense(false)} />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       <AnimatePresence>
         {showCreateGroup && (

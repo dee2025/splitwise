@@ -2,7 +2,6 @@
 
 import AddExpenseForm from "@/components/dashboard/expenses/AddExpenseForm";
 import AddMembersModal from "@/components/dashboard/groups/AddMembersModal";
-import FinalSettlementModal from "@/components/dashboard/groups/settlement/FinalSettlementModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
@@ -48,8 +47,7 @@ export default function GroupPage() {
   const [completingTrip, setCompletingTrip] = useState(false);
   const [debts, setDebts] = useState([]);
   const [loadingDebts, setLoadingDebts] = useState(true);
-  const [activeTab, setActiveTab] = useState("expenses"); // "expenses" or "members"
-  const [selectedExpense, setSelectedExpense] = useState(null); // For expense details modal
+  const [activeTab, setActiveTab] = useState("activity"); // "members" | "settlements" | "activity"
 
   const groupId = params.groupId;
 
@@ -184,7 +182,7 @@ export default function GroupPage() {
 
   return (
     <DashboardLayout>
-      <div className="w-full ">
+      <div className="w-full overflow-x-hidden">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -339,31 +337,49 @@ export default function GroupPage() {
           {/* Tabs Section */}
           <div className="mt-8 bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
             {/* Tab Headers */}
-            <div className="flex border-b border-white/8">
-              <button
-                onClick={() => setActiveTab("expenses")}
-                className={`flex-1 py-3 px-4 font-semibold text-sm transition-all ${
-                  activeTab === "expenses"
+            <div className="grid grid-cols-3 border-b border-white/8">
+             <button
+                onClick={() => setActiveTab("activity")}
+                className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
+                  activeTab === "activity"
                     ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
                     : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
                 }`}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <Receipt size={18} />
-                  <span>Expenses</span>
+                <div className="flex items-center justify-center gap-1 sm:gap-2 min-w-0">
+                  <Activity size={18} />
+                  <span className="truncate">Activity</span>
                 </div>
               </button>
+
+              
               <button
                 onClick={() => setActiveTab("members")}
-                className={`flex-1 py-3 px-4 font-semibold text-sm transition-all ${
+                className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
                   activeTab === "members"
                     ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
                     : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
                 }`}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1 sm:gap-2 min-w-0">
                   <Users size={18} />
-                  <span>Members</span>
+                  <span className="truncate">Members</span>
+                </div>
+              </button>
+             
+             
+
+               <button
+                onClick={() => setActiveTab("settlements")}
+                className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
+                  activeTab === "settlements"
+                    ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
+                    : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1 sm:gap-2 min-w-0">
+                  <CreditCard size={18} />
+                  <span className="truncate">Settlements</span>
                 </div>
               </button>
             </div>
@@ -373,59 +389,33 @@ export default function GroupPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="min-h-[300px] max-h-[500px] overflow-y-auto"
+              className="min-h-[300px] max-h-[500px] overflow-y-auto overflow-x-hidden"
             >
-              {/* Expenses Tab */}
-              {activeTab === "expenses" && (
-                <div>
-                  {expenses.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                      <Receipt size={32} className="text-slate-500 mb-3" />
-                      <p className="text-slate-400">No expenses yet</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-white/8">
-                      {expenses.map((expense, idx) => (
-                        <motion.div
-                          key={expense._id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          onClick={() => setSelectedExpense(expense)}
-                          className="px-4 py-3 hover:bg-slate-700/30 cursor-pointer transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-slate-100 truncate">
-                                {expense.description}
-                              </p>
-                              <p className="text-xs text-slate-400 mt-1 truncate">
-                                Paid by{" "}
-                                {expense.paidBy?.fullName ||
-                                  expense.paidBy?.name ||
-                                  "Unknown"}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {new Date(expense.date).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="text-right shrink-0 flex flex-col items-end">
-                              <p className="text-sm font-bold text-emerald-400">
-                                ₹{expense.amount.toLocaleString()}
-                              </p>
-                              <span className="text-xs px-2 py-1 bg-slate-700 border border-white/8 text-slate-300 rounded mt-1">
-                                {expense.category}
-                              </span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
+              {/* Members Tab */}
+              {activeTab === "activity" && (
+                <div className="p-4">
+                  <ActivityTab
+                    group={group}
+                    expenses={expenses}
+                    currentUser={user}
+                  />
                 </div>
               )}
 
-              {/* Members Tab */}
+
+                {activeTab === "settlements" && (
+                <div className="p-4">
+                  <SettlementsTab
+                    group={group}
+                    currentUser={user}
+                    onRefresh={() => {
+                      fetchDebts();
+                    }}
+                  />
+                </div>
+              )}
+
+
               {activeTab === "members" && (
                 <div>
                   {!group?.members || group.members.length === 0 ? (
@@ -469,19 +459,13 @@ export default function GroupPage() {
                   )}
                 </div>
               )}
+
+            
+
+              
             </motion.div>
           </div>
         </motion.div>
-
-        {/* Expense Details Modal */}
-        <AnimatePresence>
-          {selectedExpense && (
-            <ExpenseDetailsModal
-              expense={selectedExpense}
-              onClose={() => setSelectedExpense(null)}
-            />
-          )}
-        </AnimatePresence>
 
         {/* Modals */}
         <AnimatePresence>
@@ -502,166 +486,6 @@ export default function GroupPage() {
         </AnimatePresence>
       </div>
     </DashboardLayout>
-  );
-}
-
-// ─── Expense Details Modal ─────────────────────────────────────────
-
-function ExpenseDetailsModal({ expense, onClose }) {
-  const getCategoryIcon = (category) => {
-    const categoryIcons = {
-      food: UtensilsCrossed,
-      travel: Plane,
-      accommodation: Flag,
-      shopping: ShoppingBag,
-      entertainment: Music,
-      utilities: Plug,
-      other: FileText,
-    };
-    return categoryIcons[category] || FileText;
-  };
-
-  const CategoryIcon = getCategoryIcon(expense.category);
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 pb-20 sm:pb-0 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 100, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 100, scale: 0.95 }}
-        className="bg-slate-800 w-full sm:max-w-2xl rounded-2xl overflow-hidden shadow-2xl border border-white/6 my-auto"
-      >
-        {/* Header */}
-        <div className="bg-gradient-to-b from-slate-700 to-slate-800 px-6 py-6 border-b border-white/6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-indigo-600/20 border border-indigo-600/40 flex items-center justify-center">
-                <CategoryIcon className="w-6 h-6 text-indigo-300" />
-              </div>
-              <div>
-                <h2 className="text-2xl sm:text-xl font-bold text-slate-100">
-                  {expense.description}
-                </h2>
-                <p className="text-sm text-slate-400 mt-1">Expense Details</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors."
-            >
-              <X className="w-5 h-5 text-slate-400" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Amount */}
-          <div>
-            <p className="text-sm font-semibold text-slate-400 mb-2">Amount</p>
-            <div className="flex items-baseline gap-2">
-              <IndianRupee className="w-6 h-6 text-emerald-400" />
-              <p className="text-4xl font-bold text-emerald-400">
-                {expense.amount.toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          {/* Paid By */}
-          <div className="bg-slate-700/30 rounded-lg p-4 border border-white/8">
-            <p className="text-sm font-semibold text-slate-400 mb-3">Paid By</p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-600/20 border border-indigo-600/40 flex items-center justify-center text-indigo-300 font-semibold text-sm">
-                {expense.paidBy?.fullName?.charAt(0).toUpperCase() ||
-                  expense.paidBy?.name?.charAt(0).toUpperCase() ||
-                  "?"}
-              </div>
-              <div>
-                <p className="font-semibold text-slate-100">
-                  {expense.paidBy?.fullName ||
-                    expense.paidBy?.name ||
-                    "Unknown"}
-                </p>
-                {expense.paidBy?.email && (
-                  <p className="text-xs text-slate-400">
-                    {expense.paidBy.email}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Split Between */}
-          <div>
-            <p className="text-sm font-semibold text-slate-400 mb-3">
-              Split Between {expense.splitBetween?.length || 0}{" "}
-              {expense.splitBetween?.length === 1 ? "person" : "people"}
-            </p>
-            <div className="space-y-2">
-              {expense.splitBetween?.map((split, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-white/8"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-600/40 flex items-center justify-center text-indigo-300 text-xs font-semibold">
-                      {split.userId?.name?.charAt(0).toUpperCase() ||
-                        split.userId?.fullName?.charAt(0).toUpperCase() ||
-                        "?"}
-                    </div>
-                    <span className="text-sm font-medium text-slate-100">
-                      {split.userId?.name ||
-                        split.userId?.fullName ||
-                        "Unknown"}
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-emerald-400">
-                    ₹{split.amount.toFixed(0)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Category & Date */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-semibold text-slate-400 mb-2">
-                Category
-              </p>
-              <div className="px-3 py-2 bg-slate-700/30 rounded-lg border border-white/8">
-                <p className="text-sm font-medium text-slate-100 capitalize">
-                  {expense.category}
-                </p>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-400 mb-2">Date</p>
-              <div className="px-3 py-2 bg-slate-700/30 rounded-lg border border-white/8 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <p className="text-sm font-medium text-slate-100">
-                  {new Date(expense.date).toLocaleDateString("en-IN", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-white/6 bg-slate-700/50 px-6 py-4">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </div>
   );
 }
 
@@ -1014,15 +838,8 @@ function BalancesTab({ group, currentUser }) {
     );
   }
 
-  const { balances, debts, currency } = balanceData;
-  const currencySymbol =
-    currency === "USD"
-      ? "$"
-      : currency === "EUR"
-        ? "€"
-        : currency === "GBP"
-          ? "£"
-          : "₹";
+  const { balances, debts } = balanceData;
+  const currencySymbol = "₹";
   const allSettled = debts.length === 0;
 
   return (
@@ -1217,16 +1034,26 @@ function RecordPaymentModal({
       setLoading(true);
       await axios.post("/api/settlements", {
         groupId: group._id,
+        fromUserId: debt.fromUserId,
         toUserId: debt.toUserId,
         amount: debt.amount,
         method,
         notes: notes.trim() || undefined,
       });
-      toast.success("Payment recorded! Waiting for confirmation.");
+      toast.success("Settlement request recorded. Waiting for receiver approval.");
       onSuccess();
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error(error.response?.data?.error || "Failed to record payment");
+      if (
+        error.response?.status === 409 ||
+        error.response?.data?.code === "OPEN_SETTLEMENT_EXISTS"
+      ) {
+        toast.error(
+          "An open settlement already exists for this pair. Check Pending/Waiting sections.",
+        );
+      } else {
+        toast.error(error.response?.data?.error || "Failed to record payment");
+      }
     } finally {
       setLoading(false);
     }
@@ -1251,7 +1078,7 @@ function RecordPaymentModal({
           <div>
             <h3 className="font-bold text-slate-100">Record Payment</h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Paying {debt.toUser}
+              {debt.fromUser ? `${debt.fromUser} → ${debt.toUser}` : `Paying ${debt.toUser}`}
             </p>
           </div>
           <button
@@ -1270,6 +1097,11 @@ function RecordPaymentModal({
             {debt.amount.toFixed(2)}
           </p>
           <p className="text-xs text-slate-400 mt-1">You → {debt.toUser}</p>
+          {debt.fromUser && (
+            <p className="text-xs text-slate-400 mt-1">
+              {debt.fromUser} → {debt.toUser}
+            </p>
+          )}
         </div>
 
         <div className="px-6 py-4 space-y-4">
@@ -1335,99 +1167,465 @@ function RecordPaymentModal({
 
 // ─── Settlements Tab ──────────────────────────────────────────────────────────
 
-function SettlementsTab({ group, currentUser }) {
-  if (group.tripStatus === "ongoing") {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-12 border border-white/8 rounded-xl bg-slate-800"
-      >
-        <div className="w-14 h-14 border border-white/8 rounded-lg flex items-center justify-center mx-auto mb-4 bg-slate-700">
-          <Calendar className="w-6 h-6 text-indigo-400" />
-        </div>
-        <h3 className="text-base font-bold text-slate-100 mb-2 border-b-2 border-indigo-500 pb-1 inline-block">
-          Trip is still ongoing
-        </h3>
-        <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
-          Settlements will be available once the trip is ended. Click the "End
-          Trip" button to complete the trip and start settling up.
-        </p>
-        {group.createdBy === currentUser._id && (
-          <div className="text-xs text-slate-400 bg-slate-700 border border-white/12 rounded px-4 py-3 inline-block">
-            You can finish the trip using the "End Trip" button at the top
-          </div>
-        )}
-      </motion.div>
-    );
-  }
-
-  return (
-    <FinalSettlementModal
-      isOpen={true}
-      onClose={() => {}}
-      groupId={group._id}
-      group={group}
-    />
-  );
-}
-
-// ─── Activity Tab ─────────────────────────────────────────────────────────────
-
-function ActivityTab({ group }) {
-  const [activity, setActivity] = useState([]);
+function SettlementsTab({ group, currentUser, onRefresh }) {
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState("");
+  const [settlements, setSettlements] = useState([]);
+  const [suggestedSettlements, setSuggestedSettlements] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [selectedDebt, setSelectedDebt] = useState(null);
 
-  useEffect(() => {
-    fetchActivity();
-  }, [group._id]);
+  const getUserId = (value) =>
+    value?._id?.toString?.() || value?.toString?.() || "";
 
-  const fetchActivity = async () => {
+  const currencySymbol = "₹";
+
+  const fetchSettlementData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/activity?groupId=${group._id}`);
-      setActivity(res.data.activity || []);
+      const [summaryRes, calculateRes] = await Promise.all([
+        axios.get(`/api/settlements/summary?groupId=${group._id}`),
+        axios.get(`/api/settlements/calculate?groupId=${group._id}`),
+      ]);
+
+      setSettlements(summaryRes.data?.settlements || []);
+      setSummary(summaryRes.data?.summary || null);
+      setSuggestedSettlements(calculateRes.data?.settlements || []);
     } catch (error) {
-      console.error("Error fetching activity:", error);
+      console.error("Settlement fetch error:", error);
+      toast.error("Failed to load settlements");
+      setSettlements([]);
+      setSuggestedSettlements([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case "expense_added":
-        return <FileText size={14} className="text-indigo-400" />;
-      case "expense_updated":
-        return <FileText size={14} className="text-indigo-400" />;
-      case "expense_deleted":
-        return <FileText size={14} className="text-indigo-400" />;
-      case "member_added":
-        return <UserPlus size={14} className="text-indigo-400" />;
-      case "member_removed":
-        return <Users size={14} className="text-indigo-400" />;
-      case "settlement_done":
-        return <CheckCircle2 size={14} className="text-indigo-400" />;
-      default:
-        return <Clock size={14} className="text-indigo-400" />;
+  useEffect(() => {
+    if (group?._id) {
+      fetchSettlementData();
+    }
+  }, [group?._id]);
+
+  const handleSettlementAction = async (settlement, action) => {
+    try {
+      setUpdatingId(settlement._id);
+      await axios.post("/api/settlements/verify", {
+        settlementId: settlement._id,
+        action,
+      });
+      toast.success(
+        action === "confirm"
+          ? "Marked as payment sent"
+          : "Marked as payment received",
+      );
+      await fetchSettlementData();
+    } catch (error) {
+      console.error("Settlement action error:", error);
+      toast.error(error.response?.data?.error || "Failed to update settlement");
+    } finally {
+      setUpdatingId("");
     }
   };
 
-  const getActivityBorderColor = (type) => {
-    switch (type) {
-      case "expense_added":
-        return "border-indigo-500/20";
-      case "expense_updated":
-        return "border-indigo-500/20";
-      case "expense_deleted":
-        return "border-indigo-500/20";
-      case "member_added":
-        return "border-indigo-500/20";
-      case "settlement_done":
-        return "border-indigo-500/20";
-      default:
-        return "border-white/12";
+  const myId = currentUser?._id?.toString?.() || "";
+
+  const suggestedDebts = suggestedSettlements;
+
+  const pendingAction = settlements.filter((settlement) => {
+    const fromId = getUserId(settlement.fromUser);
+    const toId = getUserId(settlement.toUser);
+
+    if (settlement.status === "pending" && fromId === myId) return true;
+    if (settlement.status === "confirmed" && toId === myId)
+      return true;
+    return false;
+  });
+
+  const waitingForOthers = settlements.filter((settlement) => {
+    const fromId = getUserId(settlement.fromUser);
+    const toId = getUserId(settlement.toUser);
+    return (
+      fromId === myId &&
+      toId !== myId &&
+      settlement.status === "confirmed"
+    );
+  });
+
+  const historyList = settlements.filter((settlement) =>
+    ["completed", "cancelled", "disputed"].includes(settlement.status),
+  );
+
+  const openSettlementByPair = settlements.reduce((map, settlement) => {
+    if (!["pending", "confirmed"].includes(settlement.status)) {
+      return map;
     }
+
+    const fromId = getUserId(settlement.fromUser);
+    const toId = getUserId(settlement.toUser);
+    const pairKey = `${fromId}-${toId}`;
+
+    if (!map.has(pairKey)) {
+      map.set(pairKey, settlement);
+    }
+
+    return map;
+  }, new Map());
+
+  const suggestedCount = suggestedDebts.length;
+  const pendingCount = pendingAction.length;
+  const waitingCount = waitingForOthers.length;
+  const historyCount = historyList.length;
+
+  const getStatusBadge = (status) => {
+    if (status === "completed") {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
+          Completed
+        </span>
+      );
+    }
+    if (status === "confirmed") {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-sky-500/30 bg-sky-500/15 text-sky-400">
+          Sent
+        </span>
+      );
+    }
+    if (status === "cancelled") {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-rose-500/30 bg-rose-500/15 text-rose-400">
+          Cancelled
+        </span>
+      );
+    }
+    if (status === "disputed") {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30 bg-amber-500/15 text-amber-400">
+          Disputed
+        </span>
+      );
+    }
+
+    return (
+      <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-white/20 bg-white/8 text-slate-300">
+        Pending
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-700/30 border border-white/8 rounded-lg p-3">
+          <p className="text-xs text-slate-400">You Owe</p>
+          <p className="text-lg font-bold text-rose-400">
+            {currencySymbol}
+            {Number(summary?.userOweAmount || 0).toFixed(2)}
+          </p>
+        </div>
+        <div className="bg-slate-700/30 border border-white/8 rounded-lg p-3">
+          <p className="text-xs text-slate-400">You Get</p>
+          <p className="text-lg font-bold text-emerald-400">
+            {currencySymbol}
+            {Number(summary?.userGetAmount || 0).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
+          <h3 className="text-sm font-bold text-slate-100">Suggested Settlements ({suggestedCount})</h3>
+        </div>
+        {suggestedDebts.length === 0 ? (
+          <p className="px-4 py-4 text-xs text-slate-400">No suggested settlements right now.</p>
+        ) : (
+          <div className="divide-y divide-white/8">
+            {suggestedDebts.map((debt, idx) => (
+              <div key={`${getUserId(debt.fromUser)}-${getUserId(debt.toUser)}-${idx}`} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
+                {(() => {
+                  const fromId = getUserId(debt.fromUser);
+                  const toId = getUserId(debt.toUser);
+                  const pairKey = `${fromId}-${toId}`;
+                  const openSettlement = openSettlementByPair.get(pairKey);
+                  const isPending = Boolean(openSettlement);
+
+                  return (
+                    <>
+                      <div className="min-w-0 w-full sm:w-auto">
+                        <p className="text-sm text-slate-100 truncate">
+                          {debt.fromUser?.fullName || debt.fromUser?.username || "Member"} → {debt.toUser?.fullName || debt.toUser?.username || "Member"}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {isPending
+                            ? "Settlement request already raised for this pair"
+                            : "Create settlement request for this pair"}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
+                        <p className="text-sm font-bold text-slate-100">
+                          {currencySymbol}
+                          {Number(debt.amount || 0).toFixed(2)}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            setSelectedDebt({
+                              fromUser: debt.fromUser?.fullName || debt.fromUser?.username || "Member",
+                              fromUserId: fromId,
+                              toUser: debt.toUser?.fullName || debt.toUser?.username || "Member",
+                              toUserId: toId,
+                              amount: Number(debt.amount || 0),
+                            })
+                          }
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            isPending
+                              ? "bg-slate-600 text-slate-300 cursor-not-allowed"
+                              : "bg-indigo-600 text-white hover:bg-indigo-500"
+                          }`}
+                        >
+                          {isPending ? "Pending" : "Record"}
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
+          <h3 className="text-sm font-bold text-slate-100">Pending Your Action ({pendingCount})</h3>
+        </div>
+        {pendingAction.length === 0 ? (
+          <p className="px-4 py-4 text-xs text-slate-400">No pending actions for you.</p>
+        ) : (
+          <div className="divide-y divide-white/8">
+            {pendingAction.map((settlement) => {
+              const fromId = getUserId(settlement.fromUser);
+              const toId = getUserId(settlement.toUser);
+              const isPayer = fromId === myId;
+              const action = isPayer ? "confirm" : "complete";
+              const actionLabel = isPayer ? "Mark Sent" : "Confirm Received";
+              const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
+              const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
+
+              return (
+                <div key={settlement._id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
+                  <div className="min-w-0 w-full sm:w-auto">
+                    <p className="text-sm text-slate-100 truncate">
+                      {isPayer ? "You" : fromName} → {isPayer ? toName : "You"}
+                    </p>
+                    <div className="mt-1">{getStatusBadge(settlement.status)}</div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
+                    <p className="text-sm font-bold text-slate-100">
+                      {currencySymbol}
+                      {Number(settlement.amount || 0).toFixed(2)}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={updatingId === settlement._id}
+                      onClick={() => handleSettlementAction(settlement, action)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-60"
+                    >
+                      {updatingId === settlement._id ? "Saving..." : actionLabel}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
+          <h3 className="text-sm font-bold text-slate-100">Waiting For Others ({waitingCount})</h3>
+        </div>
+        {waitingForOthers.length === 0 ? (
+          <p className="px-4 py-4 text-xs text-slate-400">Nothing is waiting for others right now.</p>
+        ) : (
+          <div className="divide-y divide-white/8">
+            {waitingForOthers.map((settlement) => {
+              const toName =
+                settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
+
+              return (
+                <div key={settlement._id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
+                  <div className="min-w-0 w-full sm:w-auto">
+                    <p className="text-sm text-slate-100 truncate">You → {toName}</p>
+                    <div className="mt-1">{getStatusBadge(settlement.status)}</div>
+                  </div>
+                  <p className="text-sm font-bold text-slate-100 shrink-0">
+                    {currencySymbol}
+                    {Number(settlement.amount || 0).toFixed(2)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
+          <h3 className="text-sm font-bold text-slate-100">History ({historyCount})</h3>
+        </div>
+        {historyList.length === 0 ? (
+          <p className="px-4 py-4 text-xs text-slate-400">No completed or cancelled settlements yet.</p>
+        ) : (
+          <div className="divide-y divide-white/8">
+            {historyList.map((settlement) => {
+              const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
+              const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
+
+              return (
+                <div key={settlement._id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
+                  <div className="min-w-0 w-full sm:w-auto">
+                    <p className="text-sm text-slate-100 truncate">
+                      {fromName} → {toName}
+                    </p>
+                    <div className="mt-1">{getStatusBadge(settlement.status)}</div>
+                  </div>
+                  <p className="text-sm font-bold text-slate-100 shrink-0">
+                    {currencySymbol}
+                    {Number(settlement.amount || 0).toFixed(2)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {selectedDebt && (
+          <RecordPaymentModal
+            debt={selectedDebt}
+            group={group}
+            currencySymbol={currencySymbol}
+            onClose={() => setSelectedDebt(null)}
+            onSuccess={async () => {
+              setSelectedDebt(null);
+              await fetchSettlementData();
+              onRefresh?.();
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Activity Tab ─────────────────────────────────────────────────────────────
+
+function ActivityTab({ group, expenses = [], currentUser }) {
+  const [timeline, setTimeline] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+
+  useEffect(() => {
+    buildTimeline();
+  }, [group._id, expenses, currentUser?._id]);
+
+  const buildTimeline = async () => {
+    try {
+      setLoading(true);
+      const settlementsRes = await axios.get(`/api/settlements?groupId=${group._id}`);
+      const settlements = settlementsRes.data?.settlements || [];
+
+      const expenseEvents = (expenses || []).map((expense) => ({
+        id: `expense-${expense._id}`,
+        type: "expense",
+        createdAt: expense.createdAt || expense.date,
+        title: expense.description,
+        subtitle: `Paid by ${expense.paidBy?.fullName || expense.paidBy?.name || "Unknown"}`,
+        amount: Number(expense.amount || 0),
+        status: expense.isSettled ? "settled" : "open",
+        details: {
+          category: expense.category || "other",
+          paidByName: expense.paidBy?.fullName || expense.paidBy?.name || "Unknown",
+          date: expense.date,
+          splitBetween: expense.splitBetween || [],
+          notes: expense.notes || "",
+          expenseId: expense._id,
+        },
+      }));
+
+      const settlementEvents = settlements.map((settlement) => {
+        const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
+        const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
+        const currentUserId = currentUser?._id?.toString?.();
+
+        const normalizedFrom = settlement.fromUser?._id?.toString?.();
+        const normalizedTo = settlement.toUser?._id?.toString?.();
+
+        const fromDisplay =
+          currentUserId && normalizedFrom === currentUserId ? "You" : fromName;
+        const toDisplay =
+          currentUserId && normalizedTo === currentUserId ? "You" : toName;
+
+        return {
+          id: `settlement-${settlement._id}`,
+          type: "settlement",
+          createdAt: settlement.updatedAt || settlement.createdAt,
+          title: `${fromDisplay} → ${toDisplay}`,
+          subtitle: "Settlement",
+          amount: Number(settlement.amount || 0),
+          status: settlement.status,
+          details: {
+            fromName,
+            toName,
+            method: settlement.method || "cash",
+            notes: settlement.notes || "",
+            requestedAt: settlement.createdAt,
+            updatedAt: settlement.updatedAt,
+            settlementId: settlement._id,
+          },
+        };
+      });
+
+      const merged = [...expenseEvents, ...settlementEvents].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      setTimeline(merged);
+    } catch (error) {
+      console.error("Error fetching activity:", error);
+      toast.error("Failed to load activity timeline");
+      setTimeline([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRowConfig = (item) => {
+    if (item.type === "expense") {
+      return {
+        icon: <Receipt size={14} className="text-indigo-400" />,
+        border: "border-indigo-500/20",
+        badge: item.status === "settled" ? "Settled" : "Open",
+      };
+    }
+
+    return {
+      icon: <CreditCard size={14} className="text-emerald-400" />,
+      border: "border-emerald-500/20",
+      badge: item.status,
+    };
   };
 
   if (loading) {
@@ -1438,7 +1636,7 @@ function ActivityTab({ group }) {
     );
   }
 
-  if (activity.length === 0) {
+  if (timeline.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -1452,29 +1650,150 @@ function ActivityTab({ group }) {
           No activity yet
         </h3>
         <p className="text-slate-400 text-xs">
-          Group actions will appear here as you add expenses and members.
+          Expenses and settlements of this group will appear here.
         </p>
       </motion.div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      {activity.map((item, index) => (
-        <motion.div
-          key={item._id || index}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.03 }}
-          className={`flex gap-3 bg-slate-800 p-3 rounded-lg border ${getActivityBorderColor(item.type)}`}
-        >
-          <div className="w-7 h-7 rounded border border-white/12 bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-            {getActivityIcon(item.type)}
+    <>
+      <div className="space-y-2">
+        {timeline.map((item, index) => {
+          const cfg = getRowConfig(item);
+
+          return (
+            <motion.button
+              key={item.id || index}
+              type="button"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => setSelectedActivity(item)}
+              className={`w-full text-left flex items-start gap-3 bg-slate-800 p-3 rounded-lg border ${cfg.border} hover:bg-slate-700/40 transition-colors overflow-hidden`}
+            >
+              <div className="w-7 h-7 rounded border border-white/12 bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
+                {cfg.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 min-w-0">
+                  <p className="text-sm text-slate-100 truncate flex-1 min-w-0">{item.title}</p>
+                  <span className="text-xs font-semibold text-slate-300 px-2 py-0.5 rounded border border-white/12 bg-slate-700/70 capitalize shrink-0">
+                    {cfg.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5 truncate">{item.subtitle}</p>
+                <p className="text-xs text-indigo-300 mt-1">₹{Number(item.amount || 0).toFixed(2)}</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence>
+        {selectedActivity && (
+          <ActivityDetailsModal
+            activity={selectedActivity}
+            onClose={() => setSelectedActivity(null)}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+function ActivityDetailsModal({ activity, onClose }) {
+  const isExpense = activity.type === "expense";
+  const details = activity.details || {};
+  const [copiedKey, setCopiedKey] = useState("");
+
+  const handleCopyId = async (value, label, key) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(String(value));
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(""), 1500);
+      toast.success(`${label} copied`);
+    } catch (error) {
+      console.error("Copy failed:", error);
+      toast.error("Failed to copy");
+    }
+  };
+
+  const statusLabel = isExpense
+    ? activity.status === "settled"
+      ? "Settled"
+      : "Open"
+    : activity.status;
+
+  const statusClass =
+    activity.status === "completed" || activity.status === "settled"
+      ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+      : activity.status === "pending"
+        ? "border-white/20 bg-white/10 text-slate-300"
+        : activity.status === "confirmed"
+          ? "border-sky-500/30 bg-sky-500/15 text-sky-400"
+          : "border-white/20 bg-white/10 text-slate-300";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="bg-slate-800 rounded-xl border border-white/8 w-full max-w-md overflow-hidden shadow-xl"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-slate-700/40">
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide">
+              {isExpense ? "Expense" : "Settlement"} Details
+            </p>
+            <h3 className="font-bold text-slate-100 mt-0.5 truncate">
+              {activity.title}
+            </h3>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-slate-100">{item.message}</p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {new Date(item.createdAt).toLocaleDateString("en-IN", {
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg border border-white/8 hover:bg-slate-700 transition-colors"
+          >
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">Amount</p>
+            <p className="text-xl font-bold text-slate-100">
+              ₹{Number(activity.amount || 0).toFixed(2)}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">Status</p>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border capitalize ${statusClass}`}>
+              {statusLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Time</p>
+            <p className="text-xs text-slate-300 text-right">
+              {new Date(activity.createdAt).toLocaleDateString("en-IN", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
@@ -1483,8 +1802,122 @@ function ActivityTab({ group }) {
               })}
             </p>
           </div>
-        </motion.div>
-      ))}
-    </div>
+
+          {isExpense ? (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-400">Paid By</p>
+                <p className="text-xs text-slate-300 text-right">
+                  {details.paidByName || "Unknown"}
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-400">Category</p>
+                <p className="text-xs text-slate-300 text-right capitalize">
+                  {details.category || "other"}
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-400">Split Count</p>
+                <p className="text-xs text-slate-300 text-right">
+                  {(details.splitBetween || []).length}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-400">From</p>
+                <p className="text-xs text-slate-300 text-right">
+                  {details.fromName || "Unknown"}
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-400">To</p>
+                <p className="text-xs text-slate-300 text-right">
+                  {details.toName || "Unknown"}
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-400">Method</p>
+                <p className="text-xs text-slate-300 text-right capitalize">
+                  {(details.method || "cash").replace("_", " ")}
+                </p>
+              </div>
+            </>
+          )}
+
+          {details.notes ? (
+            <div className="pt-1">
+              <p className="text-xs text-slate-400 mb-1">Notes</p>
+              <p className="text-xs text-slate-300 bg-slate-700/40 border border-white/8 rounded-lg px-3 py-2">
+                {details.notes}
+              </p>
+            </div>
+          ) : null}
+
+          {(details.expenseId || details.settlementId) && (
+            <div className="pt-1 space-y-2">
+              {details.expenseId && (
+                <div className="flex items-center justify-between gap-2 bg-slate-700/30 border border-white/8 rounded-lg px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400">Expense ID</p>
+                    <p className="text-xs text-slate-300 truncate">{details.expenseId}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopyId(details.expenseId, "Expense ID", "expenseId")
+                    }
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors shrink-0 ${
+                      copiedKey === "expenseId"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-600 text-slate-200 hover:bg-slate-500"
+                    }`}
+                  >
+                    {copiedKey === "expenseId" ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              )}
+
+              {details.settlementId && (
+                <div className="flex items-center justify-between gap-2 bg-slate-700/30 border border-white/8 rounded-lg px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400">Settlement ID</p>
+                    <p className="text-xs text-slate-300 truncate">{details.settlementId}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopyId(
+                        details.settlementId,
+                        "Settlement ID",
+                        "settlementId",
+                      )
+                    }
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors shrink-0 ${
+                      copiedKey === "settlementId"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-600 text-slate-200 hover:bg-slate-500"
+                    }`}
+                  >
+                    {copiedKey === "settlementId" ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

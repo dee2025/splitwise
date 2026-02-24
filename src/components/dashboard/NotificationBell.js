@@ -102,17 +102,26 @@ export default function NotificationBell() {
     }
     
     // Handle navigation based on notification type and metadata
-    if (notification.metadata) {
+    if (notification.data) {
       switch (notification.type) {
         case 'group_invitation':
-          router.push(`/groups/${notification.metadata.groupId}`);
+          router.push(`/groups/${notification.data.groupId}`);
           break;
         case 'expense_added':
         case 'expense_updated':
-          router.push(`/groups/${notification.metadata.groupId}`);
+          router.push(`/groups/${notification.data.groupId}`);
           break;
-        case 'settlement':
-          router.push(`/settlements`);
+        case 'settlement_request':
+        case 'settlement_confirmed':
+        case 'settlement_completed':
+        case 'settlement_cancelled':
+        case 'settlement_disputed':
+        case 'payment_received':
+          if (notification.data.groupId) {
+            router.push(`/groups/${notification.data.groupId}`);
+          } else {
+            router.push(`/notifications`);
+          }
           break;
         default:
           break;
@@ -131,7 +140,15 @@ export default function NotificationBell() {
         return <IndianRupee className={`${iconClass} text-green-500`} />;
       case 'expense_updated':
         return <IndianRupee className={`${iconClass} text-yellow-500`} />;
-      case 'settlement':
+      case 'settlement_request':
+        return <IndianRupee className={`${iconClass} text-purple-500`} />;
+      case 'settlement_confirmed':
+        return <Check className={`${iconClass} text-sky-500`} />;
+      case 'settlement_completed':
+      case 'payment_received':
+        return <CheckCheck className={`${iconClass} text-emerald-500`} />;
+      case 'settlement_cancelled':
+      case 'settlement_disputed':
         return <UserPlus className={`${iconClass} text-purple-500`} />;
       case 'reminder':
         return <Calendar className={`${iconClass} text-orange-500`} />;
@@ -152,8 +169,16 @@ export default function NotificationBell() {
         return 'border-l-green-400';
       case 'expense_updated':
         return 'border-l-yellow-400';
-      case 'settlement':
+      case 'settlement_request':
         return 'border-l-purple-400';
+      case 'settlement_confirmed':
+        return 'border-l-sky-400';
+      case 'settlement_completed':
+      case 'payment_received':
+        return 'border-l-emerald-400';
+      case 'settlement_cancelled':
+      case 'settlement_disputed':
+        return 'border-l-rose-400';
       case 'reminder':
         return 'border-l-orange-400';
       case 'alert':
@@ -334,7 +359,7 @@ export default function NotificationBell() {
                             {notification.message}
                           </p>
                           
-                          {notification.metadata && (
+                          {notification.data && (
                             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                               <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
                                 {notification.type.replace('_', ' ')}

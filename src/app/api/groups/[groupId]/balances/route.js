@@ -144,7 +144,7 @@ export async function GET(request) {
       balances: finalMemberBalances,
       debts,
       totalExpenses: group.totalExpenses || 0,
-      currency: group.currency,
+      currency: "INR",
       groupName: group.name
     });
 

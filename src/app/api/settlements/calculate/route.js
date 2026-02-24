@@ -68,18 +68,19 @@ export async function GET(request) {
       });
     });
 
-    // Get existing pending settlements
+    // Get completed settlements to avoid re-suggesting already settled amounts
     const existingSettlements = await Settlement.find({
       groupId,
-      status: { $in: ["pending", "confirmed"] },
+      status: { $in: ["completed", "paid"] },
     });
 
-    // Apply existing pending settlements to balances
+    // Apply completed settlements to balances
     existingSettlements.forEach((s) => {
       const fromId = s.fromUser.toString();
       const toId = s.toUser.toString();
-      balances[fromId] = (balances[fromId] || 0) - s.amount;
-      balances[toId] = (balances[toId] || 0) + s.amount;
+      const settlementAmount = Number(s.amount ?? s.totalAmount ?? 0);
+      balances[fromId] = (balances[fromId] || 0) + settlementAmount;
+      balances[toId] = (balances[toId] || 0) - settlementAmount;
     });
 
     // Split into creditors and debtors

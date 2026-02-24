@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:notifications:dry": "node --env-file=.env.local scripts/normalize-notifications.mjs --dry-run",
+    "migrate:notifications": "node --env-file=.env.local scripts/normalize-notifications.mjs"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.0",

@@ -26,15 +26,27 @@ export async function GET(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    let query = {
-      $or: [
-        { fromUser: user._id },
-        { toUser: user._id }
-      ]
-    };
+    let query;
 
     if (groupId) {
-      query.groupId = groupId;
+      const group = await Group.findById(groupId).select("members.userId");
+      if (!group) {
+        return NextResponse.json({ error: "Group not found" }, { status: 404 });
+      }
+
+      const isMember = (group.members || []).some(
+        (member) => member.userId?.toString?.() === user._id.toString(),
+      );
+
+      if (!isMember) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      query = { groupId };
+    } else {
+      query = {
+        $or: [{ fromUser: user._id }, { toUser: user._id }],
+      };
     }
 
     const settlements = await Settlement.find(query)
@@ -43,7 +55,17 @@ export async function GET(request) {
       .populate('groupId', 'name currency')
       .sort({ createdAt: -1 });
 
-    return NextResponse.json({ settlements });
+    const normalizedSettlements = settlements.map((settlement) => {
+      const normalized = settlement.toObject();
+      normalized.amount = Number(
+        normalized.amount ?? normalized.totalAmount ?? 0,
+      );
+      normalized.status =
+        normalized.status === 'paid' ? 'completed' : normalized.status;
+      return normalized;
+    });
+
+    return NextResponse.json({ settlements: normalizedSettlements });
   } catch (error) {
     console.error("Settlements fetch error:", error);
     return NextResponse.json(
@@ -63,15 +85,66 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { groupId, toUserId, amount, expenseId, method, notes } = body;
+    const {
+      groupId,
+      fromUserId,
+      toUserId,
+      amount,
+      totalAmount,
+      expenseId,
+      method,
+      notes,
+    } = body;
+    const amountValue = Number(amount ?? totalAmount);
 
     const decoded = await verifyToken(token);
-    const fromUser = await User.findById(decoded.userId);
+    const requester = await User.findById(decoded.userId);
+    const fromUser = await User.findById(fromUserId || decoded.userId);
     const toUser = await User.findById(toUserId);
     const group = await Group.findById(groupId);
 
-    if (!fromUser || !toUser || !group) {
+    if (!requester || !fromUser || !toUser || !group || !Number.isFinite(amountValue) || amountValue <= 0) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    }
+
+    const memberIds = (group.members || []).map((member) =>
+      member.userId?.toString?.(),
+    );
+
+    const isRequesterMember = memberIds.includes(requester._id.toString());
+    const isFromUserMember = memberIds.includes(fromUser._id.toString());
+    const isToUserMember = memberIds.includes(toUser._id.toString());
+
+    if (!isRequesterMember || !isFromUserMember || !isToUserMember) {
+      return NextResponse.json(
+        { error: "Users must be members of this group" },
+        { status: 403 },
+      );
+    }
+
+    if (fromUser._id.toString() === toUser._id.toString()) {
+      return NextResponse.json(
+        { error: "Payer and receiver cannot be the same user" },
+        { status: 400 },
+      );
+    }
+
+    const existingOpenSettlement = await Settlement.findOne({
+      groupId,
+      fromUser: fromUser._id,
+      toUser: toUser._id,
+      status: { $in: ["pending", "confirmed"] },
+    });
+
+    if (existingOpenSettlement) {
+      return NextResponse.json(
+        {
+          code: "OPEN_SETTLEMENT_EXISTS",
+          error:
+            "An open settlement request already exists for this member pair.",
+        },
+        { status: 409 },
+      );
     }
 
     // Create settlement
@@ -79,7 +152,8 @@ export async function POST(request) {
       groupId,
       fromUser: fromUser._id,
       toUser: toUser._id,
-      amount,
+      amount: amountValue,
+      totalAmount: amountValue,
       expenseId,
       method: method || 'cash',
       notes,
@@ -91,13 +165,14 @@ export async function POST(request) {
       userId: toUser._id,
       type: 'settlement_request',
       title: 'Settlement Request',
-      message: `${fromUser.fullName} has requested ₹${amount} settlement in ${group.name}`,
+      message: `${fromUser.fullName} has requested ₹${amountValue} settlement in ${group.name}`,
       data: {
         settlementId: settlement._id,
         groupId: group._id,
         groupName: group.name,
-        amount: amount,
+        amount: amountValue,
         fromUser: fromUser.fullName,
+        createdBy: requester.fullName,
         type: 'settlement_request'
       },
       isRead: false
@@ -140,18 +215,20 @@ export async function PUT(request) {
     const decoded = await verifyToken(token);
     const user = await User.findById(decoded.userId);
 
+    const normalizedStatus = status === 'paid' ? 'completed' : status;
+
     const settlement = await Settlement.findOne({
       _id: settlementId,
       toUser: user._id, // Only the receiver can update status
-      status: 'pending'
+      status: { $in: ['pending', 'confirmed'] }
     });
 
     if (!settlement) {
       return NextResponse.json({ error: "Settlement not found" }, { status: 404 });
     }
 
-    settlement.status = status;
-    if (status === 'completed') {
+    settlement.status = normalizedStatus;
+    if (normalizedStatus === 'completed') {
       settlement.paidAt = new Date();
       
       // Mark expense as settled if it's linked to an expense
@@ -182,7 +259,7 @@ export async function PUT(request) {
       // Send notification to sender
       await Notification.create({
         userId: settlement.fromUser,
-        type: 'payment_received',
+        type: 'settlement_completed',
         title: 'Payment Received',
         message: `${user.fullName} has marked your ₹${settlement.amount} settlement as paid`,
         data: {
@@ -190,7 +267,7 @@ export async function PUT(request) {
           groupId: settlement.groupId,
           amount: settlement.amount,
           toUser: user.fullName,
-          type: 'payment_received'
+          type: 'settlement_completed'
         },
         isRead: false
       });
@@ -202,7 +279,7 @@ export async function PUT(request) {
     await settlement.populate('groupId', 'name currency');
 
     return NextResponse.json({
-      message: `Settlement ${status} successfully`,
+      message: `Settlement ${normalizedStatus} successfully`,
       settlement
     });
 

@@ -187,7 +187,6 @@ export async function PUT(request, context) {
     const { 
       name, 
       description, 
-      currency, 
       privacy, 
       members, // For adding/removing members
       removeMemberId // For removing specific member
@@ -196,7 +195,7 @@ export async function PUT(request, context) {
     // Update basic group info
     if (name !== undefined) group.name = name;
     if (description !== undefined) group.description = description;
-    if (currency !== undefined) group.currency = currency;
+    group.currency = "INR";
     if (privacy !== undefined) group.privacy = privacy;
 
     // Handle member operations

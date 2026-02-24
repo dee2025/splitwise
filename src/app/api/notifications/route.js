@@ -25,7 +25,28 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .limit(50);
 
-    return NextResponse.json({ notifications });
+    const normalizedNotifications = notifications.map((notification) => {
+      const normalized = notification.toObject();
+
+      // Normalize payload field shape (legacy: metadata, current: data)
+      const mergedData = {
+        ...(normalized.metadata || {}),
+        ...(normalized.data || {}),
+      };
+      normalized.data = mergedData;
+      delete normalized.metadata;
+
+      // Normalize legacy notification types to current lifecycle set
+      if (normalized.type === "settlement") {
+        normalized.type = "settlement_request";
+      } else if (normalized.type === "payment_received") {
+        normalized.type = "settlement_completed";
+      }
+
+      return normalized;
+    });
+
+    return NextResponse.json({ notifications: normalizedNotifications });
   } catch (error) {
     console.error("Notifications fetch error:", error);
     return NextResponse.json(

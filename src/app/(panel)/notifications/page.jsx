@@ -17,17 +17,59 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const TYPE_CONFIG = {
-  expense: {
+  expense_added: {
     icon: Wallet,
     color: "text-green-600",
     bg: "bg-green-50",
     border: "border-l-green-400",
   },
-  group: {
+  expense_updated: {
+    icon: Wallet,
+    color: "text-green-600",
+    bg: "bg-green-50",
+    border: "border-l-green-400",
+  },
+  group_invitation: {
     icon: Users,
     color: "text-blue-600",
     bg: "bg-blue-50",
     border: "border-l-blue-400",
+  },
+  settlement_request: {
+    icon: Wallet,
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+    border: "border-l-purple-400",
+  },
+  settlement_confirmed: {
+    icon: CheckCheck,
+    color: "text-sky-600",
+    bg: "bg-sky-50",
+    border: "border-l-sky-400",
+  },
+  settlement_completed: {
+    icon: CheckCheck,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    border: "border-l-emerald-400",
+  },
+  settlement_cancelled: {
+    icon: AlertCircle,
+    color: "text-rose-600",
+    bg: "bg-rose-50",
+    border: "border-l-rose-400",
+  },
+  settlement_disputed: {
+    icon: AlertCircle,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-l-amber-400",
+  },
+  payment_received: {
+    icon: CheckCheck,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    border: "border-l-emerald-400",
   },
   reminder: {
     icon: Calendar,

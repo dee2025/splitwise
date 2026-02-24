@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { updateUser } from "@/redux/slices/authSlice";
+import { logout, updateUser } from "@/redux/slices/authSlice";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -16,6 +16,7 @@ import {
   IndianRupee,
   KeyRound,
   Loader2,
+  LogOut,
   Mail,
   Phone,
   Receipt,
@@ -24,6 +25,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
@@ -200,6 +202,7 @@ function Section({
 // ── main page ─────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { user: authUser } = useSelector((state) => state.auth);
 
   const [profile, setProfile] = useState(null);
@@ -228,6 +231,7 @@ export default function ProfilePage() {
   });
   const [savingPw, setSavingPw] = useState(false);
   const [pwError, setPwError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // ── fetch ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -310,6 +314,21 @@ export default function ProfilePage() {
       setPwError(err.response?.data?.error || "Failed to change password");
     } finally {
       setSavingPw(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await axios.post("/api/auth/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      dispatch(logout());
+      toast.success("Logged out successfully");
+      router.push("/");
+      setLoggingOut(false);
     }
   };
 
@@ -677,6 +696,22 @@ export default function ProfilePage() {
                 </span>
               </div>
             ))}
+
+            <div className="pt-4">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-red-500/50 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all text-sm font-semibold disabled:opacity-60"
+              >
+                {loggingOut ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <LogOut size={14} />
+                )}
+                {loggingOut ? "Logging out..." : "Logout"}
+              </motion.button>
+            </div>
           </div>
         </Section>
 
