@@ -3,279 +3,159 @@
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight,
-  Briefcase,
-  Home,
-  MapPin,
-  UserPlus,
-  Users,
-  Utensils,
+  ArrowRight, Briefcase, Home, MapPin, Plus, Users, Utensils,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import CreateGroupForm from "./groups/CreateGroupForm";
 
-export default function GroupsSection() {
+const getGroupConfig = (name = "") => {
+  const n = name.toLowerCase();
+  if (n.includes("trip") || n.includes("travel"))
+    return { Icon: MapPin, bg: "bg-sky-500/10", color: "text-sky-400" };
+  if (n.includes("food") || n.includes("lunch") || n.includes("dinner"))
+    return { Icon: Utensils, bg: "bg-emerald-500/10", color: "text-emerald-400" };
+  if (n.includes("room") || n.includes("home") || n.includes("flat"))
+    return { Icon: Home, bg: "bg-violet-500/10", color: "text-violet-400" };
+  if (n.includes("office") || n.includes("work"))
+    return { Icon: Briefcase, bg: "bg-amber-500/10", color: "text-amber-400" };
+  return { Icon: Users, bg: "bg-indigo-500/10", color: "text-indigo-400" };
+};
+
+const fmtDate = (d) =>
+  new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+export default function GroupsSection({ onCreateGroup }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creatingGroup, setCreatingGroup] = useState(false);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    fetchGroups();
+    axios
+      .get("/api/groups")
+      .then((res) => setGroups(res.data.groups || []))
+      .catch(() => toast.error("Failed to load groups"))
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get("/api/groups");
-      setGroups(response.data.groups || []);
-    } catch (error) {
-      console.error("Error fetching groups:", error);
-      toast.error("Failed to load groups");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const visible = groups.slice(0, 6);
 
-  const handleGroupCreated = (newGroup) => {
-    setGroups((prev) => [newGroup, ...prev]);
-    setShowCreateGroup(false);
-    toast.success("Group created successfully!");
-  };
-
-  const getGroupTypeConfig = (group) => {
-    const groupName = group.name?.toLowerCase() || "";
-
-    if (groupName.includes("trip") || groupName.includes("travel")) {
-      return {
-        icon: MapPin,
-        label: "Trip",
-        border: "border-blue-400",
-      };
-    } else if (
-      groupName.includes("lunch") ||
-      groupName.includes("food") ||
-      groupName.includes("dinner")
-    ) {
-      return {
-        icon: Utensils,
-        label: "Food",
-        border: "border-green-400",
-      };
-    } else if (
-      groupName.includes("room") ||
-      groupName.includes("home") ||
-      groupName.includes("flat")
-    ) {
-      return {
-        icon: Home,
-        label: "Home",
-        border: "border-purple-400",
-      };
-    } else if (groupName.includes("office") || groupName.includes("work")) {
-      return {
-        icon: Briefcase,
-        label: "Work",
-        border: "border-orange-400",
-      };
-    } else {
-      return {
-        icon: Users,
-        label: "General",
-        border: "border-gray-400",
-      };
-    }
-  };
-
-  const calculateGroupBalance = (group) => {
-    // Mock balance calculation - positive (green) or negative (red)
-    const mockBalance = Math.random() > 0.5 ? 1250 : -750;
-    return {
-      amount: `₹ ${Math.abs(mockBalance).toLocaleString()}`,
-      isPositive: mockBalance >= 0,
-    };
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border-2 border-gray-400 p-5 shadow-sketch">
-        <div className="flex items-center justify-between mb-6 border-b-2 border-dashed border-gray-300 pb-4">
-          <div>
-            <div className="h-6 bg-gray-300 rounded w-32 mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-          </div>
-          <div className="flex gap-2">
-            <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-          </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="bg-slate-800 rounded-2xl border border-white/6 overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-sm font-bold text-slate-100 tracking-tight">Groups</h2>
+          {!loading && groups.length > 0 && (
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/8 text-slate-400">
+              {groups.length}
+            </span>
+          )}
         </div>
+        <button
+          onClick={() => router.push("/dashboard/groups")}
+          className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors"
+        >
+          See all <ArrowRight className="w-3 h-3" />
+        </button>
+      </div>
 
-        <div className="space-y-3">
-          {[...Array(3)].map((_, index) => (
-            <div key={index} className="animate-pulse">
-              <div className="flex items-center justify-between p-4 bg-gray-100 rounded border-2 border-gray-300">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-12 h-12 bg-gray-300 rounded border-2"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-300 rounded w-32"></div>
-                    <div className="h-3 bg-gray-300 rounded w-24"></div>
-                  </div>
-                </div>
-                <div className="w-16 h-6 bg-gray-300 rounded"></div>
+      <div className="h-px bg-white/6 mx-5" />
+
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="p-5 space-y-4">
+          {[1, 2, 3].map((x) => (
+            <div key={x} className="flex items-center gap-3 animate-pulse">
+              <div className="w-10 h-10 bg-white/5 rounded-xl shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 bg-white/5 rounded-full w-32" />
+                <div className="h-2.5 bg-white/4 rounded-full w-20" />
               </div>
+              <div className="h-3 bg-white/5 rounded-full w-8" />
             </div>
           ))}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className="bg-white rounded-lg border-2 border-gray-400 p-5 shadow-sketch">
-      <div>
-        <motion.div
-          whileHover={{ y: -1 }}
-          whileTap={{ y: 1 }}
-          className="flex items-center gap-2 text-gray-800 hover:text-gray-900  text-xl font-bold transition-colors duration-150 cursor-pointer mb-6 border-b-2 border-dashed border-gray-300 pb-2"
-        >
-          Recent Groups
-          <ArrowRight size={14} />
-        </motion.div>
-      </div>
-
-      {/* Groups List */}
-      <div className="space-y-3">
-        <AnimatePresence>
-          {groups.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg"
-            >
-              <div className="w-16 h-16 border-2 border-gray-400 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-50">
-                <Users size={24} className="text-gray-500" />
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">No groups yet</h3>
-              <p className="text-gray-600 text-sm mb-4 max-w-sm mx-auto">
-                Create your first group to start splitting expenses
-              </p>
-              <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ y: 1 }}
-                onClick={handleCreateGroup}
-                className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium mx-auto shadow-sketch-sm"
-              >
-                <UserPlus size={16} />
-                Create First Group
-              </motion.button>
-            </motion.div>
-          ) : (
-            groups.slice(0, 5).map((group, index) => {
-              const config = getGroupTypeConfig(group);
-              const memberCount = group.members?.length || 0;
-              const balance = calculateGroupBalance(group);
-
-              return (
-                <motion.div
-                  key={group._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -1 }}
-                  onClick={() => router.push(`/groups/${group._id}`)}
-                  className="
-                    group relative
-                    flex items-center justify-between p-4
-                    bg-white rounded border-2 border-gray-300
-                    hover:border-gray-500 hover:shadow-sketch-sm
-                    cursor-pointer transition-all duration-150
-                  "
-                >
-                  {/* Left Content */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {/* Group Icon */}
-                    <div
-                      className={`w-12 h-12 rounded border-2 bg-white flex items-center justify-center ${config.border}`}
-                    >
-                      <config.icon size={20} className="text-gray-700" />
-                    </div>
-
-                    {/* Group Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 truncate text-sm">
-                          {group.name}
-                        </h3>
-                        <span className="px-2 py-1 rounded text-xs font-medium border border-gray-400 bg-gray-100">
-                          {config.label}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 text-xs">
-                        {memberCount} member{memberCount !== 1 ? "s" : ""}
-                        {group.description && ` • ${group.description}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right Content */}
-                  <div className="flex items-center gap-3">
-                    {/* Balance */}
-                    <div className="text-right">
-                      <p
-                        className={`font-bold text-sm ${
-                          balance.isPositive ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {balance.amount}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        {balance.isPositive ? "You get" : "You owe"}
-                      </p>
-                    </div>
-
-                    {/* Arrow */}
-                    <div className="p-1 border border-gray-400 rounded group-hover:border-black transition-colors">
-                      <ArrowRight
-                        size={14}
-                        className="text-gray-600 group-hover:text-black"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* View All Groups Button */}
-      {groups.length > 5 && (
-        <div className="mt-4 text-center border-t-2 border-dashed border-gray-300 pt-4">
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ y: 1 }}
-            onClick={() => router.push("/groups")}
-            className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors duration-150 flex items-center gap-1 mx-auto"
+      {/* Empty state */}
+      {!loading && groups.length === 0 && (
+        <div className="py-14 px-5 flex flex-col items-center text-center">
+          <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
+            <Users className="w-6 h-6 text-slate-500" />
+          </div>
+          <p className="text-sm font-semibold text-slate-200 mb-1">No groups yet</p>
+          <p className="text-xs text-slate-500 mb-5 max-w-[200px] leading-relaxed">
+            Create a group to start splitting expenses with friends
+          </p>
+          <button
+            onClick={onCreateGroup}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-500 transition-colors"
           >
-            View all {groups.length} groups
-            <ArrowRight size={14} />
-          </motion.button>
+            <Plus className="w-3.5 h-3.5" />
+            New Group
+          </button>
         </div>
       )}
 
-      {/* Create Group Modal */}
-      <AnimatePresence>
-        {showCreateGroup && (
-          <CreateGroupForm
-            onClose={() => setShowCreateGroup(false)}
-            onGroupCreated={handleGroupCreated}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+      {/* Groups list */}
+      {!loading && visible.length > 0 && (
+        <div>
+          <AnimatePresence>
+            {visible.map((group, i) => {
+              const { Icon, bg, color } = getGroupConfig(group.name);
+              const memberCount = group.members?.length || 0;
+              const created = group.createdAt ? fmtDate(group.createdAt) : null;
+
+              return (
+                <motion.button
+                  key={group._id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.06 }}
+                  onClick={() => router.push(`/dashboard/groups/${group._id}`)}
+                  className="w-full flex items-center gap-3.5 px-5 py-3.5 hover:bg-white/4 transition-colors group text-left"
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
+                    <Icon className={`w-4.5 h-4.5 ${color}`} strokeWidth={1.75} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-200 truncate leading-tight group-hover:text-slate-100 transition-colors">
+                      {group.name}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {memberCount} member{memberCount !== 1 ? "s" : ""}
+                      {created ? ` · ${created}` : ""}
+                    </p>
+                  </div>
+
+                  <ArrowRight
+                    className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all shrink-0"
+                    strokeWidth={2}
+                  />
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
+
+          {groups.length > 6 && (
+            <div className="px-5 py-3.5 border-t border-white/6">
+              <button
+                onClick={() => router.push("/dashboard/groups")}
+                className="text-xs font-semibold text-slate-500 hover:text-indigo-400 transition-colors"
+              >
+                +{groups.length - 6} more groups
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
   );
 }

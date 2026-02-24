@@ -1,39 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #020617; /* slate-950 */
+  --foreground: #f1f5f9; /* slate-100 */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Montserrat", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Legacy sketch utilities — kept for non-dashboard pages */
 @layer utilities {
   .shadow-sketch {
-    box-shadow: 
+    box-shadow:
       4px 4px 0px 0px #000,
       4px 4px 0px 1px #000;
   }
-  
   .shadow-sketch-sm {
-    box-shadow: 
+    box-shadow:
       2px 2px 0px 0px #000,
       2px 2px 0px 1px #000;
   }
-  
   .shadow-sketch-hover {
-    box-shadow: 
+    box-shadow:
       6px 6px 0px 0px #000,
       6px 6px 0px 1px #000;
+  }
+  .pb-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Blob animation for landing page */
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -50px) scale(1.1);
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  75% {
+    transform: translate(50px, 50px) scale(1.05);
+  }
+}
+
+@layer utilities {
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2s;
   }
 }

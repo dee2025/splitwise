@@ -31,6 +31,21 @@ const UserSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    avatar: {
+      type: String,
+      default: null,
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+      default: "",
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
   },
   { timestamps: true }
 );

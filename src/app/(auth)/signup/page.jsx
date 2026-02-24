@@ -1,13 +1,38 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { loginSuccess } from "@/redux/slices/authSlice";
 import axios from "axios";
-import toastr from "toastr";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Check, X, Loader2, User, Mail, Phone, Lock } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  Phone,
+  User,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+
+const inputCls = (hasError) =>
+  `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
+    hasError
+      ? "bg-rose-500/10 border-rose-500/40 text-slate-100 placeholder:text-slate-500 focus:ring-rose-500"
+      : "bg-slate-700/50 border-white/8 text-slate-100 placeholder:text-slate-500 focus:ring-indigo-500"
+  }`;
 
 export default function SignupPage() {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
   const [form, setForm] = useState({
     fullName: "",
     username: "",
@@ -16,485 +41,349 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
   });
-
   const [errors, setErrors] = useState({});
-  const [checkingUsername, setCheckingUsername] = useState(false);
-  const [usernameStatus, setUsernameStatus] = useState({ available: null, message: "", valid: false });
+  const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [touched, setTouched] = useState({});
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
 
-  // Handle input changes
+  useEffect(() => {
+    if (isAuthenticated) router.push("/dashboard");
+  }, [isAuthenticated, router]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // Clear field-specific error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ""
-      }));
-    }
+    setForm((p) => ({ ...p, [name]: value }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
+    if (name === "username" && value) setUsernameAvailable(null);
   };
 
-  // Handle blur events for validation
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    setTouched(prev => ({
-      ...prev,
-      [name]: true
-    }));
-    validateField(name, form[name]);
+  const handleBlur = async (e) => {
+    const { name, value } = e.target;
+    setTouched((p) => ({ ...p, [name]: true }));
+    validateField(name, value);
+    if (name === "username" && value) await checkUsernameAvailability(value);
   };
 
-  // Field validation
   const validateField = (name, value) => {
-    const newErrors = { ...errors };
-
+    const next = { ...errors };
     switch (name) {
       case "fullName":
-        if (!value.trim()) {
-          newErrors.fullName = "Full name is required";
-        } else if (value.trim().length < 2) {
-          newErrors.fullName = "Full name must be at least 2 characters";
-        } else {
-          delete newErrors.fullName;
-        }
+        if (!value.trim()) next.fullName = "Full name is required";
+        else if (value.trim().length < 2)
+          next.fullName = "Must be at least 2 characters";
+        else delete next.fullName;
         break;
-
+      case "username":
+        if (!value.trim()) next.username = "Username is required";
+        else if (!/^[a-zA-Z0-9_]{3,20}$/.test(value))
+          next.username = "3-20 chars, letters/numbers/underscores";
+        else delete next.username;
+        break;
       case "email":
-        if (!value.trim()) {
-          newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newErrors.email = "Please enter a valid email address";
-        } else {
-          delete newErrors.email;
-        }
+        if (!value.trim()) next.email = "Email is required";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          next.email = "Invalid email address";
+        else delete next.email;
         break;
-
       case "contact":
-        if (!value.trim()) {
-          newErrors.contact = "Contact number is required";
-        } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/\s/g, ''))) {
-          newErrors.contact = "Please enter a valid contact number";
-        } else {
-          delete newErrors.contact;
-        }
+        if (!value.trim()) next.contact = "Phone number is required";
+        else if (!/^[0-9]{10}$/.test(value.replace(/\D/g, "")))
+          next.contact = "Enter a valid 10-digit number";
+        else delete next.contact;
         break;
-
       case "password":
-        if (!value) {
-          newErrors.password = "Password is required";
-        } else if (value.length < 6) {
-          newErrors.password = "Password must be at least 6 characters";
-        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
-          newErrors.password = "Include uppercase, lowercase, and numbers";
-        } else {
-          delete newErrors.password;
-        }
+        if (!value) next.password = "Password is required";
+        else if (value.length < 6) next.password = "At least 6 characters";
+        else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(value))
+          next.password = "Must contain letters and numbers";
+        else delete next.password;
         break;
-
       case "confirmPassword":
-        if (!value) {
-          newErrors.confirmPassword = "Please confirm your password";
-        } else if (value !== form.password) {
-          newErrors.confirmPassword = "Passwords do not match";
-        } else {
-          delete newErrors.confirmPassword;
-        }
+        if (!value) next.confirmPassword = "Please confirm your password";
+        else if (value !== form.password)
+          next.confirmPassword = "Passwords do not match";
+        else delete next.confirmPassword;
         break;
     }
-
-    setErrors(newErrors);
+    setErrors(next);
   };
 
-  // Username live check with debouncing
-  useEffect(() => {
-    const checkUsername = async () => {
-      if (form.username.trim().length > 0) {
-        setCheckingUsername(true);
-        try {
-          const res = await axios.post("/api/auth/check-username", {
-            username: form.username
-          });
-          setUsernameStatus(res.data);
-        } catch (error) {
-          setUsernameStatus({
-            available: false,
-            message: "Error checking username",
-            valid: false
-          });
-        }
-        setCheckingUsername(false);
-      } else {
-        setUsernameStatus({ available: null, message: "", valid: false });
-      }
-    };
-
-    const timer = setTimeout(checkUsername, 500);
-    return () => clearTimeout(timer);
-  }, [form.username]);
-
-  // Validate username on blur
-  useEffect(() => {
-    if (touched.username) {
-      if (!form.username.trim()) {
-        setErrors(prev => ({ ...prev, username: "Username is required" }));
-      } else if (!usernameStatus.valid) {
-        setErrors(prev => ({ ...prev, username: usernameStatus.message }));
-      } else {
-        setErrors(prev => ({ ...prev, username: "" }));
-      }
+  const checkUsernameAvailability = async (username) => {
+    if (!username || !/^[a-zA-Z0-9_]{3,20}$/.test(username)) return;
+    try {
+      setUsernameChecking(true);
+      const res = await axios.post("/api/auth/check-username", { username });
+      setUsernameAvailable(res.data.available);
+      if (!res.data.available)
+        setErrors((p) => ({ ...p, username: "Username already taken" }));
+    } catch {
+      /* silent */
+    } finally {
+      setUsernameChecking(false);
     }
-  }, [form.username, usernameStatus, touched.username]);
+  };
 
-  const handleSubmit = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
+    if (!usernameAvailable) {
+      toast.error("Please check username availability");
+      return;
+    }
+    if (Object.keys(errors).length > 0) {
+      toast.error("Please fix all errors");
+      return;
+    }
     setIsSubmitting(true);
-
-    // Mark all fields as touched
-    const allTouched = Object.keys(form).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {});
-    setTouched(allTouched);
-
-    // Validate all fields
-    Object.keys(form).forEach(key => {
-      validateField(key, form[key]);
-    });
-
-    // Check if username is valid and available
-    if (!usernameStatus.valid || usernameStatus.available === false) {
-      setErrors(prev => ({
-        ...prev,
-        username: usernameStatus.message || "Please choose a valid username"
-      }));
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Check if there are any errors
-    if (Object.keys(errors).some(key => errors[key])) {
-      toastr.error("Please fix the errors before submitting");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       const res = await axios.post("/api/auth/signup", form);
-      
-      if (res.status === 201) {
-        toastr.success(res.data.message || "Account created successfully!");
-        // Reset form
-        setForm({
-          fullName: "",
-          username: "",
-          email: "",
-          contact: "",
-          password: "",
-          confirmPassword: "",
-        });
-        setErrors({});
-        setTouched({});
-        setUsernameStatus({ available: null, message: "", valid: false });
-        
-        // Redirect to login page after successful signup
+      if (res.data.success) {
+        dispatch(loginSuccess({ user: res.data.user }));
+        toast.success(res.data.message || "Account created successfully");
         setTimeout(() => {
-          window.location.href = "/login";
-        }, 2000);
+          window.location.href = "/dashboard";
+        }, 500);
       }
-    } catch (error) {
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
-        toastr.error(error.response.data.error || "Please fix the form errors");
-      } else {
-        toastr.error(error.response?.data?.message || "Signup failed. Please try again.");
-      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Signup failed");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getInputClassName = (fieldName) => {
-    const baseClasses = "w-full border-2 p-3 rounded-lg focus:outline-none transition-colors shadow-sm pl-12 ";
-    
-    if (errors[fieldName]) {
-      return baseClasses + "border-red-500 focus:border-red-500 bg-red-50";
-    }
-    
-    if (touched[fieldName] && !errors[fieldName]) {
-      return baseClasses + "border-green-500 focus:border-green-500 bg-green-50";
-    }
-    
-    return baseClasses + "border-gray-300 focus:border-black";
-  };
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
+  const fields = [
+    {
+      name: "fullName",
+      label: "Full Name",
+      type: "text",
+      placeholder: "John Doe",
+      icon: User,
+      delay: 0.08,
+    },
+    {
+      name: "username",
+      label: "Username",
+      type: "text",
+      placeholder: "john_doe",
+      icon: User,
+      delay: 0.12,
+      hasCheck: true,
+    },
+    {
+      name: "email",
+      label: "Email Address",
+      type: "email",
+      placeholder: "you@example.com",
+      icon: Mail,
+      delay: 0.16,
+    },
+    {
+      name: "contact",
+      label: "Phone Number",
+      type: "tel",
+      placeholder: "+91 9876543210",
+      icon: Phone,
+      delay: 0.2,
+    },
+    {
+      name: "password",
+      label: "Password",
+      type: "password",
+      placeholder: "••••••••",
+      icon: Lock,
+      delay: 0.24,
+      isPassword: true,
+      showToggle: showPassword,
+      setShowToggle: setShowPassword,
+    },
+    {
+      name: "confirmPassword",
+      label: "Confirm Password",
+      type: "password",
+      placeholder: "••••••••",
+      icon: Lock,
+      delay: 0.28,
+      isPassword: true,
+      showToggle: showConfirmPassword,
+      setShowToggle: setShowConfirmPassword,
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <Link href="/" className="inline-block">
-            <h1 className="text-3xl font-bold">
-              Split<span className="text-gray-600">Wise</span>
-            </h1>
-          </Link>
-          <p className="text-gray-600 mt-2">Join thousands splitting bills effortlessly</p>
-        </motion.div>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
+      <Link
+        href="/"
+        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-200 transition-colors text-sm font-medium"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Back
+      </Link>
 
-        {/* Signup Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white p-8 rounded-2xl border-2 border-black shadow-sketch-lg"
-        >
-          <h2 className="text-2xl font-bold mb-6 text-center border-b-2 border-dashed border-gray-400 pb-4">
-            Create Account
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  name="fullName"
-                  placeholder="Enter your full name"
-                  className={getInputClassName("fullName")}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  value={form.fullName}
-                  required
-                />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-sm"
+      >
+        <div className="bg-slate-800 border border-white/8 rounded-2xl p-7 shadow-2xl">
+          {/* Header */}
+          <div className="text-center mb-7">
+            <Link href="/" className="inline-flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+                <span className="text-white font-bold text-sm">S</span>
               </div>
-              {errors.fullName && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <X size={12} /> {errors.fullName}
-                </p>
-              )}
-            </div>
+              <span className="text-lg font-bold text-slate-100 tracking-tight">
+                Split<span className="text-indigo-400">Wise</span>
+              </span>
+            </Link>
+            <h1 className="text-2xl font-bold text-slate-100 mb-1.5">
+              Create account
+            </h1>
+            <p className="text-slate-400 text-sm">
+              Join thousands splitting expenses smarter
+            </p>
+          </div>
 
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  name="username"
-                  placeholder="Choose a username"
-                  className={getInputClassName("username")}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  value={form.username}
-                  required
-                />
-                {form.username.length > 0 && (
-                  <div className="absolute right-3 top-3">
-                    {checkingUsername ? (
-                      <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                    ) : usernameStatus.available === true ? (
-                      <Check className="w-5 h-5 text-green-600" />
-                    ) : usernameStatus.available === false ? (
-                      <X className="w-5 h-5 text-red-600" />
+          {/* Form */}
+          <form onSubmit={handleSignup} className="space-y-3.5">
+            {fields.map((field) => {
+              const IconComponent = field.icon;
+              const hasError = touched[field.name] && errors[field.name];
+              return (
+                <motion.div
+                  key={field.name}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: field.delay }}
+                >
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                    {field.label}
+                  </label>
+                  <div className="relative">
+                    <IconComponent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type={
+                        field.isPassword
+                          ? field.showToggle
+                            ? "text"
+                            : "password"
+                          : field.type
+                      }
+                      name={field.name}
+                      value={form[field.name]}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder={field.placeholder}
+                      className={inputCls(hasError)}
+                    />
+                    {field.isPassword ? (
+                      <button
+                        type="button"
+                        onClick={() => field.setShowToggle(!field.showToggle)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        {field.showToggle ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    ) : field.hasCheck ? (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {usernameChecking ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                        ) : usernameAvailable ? (
+                          <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        ) : usernameAvailable === false ? (
+                          <div className="w-4 h-4 rounded-full bg-rose-500" />
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
-                )}
-              </div>
-              {form.username.length > 0 && (
-                <p className={`text-xs mt-1 flex items-center gap-1 ${
-                  usernameStatus.available === true ? "text-green-600" :
-                  usernameStatus.available === false ? "text-red-600" :
-                  "text-gray-500"
-                }`}>
-                  {checkingUsername ? (
-                    <>Checking availability...</>
-                  ) : (
-                    <>{usernameStatus.message}</>
+                  {hasError && (
+                    <p className="text-rose-400 text-xs mt-1">
+                      {errors[field.name]}
+                    </p>
                   )}
-                </p>
-              )}
-              {errors.username && !form.username && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <X size={12} /> {errors.username}
-                </p>
-              )}
-            </div>
+                  {field.hasCheck && usernameAvailable && (
+                    <p className="text-emerald-400 text-xs mt-1">
+                      ✓ Username is available
+                    </p>
+                  )}
+                </motion.div>
+              );
+            })}
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="your@email.com"
-                  className={getInputClassName("email")}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  value={form.email}
-                  required
-                />
-              </div>
-              {errors.email && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <X size={12} /> {errors.email}
-                </p>
-              )}
-            </div>
-
-            {/* Contact */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contact Number
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type="tel"
-                  name="contact"
-                  placeholder="+91 12345 67890"
-                  className={getInputClassName("contact")}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  value={form.contact}
-                  required
-                />
-              </div>
-              {errors.contact && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <X size={12} /> {errors.contact}
-                </p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="Create a strong password"
-                  className={getInputClassName("password")}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  value={form.password}
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 text-gray-500 hover:text-black transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <X size={12} /> {errors.password}
-                </p>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  className={getInputClassName("confirmPassword")}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  value={form.confirmPassword}
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 text-gray-500 hover:text-black transition-colors"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                  <X size={12} /> {errors.confirmPassword}
-                </p>
-              )}
-            </div>
-
-            {/* Submit Button */}
+            {/* Submit */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={isSubmitting || Object.keys(errors).some(key => errors[key])}
-              className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-all border-2 border-black shadow-sketch disabled:opacity-50 disabled:cursor-not-allowed font-medium mt-6"
+              disabled={isSubmitting || !usernameAvailable}
+              className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 shadow-lg shadow-indigo-950/50"
             >
               {isSubmitting ? (
-                <div className="flex items-center justify-center gap-2">
+                <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating Account...
-                </div>
+                  <span>Creating…</span>
+                </>
               ) : (
-                "Create Account"
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
               )}
             </motion.button>
           </form>
 
-          {/* Login Link */}
-          <div className="mt-6 text-center border-t-2 border-dashed border-gray-300 pt-6">
-            <p className="text-gray-600">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-black font-semibold hover:text-gray-700 underline underline-offset-2 transition-colors"
-              >
-                Sign in
-              </Link>
-            </p>
+          <div className="my-5 flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/6" />
+            <span className="text-xs text-slate-500">
+              Already have an account?
+            </span>
+            <div className="flex-1 h-px bg-white/6" />
           </div>
-        </motion.div>
 
-        {/* Footer Note */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-center text-gray-500 text-sm mt-8"
-        >
-          By creating an account, you agree to our Terms and Privacy Policy
-        </motion.p>
-      </div>
+          <p className="text-center text-slate-400 text-sm">
+            Sign in{" "}
+            <Link
+              href="/login"
+              className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
+            >
+              here
+            </Link>
+          </p>
+        </div>
+
+        <p className="text-center text-xs text-slate-600 mt-6">
+          By creating an account, you agree to our{" "}
+          <Link
+            href="#terms"
+            className="hover:text-slate-400 transition-colors"
+          >
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="#privacy"
+            className="hover:text-slate-400 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+        </p>
+      </motion.div>
     </div>
   );
 }

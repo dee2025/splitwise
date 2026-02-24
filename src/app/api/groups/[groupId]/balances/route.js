@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import Expense from "@/models/Expense";
 import Group from "@/models/Group";
 import User from "@/models/User";
+import Settlement from "@/models/Settlement";
 import { verifyToken } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
@@ -26,11 +27,6 @@ export async function GET(request) {
     const pathSegments = url.pathname.split('/');
     const groupId = pathSegments[pathSegments.length - 2]; // Get groupId from /api/groups/[groupId]/balances
     
-    console.log("🔍 Balances API Debug:");
-    console.log("  - Request URL:", request.url);
-    console.log("  - Path segments:", pathSegments);
-    console.log("  - Extracted groupId:", groupId);
-
     if (!groupId) {
       return NextResponse.json({ error: "Group ID is required" }, { status: 400 });
     }
@@ -64,27 +60,18 @@ export async function GET(request) {
       .populate('paidBy', 'fullName username email')
       .populate('splitBetween.userId', 'fullName username email');
 
-    console.log("  - Found expenses:", expenses.length);
-
-    // Calculate balances
+    // Calculate net balances from expenses
     const balances = {};
-    const memberBalances = [];
-
-    // Initialize balances for all members
     group.members.forEach(member => {
       if (member.userId && member.userId._id) {
         balances[member.userId._id.toString()] = 0;
       }
     });
 
-    // Calculate net balances
     expenses.forEach(expense => {
       if (expense.paidBy && expense.paidBy._id) {
-        // Add amount to payer (they paid, so they are owed money)
         const payerId = expense.paidBy._id.toString();
         balances[payerId] = (balances[payerId] || 0) + expense.amount;
-
-        // Subtract amounts from people who owe
         expense.splitBetween.forEach(split => {
           if (split.userId && split.userId._id) {
             const splitUserId = split.userId._id.toString();
@@ -94,55 +81,67 @@ export async function GET(request) {
       }
     });
 
-    // Format balances for response
+    // Adjust balances for completed settlements
+    const completedSettlements = await Settlement.find({ groupId, status: 'completed' });
+    completedSettlements.forEach(s => {
+      const fromId = s.fromUser.toString();
+      const toId = s.toUser.toString();
+      if (balances[fromId] !== undefined) balances[fromId] += s.amount;
+      if (balances[toId] !== undefined) balances[toId] -= s.amount;
+    });
+
+    // Recompute memberBalances after settlement adjustment
+    const finalMemberBalances = [];
     group.members.forEach(member => {
       if (member.userId && member.userId._id) {
         const memberId = member.userId._id.toString();
-        const balance = balances[memberId] || 0;
-        memberBalances.push({
+        const balance = parseFloat((balances[memberId] || 0).toFixed(2));
+        finalMemberBalances.push({
           userId: member.userId._id,
           userName: member.userId.fullName,
           userEmail: member.userId.email,
-          balance: parseFloat(balance.toFixed(2)),
-          owes: balance < 0 ? Math.abs(balance) : 0,
-          owed: balance > 0 ? balance : 0,
+          balance,
+          owes: balance < 0 ? parseFloat(Math.abs(balance).toFixed(2)) : 0,
+          owed: balance > 0 ? parseFloat(balance.toFixed(2)) : 0,
           isCurrentUser: memberId === user._id.toString()
         });
       }
     });
 
-    console.log("  - Calculated balances:", memberBalances);
+    // Greedy algorithm to minimize settlement transactions
+    const debtors = finalMemberBalances
+      .filter(m => m.balance < -0.01)
+      .map(m => ({ ...m, remaining: Math.abs(m.balance) }))
+      .sort((a, b) => b.remaining - a.remaining);
 
-    // Calculate who owes whom (simplified debt calculation)
+    const creditors = finalMemberBalances
+      .filter(m => m.balance > 0.01)
+      .map(m => ({ ...m, remaining: m.balance }))
+      .sort((a, b) => b.remaining - a.remaining);
+
     const debts = [];
-    const positiveBalances = memberBalances.filter(m => m.balance > 0.01);
-    const negativeBalances = memberBalances.filter(m => m.balance < -0.01);
-
-    positiveBalances.forEach(creditor => {
-      negativeBalances.forEach(debtor => {
-        if (creditor.balance > 0.01 && debtor.balance < -0.01) {
-          const amount = Math.min(creditor.balance, Math.abs(debtor.balance));
-          if (amount > 0.01) {
-            debts.push({
-              fromUser: debtor.userName,
-              fromUserId: debtor.userId,
-              toUser: creditor.userName,
-              toUserId: creditor.userId,
-              amount: parseFloat(amount.toFixed(2))
-            });
-            
-            // Update balances for this pairing
-            creditor.balance -= amount;
-            debtor.balance += amount;
-          }
-        }
-      });
-    });
-
-    console.log("  - Calculated debts:", debts);
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      const settle = Math.min(debtor.remaining, creditor.remaining);
+      if (settle > 0.01) {
+        debts.push({
+          fromUser: debtor.userName,
+          fromUserId: debtor.userId,
+          toUser: creditor.userName,
+          toUserId: creditor.userId,
+          amount: parseFloat(settle.toFixed(2))
+        });
+      }
+      debtor.remaining -= settle;
+      creditor.remaining -= settle;
+      if (debtor.remaining <= 0.01) i++;
+      if (creditor.remaining <= 0.01) j++;
+    }
 
     return NextResponse.json({
-      balances: memberBalances,
+      balances: finalMemberBalances,
       debts,
       totalExpenses: group.totalExpenses || 0,
       currency: group.currency,

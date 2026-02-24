@@ -1,8 +1,9 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import Navbar from "./dashboard/Navbar";
 import BottomNav from "./dashboard/BottomNav";
+import Navbar from "./dashboard/Navbar";
+import Sidebar from "./dashboard/Sidebar";
 
 export default function DashboardLayout({ children }) {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -10,14 +11,18 @@ export default function DashboardLayout({ children }) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen flex">
-      <div className="flex-1 flex flex-col">
-        {/* <Navbar /> */}
-        <main className=" p-4 pb-24 ">{children}</main>
+    <div className="min-h-screen bg-slate-950">
+      {/* <Navbar /> */}
 
-        {/* Bottom Navigation */}
-        <BottomNav />
+      <div className="flex">
+        <Sidebar />
+
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-10 min-h-[calc(100vh-64px)]">
+          <div className="max-w-5xl mx-auto">{children}</div>
+        </main>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

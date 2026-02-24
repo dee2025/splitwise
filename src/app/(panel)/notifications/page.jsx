@@ -1,33 +1,69 @@
-// app/notifications/page.js
 "use client";
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+
+import DashboardLayout from "@/components/DashboardLayout";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertCircle,
   Bell,
-  Check,
+  Calendar,
   CheckCheck,
+  Info,
   Trash2,
-  X,
   Users,
   Wallet,
-  Calendar,
-  AlertCircle,
-  Info,
-  Filter,
-  MoreHorizontal,
-  ArrowLeft
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+
+const TYPE_CONFIG = {
+  expense: {
+    icon: Wallet,
+    color: "text-green-600",
+    bg: "bg-green-50",
+    border: "border-l-green-400",
+  },
+  group: {
+    icon: Users,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-l-blue-400",
+  },
+  reminder: {
+    icon: Calendar,
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    border: "border-l-orange-400",
+  },
+  alert: {
+    icon: AlertCircle,
+    color: "text-red-600",
+    bg: "bg-red-50",
+    border: "border-l-red-400",
+  },
+  default: {
+    icon: Info,
+    color: "text-gray-600",
+    bg: "bg-gray-100",
+    border: "border-l-gray-400",
+  },
+};
+
+function formatTime(dateString) {
+  const date = new Date(dateString);
+  const diffH = (Date.now() - date) / 3600000;
+  if (diffH < 1) return `${Math.floor(diffH * 60)}m ago`;
+  if (diffH < 24) return `${Math.floor(diffH)}h ago`;
+  if (diffH < 168) return `${Math.floor(diffH / 24)}d ago`;
+  return date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+}
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedNotifications, setSelectedNotifications] = useState(new Set());
+  const [selected, setSelected] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
-  const router = useRouter();
+  const [activeFilter, setActiveFilter] = useState("all");
 
   useEffect(() => {
     fetchNotifications();
@@ -35,497 +71,356 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications');
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
         setNotifications(data.notifications || []);
       } else {
-        toast.error('Failed to fetch notifications');
+        toast.error("Failed to fetch notifications");
       }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      toast.error('Error loading notifications');
+    } catch {
+      toast.error("Error loading notifications");
     } finally {
       setLoading(false);
     }
   };
 
-  const markAsRead = async (notificationId) => {
+  const markAsRead = async (id) => {
     try {
-      const response = await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notificationId }),
+      const res = await fetch("/api/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId: id }),
       });
-
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(notif =>
-            notif._id === notificationId ? { ...notif, isRead: true } : notif
-          )
+      if (res.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
         );
-        toast.success('Marked as read');
       }
-    } catch (error) {
-      console.error('Error marking as read:', error);
-      toast.error('Failed to mark as read');
+    } catch {
+      toast.error("Failed to mark as read");
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch("/api/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ markAllAsRead: true }),
       });
-
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(notif => ({ ...notif, isRead: true }))
-        );
-        toast.success('All notifications marked as read');
+      if (res.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        toast.success("All marked as read");
       }
-    } catch (error) {
-      console.error('Error marking all as read:', error);
-      toast.error('Failed to mark all as read');
+    } catch {
+      toast.error("Failed to mark all as read");
     }
   };
 
-  const deleteSelectedNotifications = async () => {
+  const deleteSelected = async () => {
     try {
-      const notificationIds = Array.from(selectedNotifications);
-      const response = await fetch('/api/notifications', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notificationIds }),
+      const res = await fetch("/api/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationIds: Array.from(selected) }),
       });
-
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.filter(notif => !selectedNotifications.has(notif._id))
-        );
-        setSelectedNotifications(new Set());
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => !selected.has(n._id)));
+        setSelected(new Set());
         setShowDeleteConfirm(false);
-        toast.success('Notifications deleted successfully');
+        toast.success("Deleted successfully");
       }
-    } catch (error) {
-      console.error('Error deleting notifications:', error);
-      toast.error('Failed to delete notifications');
+    } catch {
+      toast.error("Failed to delete");
     }
   };
 
-  const toggleNotificationSelection = (notificationId) => {
-    const newSelected = new Set(selectedNotifications);
-    if (newSelected.has(notificationId)) {
-      newSelected.delete(notificationId);
-    } else {
-      newSelected.add(notificationId);
-    }
-    setSelectedNotifications(newSelected);
+  const toggleSelect = (id) => {
+    const next = new Set(selected);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelected(next);
   };
 
-  const selectAllNotifications = () => {
-    if (selectedNotifications.size === filteredNotifications.length) {
-      setSelectedNotifications(new Set());
-    } else {
-      setSelectedNotifications(new Set(filteredNotifications.map(n => n._id)));
-    }
-  };
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'expense':
-        return <Wallet size={20} className="text-green-600" />;
-      case 'group':
-        return <Users size={20} className="text-blue-600" />;
-      case 'reminder':
-        return <Calendar size={20} className="text-orange-600" />;
-      case 'alert':
-        return <AlertCircle size={20} className="text-red-600" />;
-      default:
-        return <Info size={20} className="text-gray-600" />;
-    }
-  };
-
-  const getNotificationColor = (type) => {
-    switch (type) {
-      case 'expense':
-        return 'border-l-green-400';
-      case 'group':
-        return 'border-l-blue-400';
-      case 'reminder':
-        return 'border-l-orange-400';
-      case 'alert':
-        return 'border-l-red-400';
-      default:
-        return 'border-l-gray-400';
-    }
-  };
-
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      const minutes = Math.floor(diffInHours * 60);
-      return `${minutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else if (diffInHours < 168) {
-      const days = Math.floor(diffInHours / 24);
-      return `${days}d ago`;
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-  };
-
-  // Filter notifications
-  const filteredNotifications = notifications.filter(notification => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'unread') return !notification.isRead;
-    if (activeFilter === 'read') return notification.isRead;
+  const filtered = notifications.filter((n) => {
+    if (activeFilter === "unread") return !n.isRead;
+    if (activeFilter === "read") return n.isRead;
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-2xl mx-auto px-4">
-          {/* Header Skeleton */}
-          <div className="py-6 border-b border-gray-200">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-lg font-bold text-slate-100 tracking-tight mb-1">
+                Notifications
+              </h1>
+              <p className="text-xs text-slate-500 font-medium">
+                {unreadCount} unread · {notifications.length} total
+              </p>
             </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 active:scale-95 transition-all shadow-lg shadow-indigo-950/60"
+              >
+                <CheckCheck size={14} />
+                Mark all read
+              </button>
+            )}
           </div>
-          
-          {/* Notifications Skeleton */}
-          <div className="space-y-3 mt-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                    </div>
+        </motion.div>
+
+        {/* Filter Pills */}
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { id: "all", label: "All" },
+            {
+              id: "unread",
+              label: `Unread${unreadCount ? ` (${unreadCount})` : ""}`,
+            },
+            { id: "read", label: "Read" },
+          ].map((f) => (
+            <motion.button
+              key={f.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveFilter(f.id)}
+              className={`px-3 py-1.5 rounded-lg border transition-all text-xs font-semibold ${
+                activeFilter === f.id
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-950/60"
+                  : "bg-white/5 border-white/8 text-slate-300 hover:bg-white/10 hover:border-white/15"
+              }`}
+            >
+              {f.label}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Bulk action bar */}
+        <AnimatePresence>
+          {selected.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="flex items-center justify-between bg-slate-800 text-slate-100 px-4 py-3 rounded-lg border border-white/6"
+            >
+              <span className="text-sm font-semibold">
+                {selected.size} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="text-xs text-slate-400 hover:text-slate-200 transition-colors font-medium"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 text-red-400 rounded-lg border border-red-500/30 hover:bg-red-600/30 hover:border-red-500/50 transition-all text-xs font-semibold"
+                >
+                  <Trash2 size={13} />
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Content */}
+        {loading ? (
+          <div className="space-y-2.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-slate-800 rounded-lg border border-white/6 p-3 animate-pulse"
+              >
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 bg-slate-700 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-700 rounded w-3/4" />
+                    <div className="h-3 bg-slate-700/50 rounded w-1/2" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-4 py-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => router.back()}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  <ArrowLeft size={20} className="text-gray-600" />
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-                  <p className="text-gray-600 text-sm">
-                    {unreadCount} unread • {notifications.length} total
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  <Filter size={20} className="text-gray-600" />
-                </motion.button>
-              </div>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-              {[
-                { id: 'all', label: 'All' },
-                { id: 'unread', label: 'Unread', count: unreadCount },
-                { id: 'read', label: 'Read' }
-              ].map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setActiveFilter(filter.id)}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    activeFilter === filter.id
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-1">
-                    {filter.label}
-                    {filter.count !== undefined && (
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full text-xs min-w-[20px]">
-                        {filter.count}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Bar */}
-        {selectedNotifications.size > 0 && (
+        ) : filtered.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-blue-50 border-b border-blue-200 px-4 py-3"
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16 bg-slate-800 rounded-lg border border-white/6"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={selectAllNotifications}
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
-                >
-                  {selectedNotifications.size === filteredNotifications.length ? 'Deselect all' : 'Select all'}
-                </button>
-                <span className="text-blue-700 font-medium text-sm">
-                  {selectedNotifications.size} selected
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedNotifications(new Set())}
-                  className="text-blue-600 hover:text-blue-700 text-sm transition-colors"
-                >
-                  Clear
-                </button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 text-sm"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </motion.button>
-              </div>
+            <div className="w-12 h-12 rounded-lg bg-indigo-600/20 flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-6 h-6 text-indigo-400" />
             </div>
+            <h3 className="text-sm font-bold text-slate-100 mb-1">
+              {activeFilter === "all"
+                ? "No notifications"
+                : `No ${activeFilter} notifications`}
+            </h3>
+            <p className="text-slate-400 text-xs max-w-xs mx-auto">
+              {activeFilter === "all"
+                ? "You're all caught up! New notifications will appear here."
+                : "Try switching the filter above."}
+            </p>
           </motion.div>
-        )}
+        ) : (
+          <div className="space-y-2.5">
+            <AnimatePresence mode="popLayout">
+              {filtered.map((n, i) => {
+                const cfg = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.default;
+                const Icon = cfg.icon;
+                const isSelected = selected.has(n._id);
 
-        {/* Notifications List */}
-        <div className="p-4 space-y-3">
-          <AnimatePresence mode="popLayout">
-            {filteredNotifications.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-12"
-              >
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Bell size={24} className="text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No notifications found
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  {activeFilter === 'all' 
-                    ? "You're all caught up! New notifications will appear here."
-                    : `No ${activeFilter} notifications found.`
-                  }
-                </p>
-              </motion.div>
-            ) : (
-              filteredNotifications.map((notification, index) => (
-                <motion.div
-                  key={notification._id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
-                  whileHover={{ y: -1 }}
-                  className={`
-                    group relative bg-white rounded-xl border border-gray-200 hover:border-gray-300 
-                    transition-all duration-200 cursor-pointer border-l-4
-                    ${getNotificationColor(notification.type)}
-                    ${!notification.isRead ? 'bg-blue-50/30' : ''}
-                  `}
-                >
-                  <div className="p-4">
-                    <div className="flex items-start gap-3">
-                      {/* Selection Checkbox */}
+                return (
+                  <motion.div
+                    key={n._id}
+                    layout
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -80 }}
+                    transition={{
+                      duration: 0.18,
+                      delay: Math.min(i * 0.03, 0.2),
+                    }}
+                    whileHover={{ y: -1 }}
+                    onClick={() => {
+                      if (!n.isRead) markAsRead(n._id);
+                    }}
+                    className={`group relative bg-slate-800 rounded-lg border transition-all duration-150 cursor-pointer ${
+                      isSelected
+                        ? "border-indigo-500/50 bg-slate-800/80"
+                        : !n.isRead
+                          ? "border-white/6 hover:border-white/10 hover:bg-slate-700/50"
+                          : "border-white/4 hover:border-white/8"
+                    }`}
+                  >
+                    <div className="p-3.5 flex items-start gap-3">
+                      {/* Checkbox */}
                       <input
                         type="checkbox"
-                        checked={selectedNotifications.has(notification._id)}
-                        onChange={() => toggleNotificationSelection(notification._id)}
-                        className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(n._id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 w-4 h-4 rounded accent-indigo-600 bg-slate-700/50 border border-white/8 shrink-0 cursor-pointer"
                       />
 
-                      {/* Notification Icon */}
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                          {getNotificationIcon(notification.type)}
-                        </div>
+                      {/* Icon */}
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? "bg-indigo-600/20"
+                            : cfg.accentBg || "bg-white/5"
+                        }`}
+                      >
+                        <Icon
+                          size={16}
+                          className={cfg.color || "text-slate-400"}
+                        />
                       </div>
 
-                      {/* Notification Content */}
+                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <p className={`font-medium text-sm ${
-                            !notification.isRead ? 'text-gray-900' : 'text-gray-700'
-                          }`}>
-                            {notification.title}
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p
+                            className={`text-sm font-semibold leading-tight ${
+                              !n.isRead ? "text-slate-100" : "text-slate-400"
+                            }`}
+                          >
+                            {n.title}
                           </p>
-                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                            <span className="text-xs text-gray-500 whitespace-nowrap">
-                              {formatTime(notification.createdAt)}
-                            </span>
-                            {!notification.isRead && (
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(notification._id);
-                                }}
-                                className="p-1 hover:bg-green-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                title="Mark as read"
-                              >
-                                <Check size={14} className="text-green-600" />
-                              </motion.button>
-                            )}
-                          </div>
+                          <span className="text-xs text-slate-500 whitespace-nowrap font-medium">
+                            {formatTime(n.createdAt)}
+                          </span>
                         </div>
-                        
-                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                          {notification.message}
+                        <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">
+                          {n.message}
                         </p>
-                        
-                        {notification.metadata && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {Object.entries(notification.metadata).slice(0, 2).map(([key, value]) => (
-                              <span
-                                key={key}
-                                className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs"
-                              >
-                                {key}: {value}
-                              </span>
-                            ))}
-                          </div>
+                        {!n.isRead && (
+                          <span className="inline-block mt-1.5 w-1.5 h-1.5 rounded-full bg-black" />
                         )}
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Bulk Actions Footer */}
-        {notifications.length > 0 && (
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={markAllAsRead}
-                disabled={unreadCount === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
-              >
-                <CheckCheck size={16} />
-                Mark all read
-              </motion.button>
-              
-              <span className="text-gray-600 text-sm">
-                {unreadCount} unread
-              </span>
-            </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
-      </div>
 
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 flex items-end justify-center z-50 p-4 backdrop-blur-sm sm:items-center sm:p-0"
-          >
+        {/* Delete confirm modal */}
+        <AnimatePresence>
+          {showDeleteConfirm && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl p-6 w-full max-w-sm sm:max-w-md shadow-xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4 backdrop-blur-[2px]"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                  <Trash2 size={20} className="text-red-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    Delete Notifications
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    This action cannot be undone
-                  </p>
-                </div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.96 }}
+                className="bg-white rounded-xl border-2 border-black shadow-sketch w-full max-w-sm p-6"
+              >
+                {/* Corner accents */}
+                <div className="absolute top-2 right-2 w-2 h-2 border-t-2 border-r-2 border-gray-300 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 w-2 h-2 border-b-2 border-l-2 border-gray-300 pointer-events-none" />
 
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to delete {selectedNotifications.size} selected notification{selectedNotifications.size > 1 ? 's' : ''}?
-              </p>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 border-2 border-red-400 bg-red-50 rounded-lg flex items-center justify-center">
+                    <Trash2 size={18} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm">
+                      Delete Notifications
+                    </h3>
+                    <p className="text-gray-500 text-xs">
+                      This cannot be undone
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="ml-auto p-1 hover:bg-gray-100 rounded transition-colors"
+                  >
+                    <X size={16} className="text-gray-500" />
+                  </button>
+                </div>
 
-              <div className="flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={deleteSelectedNotifications}
-                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 font-medium"
-                >
-                  Delete
-                </motion.button>
-              </div>
+                <p className="text-gray-700 text-sm mb-5">
+                  Delete <span className="font-bold">{selected.size}</span>{" "}
+                  selected notification{selected.size > 1 ? "s" : ""}?
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-4 py-2.5 border-2 border-gray-400 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={deleteSelected}
+                    className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg border-2 border-black hover:bg-gray-800 transition-all text-sm font-medium shadow-sketch-sm"
+                  >
+                    Delete
+                  </motion.button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </DashboardLayout>
   );
 }

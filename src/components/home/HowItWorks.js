@@ -1,257 +1,134 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calculator, CheckCircle2, PlusCircle, Users } from "lucide-react";
+import { ArrowRight, CheckCircle, Plus, Users } from "lucide-react";
+
+const steps = [
+  {
+    number: "01",
+    title: "Create Your Trip",
+    description:
+      "Start a group for your trip with a few clicks. Invite friends via link or email—they're instantly in.",
+    icon: Users,
+    color: "from-blue-600 to-blue-400",
+  },
+  {
+    number: "02",
+    title: "Add Expenses",
+    description:
+      "Record who paid for what. Select who participated. Our smart algorithm handles all the math instantly.",
+    icon: Plus,
+    color: "from-purple-600 to-purple-400",
+  },
+  {
+    number: "03",
+    title: "Settle & Done",
+    description:
+      "See the settlement summary. Pay with UPI, bank transfer, or cash. One click and you're square with everyone.",
+    icon: CheckCircle,
+    color: "from-green-600 to-green-400",
+  },
+];
 
 export default function HowItWorks() {
-  const steps = [
-    {
-      number: "01",
-      title: "Create Your Group",
-      description:
-        "Start a new group for your trip, event, or shared expenses. Give it a memorable name that reflects your adventure.",
-      icon: <Users className="w-5 h-5" />,
-      visual: {
-        title: "Goa Trip 2024",
-        members: "5 friends",
-        type: "Travel",
-        color: "bg-blue-50",
-      },
-    },
-    {
-      number: "02",
-      title: "Add & Split Expenses",
-      description:
-        "Easily add expenses for food, travel, accommodation, or anything else. Select participants and let us handle the math.",
-      icon: <PlusCircle className="w-5 h-5" />,
-      visual: {
-        title: "Beachside Dinner",
-        amount: "₹2,800",
-        split: "5 people",
-        paidBy: "You",
-        color: "bg-green-50",
-      },
-    },
-    {
-      number: "03",
-      title: "Settle Up Effortlessly",
-      description:
-        "Get clear settlement suggestions showing who owes whom. No awkward conversations—just quick, fair resolutions.",
-      icon: <Calculator className="w-5 h-5" />,
-      visual: {
-        title: "All Settled Up!",
-        amount: "₹0.00",
-        status: "Balanced",
-        color: "bg-purple-50",
-      },
-    },
-  ];
-
   return (
-    <section className="px-6 md:px-12 lg:px-20 py-20 bg-white">
+    <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 py-16 sm:py-20 md:py-28 lg:py-32 bg-gradient-to-b from-blue-50/30 via-white to-purple-50/20">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Section Header */}
+        <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
+              How It Works
+            </h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+              Three simple steps to manage shared expenses like a pro. Ready?
+              Let's go.
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Steps Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.15, duration: 0.5 }}
+                viewport={{ once: true }}
+                className="relative"
+              >
+                {/* Step Card */}
+                <div className="h-full p-6 sm:p-8 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300">
+                  {/* Step Number */}
+                  <div
+                    className={`absolute -top-3 -right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r ${step.color} text-white font-bold text-lg sm:text-xl flex items-center justify-center shadow-lg`}
+                  >
+                    {step.number}
+                  </div>
+
+                  {/* Icon */}
+                  <div
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${step.color} flex items-center justify-center mb-4 sm:mb-6`}
+                  >
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+                    {step.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                {index < steps.length - 1 && (
+                  <div className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10">
+                    <ArrowRight className="w-8 h-8 text-blue-300" />
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Feature Highlight */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="p-6 sm:p-8 md:p-10 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            How It Works
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Split expenses with friends and colleagues in three simple steps. No
-            complicated math, no forgotten payments.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold mb-2">
+                Ready to split smarter?
+              </h3>
+              <p className="text-blue-100">
+                Join thousands of travelers and groups already using SplitWise.
+              </p>
+            </div>
+            <a
+              href="/signup"
+              className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-600 rounded-xl font-semibold hover:shadow-xl transition-all duration-300 hover:-translate-y-1 whitespace-nowrap"
+            >
+              Start Free →
+            </a>
+          </div>
         </motion.div>
-
-        {/* Steps with Visual Cards */}
-        <div className="space-y-12">
-          {steps.map((step, index) => (
-            <StepWithVisual
-              key={index}
-              number={step.number}
-              title={step.title}
-              description={step.description}
-              icon={step.icon}
-              visual={step.visual}
-              index={index}
-              delay={index * 0.2}
-            />
-          ))}
-        </div>
       </div>
     </section>
-  );
-}
-
-function StepWithVisual({
-  number,
-  title,
-  description,
-  icon,
-  visual,
-  index,
-  delay = 0,
-}) {
-  const isEven = index % 2 === 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay }}
-      viewport={{ once: true }}
-      className={`flex flex-col lg:flex-row gap-8 items-center ${
-        isEven ? "lg:flex-row" : "lg:flex-row-reverse"
-      }`}
-    >
-      {/* Left Side - Content */}
-      <div className="flex-1">
-        <div className="max-w-lg">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-xl bg-black text-white flex items-center justify-center font-bold text-lg border-2 border-black">
-              {number}
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-gray-100 border-2 border-gray-300 flex items-center justify-center text-gray-700">
-              {icon}
-            </div>
-          </div>
-
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            {title}
-          </h3>
-          <p className="text-lg text-gray-600 leading-relaxed">{description}</p>
-        </div>
-      </div>
-
-      {/* Right Side - Visual Card */}
-      <div className="flex-1 flex justify-center">
-        <VisualCard {...visual} index={index} />
-      </div>
-    </motion.div>
-  );
-}
-
-function VisualCard({
-  title,
-  amount,
-  split,
-  paidBy,
-  members,
-  type,
-  status,
-  color,
-  index,
-}) {
-  const getCardContent = (index) => {
-    switch (index) {
-      case 0: // Group Creation
-        return (
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900">{title}</h4>
-                <p className="text-sm text-gray-500">{members}</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 bg-white rounded border">
-                <span className="text-sm text-gray-600">Trip Type</span>
-                <span className="font-medium">{type}</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-white rounded border">
-                <span className="text-sm text-gray-600">Status</span>
-                <span className="font-medium text-green-600">Active</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 1: // Adding Expense
-        return (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-bold text-gray-900">{title}</h4>
-              <div className="text-right">
-                <p className="font-bold text-lg text-gray-900">{amount}</p>
-                <p className="text-sm text-gray-500">{split}</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-white rounded border">
-                <span className="text-gray-600">Paid by</span>
-                <span className="font-medium">{paidBy}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white rounded border">
-                <span className="text-gray-600">Split between</span>
-                <span className="font-medium">5 people</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white rounded border">
-                <span className="text-gray-600">Each pays</span>
-                <span className="font-bold text-green-600">₹560</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2: // Settlement
-        return (
-          <div className="p-6">
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
-              </div>
-              <h4 className="font-bold text-gray-900 text-lg">{title}</h4>
-              <p className="text-2xl font-bold text-gray-900 my-2">{amount}</p>
-              <p className="text-sm text-green-600 font-medium">{status}</p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 bg-white rounded border">
-                <span className="text-gray-600">Amit → Priya</span>
-                <span className="font-medium text-green-600">₹0</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-white rounded border">
-                <span className="text-gray-600">Rohit → You</span>
-                <span className="font-medium text-green-600">₹0</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-white rounded border">
-                <span className="text-gray-600">Neha → All</span>
-                <span className="font-medium text-green-600">₹0</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: index % 2 === 0 ? 50 : -50 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-      viewport={{ once: true }}
-      className="w-full max-w-sm"
-    >
-      <div className="rounded-2xl border-2 border-gray-300 bg-white shadow-sketch-lg hover:shadow-sketch-xl transition-all duration-300 hover:border-black">
-        {getCardContent(index)}
-
-        {/* Card Footer */}
-        <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-2xl">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">splitzy</span>
-            <span className="text-gray-400">Live</span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
   );
 }
