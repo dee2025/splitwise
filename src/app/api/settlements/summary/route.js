@@ -69,11 +69,13 @@ export async function GET(request) {
       const normalizedStatus =
         settlement.status === "paid" ? "completed" : settlement.status;
 
-      // Calculate amount owed/to receive
-      if (settlement.fromUser._id.toString() === user._id.toString()) {
-        summary.userOweAmount += settlementAmount;
-      } else {
-        summary.userGetAmount += settlementAmount;
+      // Only completed settlements should impact paid/received totals
+      if (normalizedStatus === "completed") {
+        if (settlement.fromUser._id.toString() === user._id.toString()) {
+          summary.userOweAmount += settlementAmount;
+        } else {
+          summary.userGetAmount += settlementAmount;
+        }
       }
 
       // Group by status

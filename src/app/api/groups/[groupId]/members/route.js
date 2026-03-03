@@ -5,6 +5,26 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
+function normalizeGroup(groupDoc) {
+  const group = groupDoc?.toObject ? groupDoc.toObject() : groupDoc;
+
+  return {
+    ...group,
+    members: (group.members || []).map((m) => ({
+      _id: m._id,
+      userId: m.userId?._id || m.userId || null,
+      name: m.userId?.fullName || m.name || "Unknown",
+      fullName: m.userId?.fullName || m.name || "Unknown",
+      username: m.userId?.username || null,
+      email: m.userId?.email || m.email || null,
+      contact: m.userId?.contact || m.contact || null,
+      role: m.role,
+      type: m.type,
+      joinedAt: m.joinedAt,
+    })),
+  };
+}
+
 export async function POST(request, { params }) {
   try {
     await connectDB();
@@ -106,7 +126,7 @@ export async function POST(request, { params }) {
     return NextResponse.json(
       {
         message: `Added ${membersToAdd.length} member(s)`,
-        group: populatedGroup,
+        group: normalizeGroup(populatedGroup),
       },
       { status: 200 },
     );

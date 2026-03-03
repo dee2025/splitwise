@@ -92,17 +92,46 @@ export async function PUT(request) {
     }
 
     const body = await request.json();
-    const { fullName, contact, bio, avatar } = body;
+    const { fullName, username, contact, bio, avatar } = body;
+
+    const errors = {};
 
     if (fullName !== undefined) {
       const trimmed = fullName.trim();
       if (!trimmed) {
-        return NextResponse.json(
-          { error: "Full name cannot be empty" },
-          { status: 400 }
-        );
+        errors.fullName = "Full name cannot be empty";
+      } else if (trimmed.length < 2) {
+        errors.fullName = "Full name must be at least 2 characters";
+      } else {
+        user.fullName = trimmed;
       }
-      user.fullName = trimmed;
+    }
+
+    if (username !== undefined) {
+      const trimmedUsername = username.trim().toLowerCase();
+      if (!trimmedUsername) {
+        errors.username = "Username cannot be empty";
+      } else if (!/^[a-z0-9_]{3,20}$/.test(trimmedUsername)) {
+        errors.username = "Username must be 3-20 chars (letters, numbers, underscore)";
+      } else if (trimmedUsername !== user.username.toLowerCase()) {
+        // Only check uniqueness if username changed
+        const existingUser = await User.findOne({ username: trimmedUsername }).select("_id");
+        if (existingUser) {
+          errors.username = "Username is already taken";
+        } else {
+          user.username = trimmedUsername;
+        }
+      } else {
+        // Username unchanged, just keep it
+        user.username = trimmedUsername;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return NextResponse.json(
+        { error: "Validation failed", errors },
+        { status: 400 }
+      );
     }
 
     if (contact !== undefined) user.contact = contact.trim();

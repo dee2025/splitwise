@@ -30,14 +30,13 @@ const CATEGORY_OPTIONS = [
 ];
 
 function normalizeMember(member) {
-  const userId =
-    member?.userId?._id || member?.userId || member?._id || member?.id || "";
+  const userId = member?.userId?._id || member?.userId || "";
 
   const name =
-    member?.name ||
     member?.fullName ||
     member?.userId?.fullName ||
     member?.userId?.username ||
+    member?.name ||
     "Unknown";
 
   return {
@@ -78,6 +77,7 @@ export default function GlobalAddExpenseModal() {
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loadingGroupDetails, setLoadingGroupDetails] = useState(false);
 
   const [formData, setFormData] = useState({
     description: "",
@@ -241,11 +241,30 @@ export default function GlobalAddExpenseModal() {
     }));
   };
 
-  const handleNextFromGroupStep = () => {
+  const handleNextFromGroupStep = async () => {
     if (!selectedGroupId) {
       toast.error("Please select a group first");
       return;
     }
+
+    try {
+      setLoadingGroupDetails(true);
+      const res = await axios.get(`/api/groups/${selectedGroupId}`);
+      const latestGroup = res.data?.group;
+      if (latestGroup?._id) {
+        setGroups((prev) =>
+          prev.map((group) =>
+            group._id === latestGroup._id ? latestGroup : group,
+          ),
+        );
+      }
+    } catch {
+      toast.error("Could not refresh member list. Please try again.");
+      return;
+    } finally {
+      setLoadingGroupDetails(false);
+    }
+
     setStep(2);
   };
 
@@ -423,11 +442,17 @@ export default function GlobalAddExpenseModal() {
                     <button
                       type="button"
                       onClick={handleNextFromGroupStep}
-                      disabled={!selectedGroupId || loadingGroups || groups.length === 0}
+                      disabled={!selectedGroupId || loadingGroups || loadingGroupDetails || groups.length === 0}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      Next
-                      <ArrowRight className="w-4 h-4" />
+                      {loadingGroupDetails ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          Next
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

@@ -1,13 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Plus, Users } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import AddExpenseModal from "@/components/dashboard/AddExpenseModal";
 import GroupsSection from "@/components/dashboard/GroupsSection";
 import RecentExpenses from "@/components/dashboard/RecentExpences";
 import StatsCards from "@/components/dashboard/StatsCards";
@@ -17,7 +16,6 @@ export default function Dashboard() {
   const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
   const router = useRouter();
 
-  // const [showAddExpense, setShowAddExpense] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsKey, setGroupsKey] = useState(0);
 
@@ -75,13 +73,6 @@ export default function Dashboard() {
               <span className="hidden sm:inline">New Group</span>
             </button>
 
-            {/* <button
-              onClick={() => setShowAddExpense(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 active:scale-95 transition-all shadow-lg shadow-indigo-950/60"
-            >
-              <Plus className="w-3.5 h-3.5 shrink-0" />
-              Add Expense
-            </button> */}
           </div>
         </motion.div>
 
@@ -101,13 +92,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      {/* ── Modals ── */}
-      {/* <AnimatePresence>
-        {showAddExpense && (
-          <AddExpenseModal onClose={() => setShowAddExpense(false)} />
-        )}
-      </AnimatePresence> */}
 
       <AnimatePresence>
         {showCreateGroup && (

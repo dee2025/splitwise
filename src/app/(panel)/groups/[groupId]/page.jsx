@@ -1,6 +1,5 @@
 "use client";
 
-import AddExpenseForm from "@/components/dashboard/expenses/AddExpenseForm";
 import AddMembersModal from "@/components/dashboard/groups/AddMembersModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import axios from "axios";
@@ -33,6 +32,40 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 
+function getMemberName(member) {
+  return (
+    member?.fullName ||
+    member?.name ||
+    member?.username ||
+    member?.userId?.fullName ||
+    member?.userId?.name ||
+    member?.userId?.username ||
+    "Unknown User"
+  );
+}
+
+function getMemberSecondary(member) {
+  return (
+    member?.email ||
+    member?.userId?.email ||
+    member?.contact ||
+    member?.userId?.contact ||
+    member?.username ||
+    member?.userId?.username ||
+    "No details available"
+  );
+}
+
+function getMemberKey(member, idx) {
+  return (
+    member?._id ||
+    member?.userId?._id ||
+    member?.userId ||
+    member?.email ||
+    `${idx}`
+  );
+}
+
 export default function GroupPage() {
   const params = useParams();
   const router = useRouter();
@@ -42,7 +75,6 @@ export default function GroupPage() {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandMembers, setExpandMembers] = useState(false);
-  const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [completingTrip, setCompletingTrip] = useState(false);
   const [debts, setDebts] = useState([]);
@@ -125,14 +157,13 @@ export default function GroupPage() {
     }
   };
 
-  const handleExpenseAdded = (newExpense) => {
-    setExpenses((prev) => [newExpense, ...prev]);
-    if (group) {
-      setGroup((prev) => ({
-        ...prev,
-        totalExpenses: (prev.totalExpenses || 0) + newExpense.amount,
-      }));
-    }
+  const openGlobalAddExpense = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("splitzy:open-add-expense", {
+        detail: { groupId: group?._id || groupId },
+      }),
+    );
   };
 
   const handleCompleteTrip = async () => {
@@ -244,7 +275,7 @@ export default function GroupPage() {
               <motion.button
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 1 }}
-                onClick={() => setShowAddExpense(true)}
+                onClick={openGlobalAddExpense}
                 disabled={group.tripStatus === "completed"}
                 className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-indigo-600 hover:bg-indigo-500 transition-all duration-150 font-medium text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
@@ -427,7 +458,7 @@ export default function GroupPage() {
                     <div className="divide-y divide-white/8">
                       {group.members.map((member, idx) => (
                         <motion.div
-                          key={member._id || member.userId}
+                          key={getMemberKey(member, idx)}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.05 }}
@@ -435,16 +466,15 @@ export default function GroupPage() {
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="w-10 h-10 rounded-lg border border-white/8 bg-indigo-600/20 flex items-center justify-center text-indigo-300 font-semibold text-sm shrink-0">
-                              {member.name?.charAt(0).toUpperCase() ||
-                                member.fullName?.charAt(0).toUpperCase() ||
+                              {getMemberName(member)?.charAt(0).toUpperCase() ||
                                 "?"}
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-slate-100 truncate">
-                                {member.name || member.fullName}
+                                {getMemberName(member)}
                               </p>
                               <p className="text-xs text-slate-400 truncate">
-                                {member.email}
+                                {getMemberSecondary(member)}
                               </p>
                             </div>
                           </div>
@@ -469,13 +499,6 @@ export default function GroupPage() {
 
         {/* Modals */}
         <AnimatePresence>
-          {showAddExpense && (
-            <AddExpenseForm
-              group={group}
-              onClose={() => setShowAddExpense(false)}
-              onExpenseAdded={handleExpenseAdded}
-            />
-          )}
           {showAddMembers && (
             <AddMembersModal
               groupId={groupId}
@@ -1173,6 +1196,7 @@ function SettlementsTab({ group, currentUser, onRefresh }) {
   const [settlements, setSettlements] = useState([]);
   const [suggestedSettlements, setSuggestedSettlements] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [netBalance, setNetBalance] = useState(0);
   const [selectedDebt, setSelectedDebt] = useState(null);
 
   const getUserId = (value) =>
@@ -1191,11 +1215,18 @@ function SettlementsTab({ group, currentUser, onRefresh }) {
       setSettlements(summaryRes.data?.settlements || []);
       setSummary(summaryRes.data?.summary || null);
       setSuggestedSettlements(calculateRes.data?.settlements || []);
+
+      const currentUserId = currentUser?._id?.toString?.() || "";
+      const calculatedNet = Number(
+        calculateRes.data?.balances?.[currentUserId] || 0,
+      );
+      setNetBalance(calculatedNet);
     } catch (error) {
       console.error("Settlement fetch error:", error);
       toast.error("Failed to load settlements");
       setSettlements([]);
       setSuggestedSettlements([]);
+      setNetBalance(0);
     } finally {
       setLoading(false);
     }
@@ -1276,6 +1307,8 @@ function SettlementsTab({ group, currentUser, onRefresh }) {
   const pendingCount = pendingAction.length;
   const waitingCount = waitingForOthers.length;
   const historyCount = historyList.length;
+  const youOweFromExpenses = netBalance < 0 ? Math.abs(netBalance) : 0;
+  const youGetFromExpenses = netBalance > 0 ? netBalance : 0;
 
   const getStatusBadge = (status) => {
     if (status === "completed") {
@@ -1326,20 +1359,24 @@ function SettlementsTab({ group, currentUser, onRefresh }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-slate-700/30 border border-white/8 rounded-lg p-3">
-          <p className="text-xs text-slate-400">You Owe</p>
+          <p className="text-xs text-slate-400">You Owe (Net)</p>
           <p className="text-lg font-bold text-rose-400">
             {currencySymbol}
-            {Number(summary?.userOweAmount || 0).toFixed(2)}
+            {Number(youOweFromExpenses || 0).toFixed(2)}
           </p>
         </div>
         <div className="bg-slate-700/30 border border-white/8 rounded-lg p-3">
-          <p className="text-xs text-slate-400">You Get</p>
+          <p className="text-xs text-slate-400">You Get (Net)</p>
           <p className="text-lg font-bold text-emerald-400">
             {currencySymbol}
-            {Number(summary?.userGetAmount || 0).toFixed(2)}
+            {Number(youGetFromExpenses || 0).toFixed(2)}
           </p>
         </div>
       </div>
+
+      <p className="text-[11px] text-slate-400 px-1">
+        Net is calculated from expenses and completed settlements only. Pending requests do not change net balances.
+      </p>
 
       <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">

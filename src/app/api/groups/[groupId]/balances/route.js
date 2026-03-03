@@ -81,13 +81,17 @@ export async function GET(request) {
       }
     });
 
-    // Adjust balances for completed settlements
-    const completedSettlements = await Settlement.find({ groupId, status: 'completed' });
+    // Adjust balances for completed settlements (include legacy 'paid' status)
+    const completedSettlements = await Settlement.find({
+      groupId,
+      status: { $in: ['completed', 'paid'] },
+    });
     completedSettlements.forEach(s => {
       const fromId = s.fromUser.toString();
       const toId = s.toUser.toString();
-      if (balances[fromId] !== undefined) balances[fromId] += s.amount;
-      if (balances[toId] !== undefined) balances[toId] -= s.amount;
+      const settlementAmount = Number(s.amount ?? s.totalAmount ?? 0);
+      if (balances[fromId] !== undefined) balances[fromId] += settlementAmount;
+      if (balances[toId] !== undefined) balances[toId] -= settlementAmount;
     });
 
     // Recompute memberBalances after settlement adjustment

@@ -5,6 +5,26 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
+function normalizeGroup(groupDoc) {
+  const group = groupDoc?.toObject ? groupDoc.toObject() : groupDoc;
+
+  return {
+    ...group,
+    members: (group.members || []).map((m) => ({
+      _id: m._id,
+      userId: m.userId?._id || m.userId || null,
+      name: m.userId?.fullName || m.name || "Unknown",
+      fullName: m.userId?.fullName || m.name || "Unknown",
+      username: m.userId?.username || null,
+      email: m.userId?.email || m.email || null,
+      contact: m.userId?.contact || m.contact || null,
+      role: m.role,
+      type: m.type,
+      joinedAt: m.joinedAt,
+    })),
+  };
+}
+
 export async function GET(request) {
   try {
     await connectDB();
@@ -27,20 +47,7 @@ export async function GET(request) {
       .sort({ createdAt: -1 });
 
     // 🔥 FIX: clean member structure
-    groups = groups.map((group) => ({
-      ...group.toObject(),
-      members: group.members.map((m) => ({
-        _id: m._id,
-        userId: m.userId?._id || null,
-        fullName: m.userId?.fullName || m.name,
-        username: m.userId?.username || null,
-        email: m.userId?.email || m.email,
-        contact: m.userId?.contact || m.contact,
-        role: m.role,
-        type: m.type,
-        joinedAt: m.joinedAt,
-      })),
-    }));
+    groups = groups.map((group) => normalizeGroup(group));
 
     return NextResponse.json({ groups });
   } catch (error) {
@@ -149,7 +156,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         message: "Group created successfully",
-        group: populatedGroup,
+        group: normalizeGroup(populatedGroup),
       },
       { status: 201 },
     );

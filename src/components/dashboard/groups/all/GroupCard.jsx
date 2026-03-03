@@ -5,6 +5,18 @@ import { getGroupTypeConfig } from "@/utils/groupUtils";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar, Settings, TrendingUp } from "lucide-react";
 
+function getDisplayName(member) {
+  return (
+    member?.fullName ||
+    member?.userId?.fullName ||
+    member?.name ||
+    member?.userId?.name ||
+    member?.username ||
+    member?.userId?.username ||
+    "Unknown User"
+  );
+}
+
 export default function GroupCard({
   group,
   index,
@@ -118,7 +130,7 @@ export default function GroupCard({
             <div className="flex -space-x-2">
               {group.members?.slice(0, 3).map((member, idx) => {
                 const initials =
-                  (member.name || member.fullName)
+                  getDisplayName(member)
                     ?.split(" ")
                     .map((n) => n[0])
                     .join("")
@@ -129,7 +141,7 @@ export default function GroupCard({
                     key={member._id || idx}
                     whileHover={{ scale: 1.2, zIndex: 10 }}
                     className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 border-2 border-slate-800 flex items-center justify-center text-xs font-bold text-white shadow-sm hover:shadow-lg"
-                    title={member.name || member.fullName}
+                    title={getDisplayName(member)}
                   >
                     {initials}
                   </motion.div>

@@ -6,6 +6,26 @@ import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
+function normalizeGroup(groupDoc) {
+  const group = groupDoc?.toObject ? groupDoc.toObject() : groupDoc;
+
+  return {
+    ...group,
+    members: (group.members || []).map((m) => ({
+      _id: m._id,
+      userId: m.userId?._id || m.userId || null,
+      name: m.userId?.fullName || m.name || "Unknown",
+      fullName: m.userId?.fullName || m.name || "Unknown",
+      username: m.userId?.username || null,
+      email: m.userId?.email || m.email || null,
+      contact: m.userId?.contact || m.contact || null,
+      role: m.role,
+      type: m.type,
+      joinedAt: m.joinedAt,
+    })),
+  };
+}
+
 export async function GET(request, context) {
   try {
     await connectDB();
@@ -122,7 +142,7 @@ export async function GET(request, context) {
     }
 
     console.log("✅ Access granted to group:", group.name);
-    return NextResponse.json({ group });
+    return NextResponse.json({ group: normalizeGroup(group) });
   } catch (error) {
     console.error("Group fetch error:", error);
     return NextResponse.json(
@@ -275,7 +295,7 @@ export async function PUT(request, context) {
 
     return NextResponse.json({ 
       message: "Group updated successfully",
-      group: updatedGroup 
+      group: normalizeGroup(updatedGroup), 
     });
   } catch (error) {
     console.error("Group update error:", error);

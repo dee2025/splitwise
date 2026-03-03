@@ -84,6 +84,14 @@ export async function POST(request) {
       );
     }
 
+    const amountValue = Number(amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      return NextResponse.json(
+        { error: "Amount must be greater than 0" },
+        { status: 400 },
+      );
+    }
+
     // Verify token
     const decoded = await verifyToken(token);
     const user = await User.findById(decoded.userId);
@@ -99,9 +107,11 @@ export async function POST(request) {
       );
     }
 
+    const paidById = String(paidBy);
+
     // Validate paidBy user is in the group
     const paidByUser = group.members.find(
-      (m) => m.userId.toString() === paidBy || m.userId === paidBy,
+      (m) => String(m.userId) === paidById,
     );
     if (!paidByUser) {
       return NextResponse.json(
@@ -110,15 +120,58 @@ export async function POST(request) {
       );
     }
 
+    const groupMemberIds = new Set((group.members || []).map((m) => String(m.userId)));
+
+    const normalizedSplit = splitBetween.map((sb) => ({
+      userId: String(sb.userId),
+      amount: Number(sb.amount),
+      percentage: Number(sb.percentage || 0),
+    }));
+
+    const uniqueSplitIds = new Set();
+    for (const sb of normalizedSplit) {
+      if (!groupMemberIds.has(sb.userId)) {
+        return NextResponse.json(
+          { error: "Split members must belong to the selected group" },
+          { status: 400 },
+        );
+      }
+      if (!Number.isFinite(sb.amount) || sb.amount <= 0) {
+        return NextResponse.json(
+          { error: "Each split amount must be greater than 0" },
+          { status: 400 },
+        );
+      }
+      if (uniqueSplitIds.has(sb.userId)) {
+        return NextResponse.json(
+          { error: "Duplicate users found in split" },
+          { status: 400 },
+        );
+      }
+      uniqueSplitIds.add(sb.userId);
+    }
+
+    const splitTotal = normalizedSplit.reduce((sum, sb) => sum + sb.amount, 0);
+    if (Math.abs(splitTotal - amountValue) > 0.01) {
+      return NextResponse.json(
+        { error: "Split total must match expense amount" },
+        { status: 400 },
+      );
+    }
+
+    const normalizedPaidTo = (paidTo && Array.isArray(paidTo) ? paidTo : normalizedSplit.map((sb) => sb.userId))
+      .map((id) => String(id))
+      .filter((id) => groupMemberIds.has(id));
+
     // Create expense
     const expense = await Expense.create({
       description: description.trim(),
-      amount: parseFloat(amount),
+      amount: amountValue,
       date: date ? new Date(date) : new Date(),
       groupId,
-      paidBy: paidBy,
-      paidTo: paidTo || splitBetween.map((sb) => sb.userId), // Store who the expense was split to
-      splitBetween: splitBetween.map((sb) => ({
+      paidBy: paidById,
+      paidTo: normalizedPaidTo, // Store who the expense was split to
+      splitBetween: normalizedSplit.map((sb) => ({
         userId: sb.userId,
         amount: sb.amount,
         percentage: sb.percentage,
@@ -129,12 +182,12 @@ export async function POST(request) {
     });
 
     // Update group total
-    group.totalExpenses = (group.totalExpenses || 0) + parseFloat(amount);
+    group.totalExpenses = (group.totalExpenses || 0) + amountValue;
     await group.save();
 
     // Send notifications to involved users (except payer)
-    const involvedUsers = splitBetween
-      .filter((sb) => sb.userId.toString() !== user._id.toString())
+    const involvedUsers = normalizedSplit
+      .filter((sb) => sb.userId !== paidById)
       .map((sb) => sb.userId);
 
     for (const userId of involvedUsers) {

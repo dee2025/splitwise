@@ -25,6 +25,7 @@ export async function GET(request) {
 
     const formattedUsers = users.map(user => ({
       id: user._id.toString(),
+      fullName: user.fullName,
       name: user.fullName,
       username: user.username,
       email: user.email,

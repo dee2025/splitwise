@@ -6,6 +6,10 @@ import { Loader2, Plus, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+function getUserDisplayName(user) {
+  return user?.fullName || user?.name || user?.username || user?.email || "User";
+}
+
 export default function AddMembersModal({ groupId, onClose, onMembersAdded }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -60,7 +64,7 @@ export default function AddMembersModal({ groupId, onClose, onMembersAdded }) {
       const response = await axios.post(`/api/groups/${groupId}/members`, {
         members: selectedMembers.map((m) => ({
           userId: m.id,
-          name: m.fullName,
+          name: getUserDisplayName(m),
           email: m.email,
           contact: m.contact,
           type: "registered",
@@ -139,7 +143,7 @@ export default function AddMembersModal({ groupId, onClose, onMembersAdded }) {
                 >
                   <div>
                     <p className="font-medium text-slate-100">
-                      {member.fullName}
+                      {getUserDisplayName(member)}
                     </p>
                     <p className="text-xs text-slate-400">{member.email}</p>
                   </div>
@@ -179,7 +183,7 @@ export default function AddMembersModal({ groupId, onClose, onMembersAdded }) {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="font-medium text-slate-100">
-                          {user.fullName}
+                          {getUserDisplayName(user)}
                         </p>
                         <p className="text-xs text-slate-400">{user.email}</p>
                       </div>

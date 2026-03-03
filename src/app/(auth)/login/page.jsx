@@ -70,23 +70,55 @@ export default function LoginPage() {
     setErrors(next);
   };
 
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!form.email.trim()) {
+      nextErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      nextErrors.email = "Invalid email address";
+    }
+
+    if (!form.password) {
+      nextErrors.password = "Password is required";
+    } else if (form.password.length < 6) {
+      nextErrors.password = "Password must be at least 6 characters";
+    }
+
+    setTouched({ email: true, password: true });
+    setErrors(nextErrors);
+
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (Object.keys(errors).length > 0) {
+    const isValid = validateForm();
+    if (!isValid) {
       toast.error("Please fix all errors");
       return;
     }
     setIsSubmitting(true);
     try {
-      const res = await axios.post("/api/auth/login", form);
+      const payload = {
+        email: form.email.trim(),
+        password: form.password,
+      };
+
+      const res = await axios.post("/api/auth/login", payload);
       if (res.data.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Login successful");
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 500);
+        router.replace("/dashboard");
+        return;
       }
+      toast.error("Login failed. Please try again.");
     } catch (err) {
+      const apiErrors = err.response?.data?.errors;
+      if (apiErrors && typeof apiErrors === "object") {
+        setErrors((prev) => ({ ...prev, ...apiErrors }));
+        setTouched({ email: true, password: true });
+      }
       toast.error(err.response?.data?.error || "Login failed");
     } finally {
       setIsSubmitting(false);

@@ -5,14 +5,12 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  CheckCircle,
   ChevronLeft,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
-  Phone,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,9 +33,7 @@ export default function SignupPage() {
 
   const [form, setForm] = useState({
     fullName: "",
-    username: "",
     email: "",
-    contact: "",
     password: "",
     confirmPassword: "",
   });
@@ -46,8 +42,6 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usernameChecking, setUsernameChecking] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) router.push("/dashboard");
@@ -57,14 +51,12 @@ export default function SignupPage() {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
-    if (name === "username" && value) setUsernameAvailable(null);
   };
 
-  const handleBlur = async (e) => {
+  const handleBlur = (e) => {
     const { name, value } = e.target;
     setTouched((p) => ({ ...p, [name]: true }));
     validateField(name, value);
-    if (name === "username" && value) await checkUsernameAvailability(value);
   };
 
   const validateField = (name, value) => {
@@ -76,23 +68,11 @@ export default function SignupPage() {
           next.fullName = "Must be at least 2 characters";
         else delete next.fullName;
         break;
-      case "username":
-        if (!value.trim()) next.username = "Username is required";
-        else if (!/^[a-zA-Z0-9_]{3,20}$/.test(value))
-          next.username = "3-20 chars, letters/numbers/underscores";
-        else delete next.username;
-        break;
       case "email":
         if (!value.trim()) next.email = "Email is required";
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
           next.email = "Invalid email address";
         else delete next.email;
-        break;
-      case "contact":
-        if (!value.trim()) next.contact = "Phone number is required";
-        else if (!/^[0-9]{10}$/.test(value.replace(/\D/g, "")))
-          next.contact = "Enter a valid 10-digit number";
-        else delete next.contact;
         break;
       case "password":
         if (!value) next.password = "Password is required";
@@ -111,43 +91,87 @@ export default function SignupPage() {
     setErrors(next);
   };
 
-  const checkUsernameAvailability = async (username) => {
-    if (!username || !/^[a-zA-Z0-9_]{3,20}$/.test(username)) return;
-    try {
-      setUsernameChecking(true);
-      const res = await axios.post("/api/auth/check-username", { username });
-      setUsernameAvailable(res.data.available);
-      if (!res.data.available)
-        setErrors((p) => ({ ...p, username: "Username already taken" }));
-    } catch {
-      /* silent */
-    } finally {
-      setUsernameChecking(false);
+
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!form.fullName.trim()) {
+      nextErrors.fullName = "Full name is required";
+    } else if (form.fullName.trim().length < 2) {
+      nextErrors.fullName = "Must be at least 2 characters";
     }
+
+    if (!form.email.trim()) {
+      nextErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      nextErrors.email = "Invalid email address";
+    }
+
+    if (!form.password) {
+      nextErrors.password = "Password is required";
+    } else if (form.password.length < 6) {
+      nextErrors.password = "At least 6 characters";
+    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(form.password)) {
+      nextErrors.password = "Must contain letters and numbers";
+    }
+
+    if (!form.confirmPassword) {
+      nextErrors.confirmPassword = "Please confirm your password";
+    } else if (form.confirmPassword !== form.password) {
+      nextErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setTouched({
+      fullName: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
+    setErrors(nextErrors);
+
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!usernameAvailable) {
-      toast.error("Please check username availability");
-      return;
-    }
-    if (Object.keys(errors).length > 0) {
+    const isValid = validateForm();
+    if (!isValid) {
       toast.error("Please fix all errors");
       return;
     }
     setIsSubmitting(true);
     try {
-      const res = await axios.post("/api/auth/signup", form);
+      const payload = {
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        password: form.password,
+      };
+
+      const res = await axios.post("/api/auth/signup", payload);
       if (res.data.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Account created successfully");
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 500);
+        router.replace("/dashboard");
+        return;
       }
+      toast.error("Signup failed. Please try again.");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Signup failed");
+      const apiErrors = err.response?.data?.errors;
+      if (apiErrors && typeof apiErrors === "object") {
+        setErrors((prev) => ({ ...prev, ...apiErrors }));
+        setTouched({
+          fullName: true,
+          email: true,
+          password: true,
+          confirmPassword: true,
+        });
+      }
+      toast.error(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Signup failed",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -171,29 +195,12 @@ export default function SignupPage() {
       delay: 0.08,
     },
     {
-      name: "username",
-      label: "Username",
-      type: "text",
-      placeholder: "john_doe",
-      icon: User,
-      delay: 0.12,
-      hasCheck: true,
-    },
-    {
       name: "email",
       label: "Email Address",
       type: "email",
       placeholder: "you@example.com",
       icon: Mail,
-      delay: 0.16,
-    },
-    {
-      name: "contact",
-      label: "Phone Number",
-      type: "tel",
-      placeholder: "+91 9876543210",
-      icon: Phone,
-      delay: 0.2,
+      delay: 0.12,
     },
     {
       name: "password",
@@ -201,7 +208,7 @@ export default function SignupPage() {
       type: "password",
       placeholder: "••••••••",
       icon: Lock,
-      delay: 0.24,
+      delay: 0.16,
       isPassword: true,
       showToggle: showPassword,
       setShowToggle: setShowPassword,
@@ -212,7 +219,7 @@ export default function SignupPage() {
       type: "password",
       placeholder: "••••••••",
       icon: Lock,
-      delay: 0.28,
+      delay: 0.2,
       isPassword: true,
       showToggle: showConfirmPassword,
       setShowToggle: setShowConfirmPassword,
@@ -298,16 +305,6 @@ export default function SignupPage() {
                           <Eye className="w-4 h-4" />
                         )}
                       </button>
-                    ) : field.hasCheck ? (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {usernameChecking ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-                        ) : usernameAvailable ? (
-                          <CheckCircle className="w-4 h-4 text-emerald-400" />
-                        ) : usernameAvailable === false ? (
-                          <div className="w-4 h-4 rounded-full bg-rose-500" />
-                        ) : null}
-                      </div>
                     ) : null}
                   </div>
                   {hasError && (
@@ -315,11 +312,7 @@ export default function SignupPage() {
                       {errors[field.name]}
                     </p>
                   )}
-                  {field.hasCheck && usernameAvailable && (
-                    <p className="text-emerald-400 text-xs mt-1">
-                      ✓ Username is available
-                    </p>
-                  )}
+
                 </motion.div>
               );
             })}
@@ -331,7 +324,7 @@ export default function SignupPage() {
               transition={{ delay: 0.32 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={isSubmitting || !usernameAvailable}
+              disabled={isSubmitting}
               className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 shadow-lg shadow-indigo-950/50"
             >
               {isSubmitting ? (

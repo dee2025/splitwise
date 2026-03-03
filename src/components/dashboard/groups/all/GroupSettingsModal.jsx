@@ -5,6 +5,7 @@ import { getGroupTypeConfig } from "@/utils/groupUtils";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  CloudCog,
   Crown,
   Edit,
   Loader2,
@@ -18,6 +19,18 @@ import {
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+function getDisplayName(entity) {
+  return (
+    entity?.fullName ||
+    entity?.userId?.fullName ||
+    entity?.name ||
+    entity?.userId?.name ||
+    entity?.username ||
+    entity?.userId?.username ||
+    "Unknown User"
+  );
+}
+
 export default function GroupSettingsModal({
   group,
   onClose,
@@ -25,6 +38,7 @@ export default function GroupSettingsModal({
   onGroupDeleted,
   currentUser,
 }) {
+  console.log("Rendering GroupSettingsModal for group:", group);
   const [editForm, setEditForm] = useState({
     name: group.name,
     description: group.description || "",
@@ -93,7 +107,7 @@ export default function GroupSettingsModal({
       onGroupUpdated(res.data.group);
       setSearchQuery("");
       setSearchResults([]);
-      toast.success(`Added ${user.fullName || user.name} to group`);
+      toast.success(`Added ${getDisplayName(user)} to group`);
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to add member");
     }
@@ -271,12 +285,12 @@ export default function GroupSettingsModal({
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-medium">
-                            {(user.fullName || user.name)
+                            {getDisplayName(user)
                               ?.charAt(0)
                               .toUpperCase()}
                           </div>
                           <span className="text-sm text-gray-700">
-                            {user.fullName || user.name}
+                            {getDisplayName(user)}
                           </span>
                         </div>
                         <Plus size={14} className="text-gray-400" />
@@ -319,12 +333,12 @@ export default function GroupSettingsModal({
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-xs text-white font-medium">
-                      {(member.name || member.fullName)
+                      {getDisplayName(member)
                         ?.charAt(0)
                         .toUpperCase()}
                     </div>
                     <span className="text-sm text-gray-700">
-                      {member.name || member.fullName}
+                      {getDisplayName(member)}
                     </span>
                     {member.role === "admin" && (
                       <Crown size={12} className="text-yellow-600" />

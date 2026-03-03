@@ -4,23 +4,100 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { generateToken, setTokenCookie } from "@/lib/auth";
 
+// Generate unique username from fullName
+async function generateUniqueUsername(fullName) {
+  // Create base username from fullName: remove spaces, lowercase, keep only alphanumeric + underscore
+  const baseUsername = fullName
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 15); // Leave room for random suffix
+
+  if (!baseUsername) {
+    // Fallback if name has no valid characters
+    return `user_${Date.now()}`;
+  }
+
+  // Check if base username exists
+  let finalUsername = baseUsername;
+  let counter = 1;
+
+  while (await User.findOne({ username: finalUsername }).select("_id")) {
+    finalUsername = `${baseUsername}_${counter}`;
+    counter++;
+  }
+
+  return finalUsername;
+}
+
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
 
-    const { fullName, username, email, contact, password, confirmPassword } = body;
+    const { fullName, email, password, confirmPassword } = body;
 
-    // ... (keep your existing validation logic)
+    const normalizedFullName = fullName?.trim() || "";
+    const normalizedEmail = email?.toLowerCase().trim() || "";
+
+    const errors = {};
+
+    if (!normalizedFullName) {
+      errors.fullName = "Full name is required";
+    } else if (normalizedFullName.length < 2) {
+      errors.fullName = "Full name must be at least 2 characters";
+    }
+
+    if (!normalizedEmail) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!password) {
+      errors.password = "Password is required";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(password)) {
+      errors.password = "Password must include letters and numbers";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation failed",
+          errors,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email: normalizedEmail }).select("_id");
+
+    if (existingEmail) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Email is already registered",
+          errors: { email: "Email already registered" },
+        },
+        { status: 409 },
+      );
+    }
+
+    // Generate unique username
+    const generatedUsername = await generateUniqueUsername(normalizedFullName);
 
     // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const newUser = await User.create({
-      fullName: fullName.trim(),
-      username: username.toLowerCase().trim(),
-      email: email.toLowerCase().trim(),
-      contact: contact.trim(),
+      fullName: normalizedFullName,
+      username: generatedUsername,
+      email: normalizedEmail,
+      contact: "",
       password: hashedPassword,
     });
 
@@ -42,6 +119,7 @@ export async function POST(req) {
 
     // Create response
     const response = NextResponse.json({
+      success: true,
       message: "Account created successfully!",
       user: userResponse,
     }, { status: 201 });
@@ -53,7 +131,26 @@ export async function POST(req) {
 
   } catch (error) {
     console.error("Signup error:", error);
+
+    if (error?.code === 11000) {
+      const duplicateField = Object.keys(error.keyPattern || {})[0];
+      const duplicateMessages = {
+        username: "Username is already taken",
+        email: "Email is already registered",
+        contact: "Phone number is already registered",
+      };
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: duplicateMessages[duplicateField] || "Duplicate value not allowed",
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({ 
+      success: false,
       error: "Internal server error",
       message: "Something went wrong. Please try again later."
     }, { status: 500 });

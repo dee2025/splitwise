@@ -217,6 +217,7 @@ export default function ProfilePage() {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: "",
+    username: "",
     contact: "",
     bio: "",
   });
@@ -242,6 +243,7 @@ export default function ProfilePage() {
         setStats(res.data.stats);
         setEditForm({
           fullName: res.data.user.fullName,
+          username: res.data.user.username,
           contact: res.data.user.contact,
           bio: res.data.user.bio ?? "",
         });
@@ -259,17 +261,26 @@ export default function ProfilePage() {
       toast.error("Full name is required");
       return;
     }
+    if (!editForm.username.trim()) {
+      toast.error("Username is required");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(editForm.username)) {
+      toast.error("Username must be 3-20 chars (letters, numbers, underscore)");
+      return;
+    }
     setSavingInfo(true);
     try {
       const res = await axios.put("/api/users/profile", {
         fullName: editForm.fullName.trim(),
+        username: editForm.username.trim(),
         contact: editForm.contact.trim(),
         bio: editForm.bio.trim(),
       });
       const updated = res.data.user;
       setProfile((prev) => ({ ...prev, ...updated }));
       dispatch(
-        updateUser({ fullName: updated.fullName, contact: updated.contact }),
+        updateUser({ fullName: updated.fullName, username: updated.username, username: updated.username, contact: updated.contact }),
       );
       toast.success("Profile updated!");
       setEditMode(false);
@@ -283,6 +294,7 @@ export default function ProfilePage() {
   const handleCancelEdit = () => {
     setEditForm({
       fullName: profile.fullName,
+      username: profile.username,
       contact: profile.contact,
       bio: profile.bio ?? "",
     });
@@ -410,7 +422,7 @@ export default function ProfilePage() {
                 </p>
                 {profile?.bio && (
                   <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto italic">
-                    "{profile.bio}"
+                    &ldquo;{profile.bio}&rdquo;
                   </p>
                 )}
               </div>
@@ -484,10 +496,12 @@ export default function ProfilePage() {
               icon={User}
               label="Username"
               name="username"
-              value={profile?.username || ""}
-              onChange={() => {}}
-              disabled
-              hint="Username cannot be changed"
+              value={editMode ? editForm.username : profile?.username || ""}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, username: e.target.value }))
+              }
+              disabled={!editMode}
+              hint={editMode ? "3-20 chars, letters/numbers/underscore" : undefined}
             />
             <InputRow
               icon={Phone}

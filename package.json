@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "migrate:notifications:dry": "node --env-file=.env.local scripts/normalize-notifications.mjs --dry-run",
-    "migrate:notifications": "node --env-file=.env.local scripts/normalize-notifications.mjs"
+    "migrate:notifications": "node --env-file=.env.local scripts/normalize-notifications.mjs",
+    "db:purge:keep-users:dry": "node --env-file=.env.local scripts/purge-keep-users.mjs --dry-run",
+    "db:purge:keep-users": "node --env-file=.env.local scripts/purge-keep-users.mjs --apply"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.0",
