@@ -80,7 +80,7 @@ export default function LandingUseCases() {
             Works for any shared expense scenario
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Whether planned or spontaneous, group or recurring—Splitwise handles
+            Whether planned or spontaneous, group or recurring—Money Split handles
             it all.
           </p>
         </motion.div>

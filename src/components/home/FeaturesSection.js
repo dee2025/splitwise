@@ -64,7 +64,7 @@ export default function FeaturesSection() {
           >
             <span className="block mb-2">Why choose</span>
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              SplitWise
+              Money Split
             </span>
           </motion.h2>
           <motion.p

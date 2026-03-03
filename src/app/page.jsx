@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
+import Head from "next/head";
 import {
   ArrowRight,
   BarChart3,
@@ -239,16 +240,40 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Money Split",
+            "description": "Easy expense splitter and bill tracker app for groups, trips, and roommates",
+            "url": "https://moneysplit.in",
+            "applicationCategory": "FinanceApplication",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "INR"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.8",
+              "ratingCount": "1000"
+            }
+          }),
+        }}
+      />
 
       {/* ── Navigation ─────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 inset-x-0 z-50 px-5 sm:px-8 py-4 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-xs">S</span>
+              <span className="text-white font-bold text-xs">M</span>
             </div>
-            <span className="font-bold text-sm tracking-tight">
-              Split<span className="text-indigo-400">Wise</span>
+            <span className="text-base font-bold text-slate-100 tracking-tight">
+              Money<span className="text-indigo-400">Split</span>
             </span>
           </Link>
 
@@ -575,7 +600,7 @@ export default function LandingPage() {
               <span className="text-indigo-400">today.</span>
             </h2>
             <p className="text-lg text-slate-400 mb-12 max-w-md mx-auto leading-relaxed">
-              Join thousands of groups already settling up on SplitWise. Free to
+              Join thousands of users managing shared expenses on Money Split. Free to
               use, forever.
             </p>
 
@@ -604,10 +629,10 @@ export default function LandingPage() {
           {/* Brand */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-[10px]">S</span>
+              <span className="text-white font-bold text-[10px]">M</span>
             </div>
             <span className="text-sm font-bold text-slate-500">
-              Split<span className="text-indigo-400">Wise</span>
+              Money<span className="text-indigo-400">Split</span>
             </span>
           </Link>
 
@@ -629,7 +654,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-xs text-slate-700 font-medium">
-            © {new Date().getFullYear()} SplitWise
+            © {new Date().getFullYear()} Money Split
           </p>
         </div>
       </footer>

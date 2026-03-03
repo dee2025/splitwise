@@ -1,7 +1,7 @@
 {
-  "name": "splitzy",
-  "version": "0.1.0",
-  "private": true,
+  "name": "money-split",
+  "version": "0.2.0",
+  "description": "Money Split - Easy expense splitting and bill tracking app for groups and shared costs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -24,6 +24,7 @@
     "next": "16.1.6",
     "next-auth": "^4.24.13",
     "next-themes": "^0.4.6",
+    "nodemailer": "^7.0.13",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-hot-toast": "^2.6.0",

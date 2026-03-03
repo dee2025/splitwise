@@ -117,7 +117,7 @@ export default function HowItWorks() {
                 Ready to split smarter?
               </h3>
               <p className="text-blue-100">
-                Join thousands of travelers and groups already using SplitWise.
+                Join thousands of travelers and groups already using Money Split.
               </p>
             </div>
             <a

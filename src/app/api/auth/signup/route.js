@@ -3,6 +3,7 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { generateToken, setTokenCookie } from "@/lib/auth";
+import { sendWelcomeEmail } from "@/lib/mailer";
 
 // Generate unique username from fullName
 async function generateUniqueUsername(fullName) {
@@ -126,6 +127,13 @@ export async function POST(req) {
 
     // Set HTTP-only cookie
     setTokenCookie(response, token);
+
+    // Send welcome email in background (non-blocking — never fails the signup)
+    sendWelcomeEmail({
+      to: newUser.email,
+      fullName: newUser.fullName,
+      username: newUser.username,
+    }).catch((err) => console.error("Welcome email failed:", err.message));
 
     return response;
 

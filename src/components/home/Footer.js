@@ -148,7 +148,7 @@ export default function Footer() {
             {/* Bottom Section */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-xs sm:text-sm text-gray-600">
-                © {currentYear} SplitWise. Built with love for friends and
+                © {currentYear} Money Split. Built with love for friends and
                 travelers.
               </p>
               <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-600">

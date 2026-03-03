@@ -66,7 +66,7 @@ export default function LandingAppAvailability() {
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Web App</h3>
             <p className="text-slate-600 mb-6 text-sm">
-              Access Splitwise from any browser. Full features, responsive
+              Access Money Split from any browser. Full features, responsive
               design, works perfectly on desktop and tablet.
             </p>
             <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 transition-colors text-sm">

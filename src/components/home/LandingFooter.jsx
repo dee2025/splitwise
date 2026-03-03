@@ -14,7 +14,7 @@ export default function LandingFooter() {
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">S</span>
               </div>
-              <span className="font-bold text-white">Splitwise</span>
+              <span className="font-bold text-white">Money Split</span>
             </div>
             <p className="text-sm leading-relaxed">
               Split expenses fairly, track balances clearly, and settle up with
@@ -109,7 +109,7 @@ export default function LandingFooter() {
 
         {/* Bottom footer */}
         <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-slate-400">
-          <p>&copy; 2026 Splitwise. All rights reserved.</p>
+          <p>&copy; 2026 Money Split. All rights reserved.</p>
           <div className="flex items-center gap-4 mt-4 sm:mt-0">
             <Link href="#" className="hover:text-slate-300 transition-colors">
               Twitter
