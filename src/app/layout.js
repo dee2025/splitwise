@@ -1,6 +1,7 @@
 // app/layout.js
 import { Providers } from "@/redux/Providers";
 import GlobalAddExpenseModal from "@/components/global/GlobalAddExpenseModal";
+import WebsiteShell from "@/components/site/WebsiteShell";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
@@ -17,6 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://moneysplit.in"),
   title: "Money Split - Easy Bill Splitting & Expense Tracking App",
   description: "Split bills with friends, roommates, and travel groups without drama. Track shared expenses, settle up instantly with optimal algorithms. Free expense splitter app for groups.",
   keywords: "bill splitter, expense tracker, split bills, money management, group expenses, travel expenses, roommate expenses, settle debts",
@@ -57,6 +59,9 @@ export const metadata = {
   alternates: {
     canonical: "https://moneysplit.in",
   },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || "",
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -68,7 +73,7 @@ export default function RootLayout({ children }) {
         <Toaster position="top-right" />
         <Providers>
           <ThemeProvider>
-            {children}
+            <WebsiteShell>{children}</WebsiteShell>
             <GlobalAddExpenseModal />
           </ThemeProvider>
         </Providers>
