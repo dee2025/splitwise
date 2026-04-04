@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import Script from "next/script";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -30,18 +31,20 @@ export default function SignupPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const [form, setForm] = useState({
     fullName: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleButtonRef = useRef(null);
 
   useEffect(() => {
     if (isAuthenticated) router.push("/dashboard");
@@ -81,12 +84,6 @@ export default function SignupPage() {
           next.password = "Must contain letters and numbers";
         else delete next.password;
         break;
-      case "confirmPassword":
-        if (!value) next.confirmPassword = "Please confirm your password";
-        else if (value !== form.password)
-          next.confirmPassword = "Passwords do not match";
-        else delete next.confirmPassword;
-        break;
     }
     setErrors(next);
   };
@@ -116,17 +113,10 @@ export default function SignupPage() {
       nextErrors.password = "Must contain letters and numbers";
     }
 
-    if (!form.confirmPassword) {
-      nextErrors.confirmPassword = "Please confirm your password";
-    } else if (form.confirmPassword !== form.password) {
-      nextErrors.confirmPassword = "Passwords do not match";
-    }
-
     setTouched({
       fullName: true,
       email: true,
       password: true,
-      confirmPassword: true,
     });
     setErrors(nextErrors);
 
@@ -164,7 +154,6 @@ export default function SignupPage() {
           fullName: true,
           email: true,
           password: true,
-          confirmPassword: true,
         });
       }
       toast.error(
@@ -176,6 +165,63 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleGoogleCredential = useCallback(async (googleResponse) => {
+    const credential = googleResponse?.credential;
+    if (!credential) {
+      toast.error("Google sign up failed. Please try again.");
+      return;
+    }
+
+    setGoogleLoading(true);
+    try {
+      const res = await axios.post("/api/auth/google-login", { credential });
+      if (res.data?.success) {
+        dispatch(loginSuccess({ user: res.data.user }));
+        toast.success("Signed up with Google successfully");
+        router.replace("/dashboard");
+        return;
+      }
+      toast.error("Google sign up failed. Please try again.");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Google sign up failed.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [dispatch, router]);
+
+  const initGoogleButton = useCallback(() => {
+    if (!googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+
+    googleButtonRef.current.innerHTML = "";
+    window.google.accounts.id.renderButton(googleButtonRef.current, {
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "pill",
+      width: 350,
+    });
+    setGoogleReady(true);
+  }, [googleClientId, handleGoogleCredential]);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    if (window.google?.accounts?.id) {
+      initGoogleButton();
+    }
+  }, [googleClientId, initGoogleButton]);
 
   if (isAuthenticated) {
     return (
@@ -213,21 +259,18 @@ export default function SignupPage() {
       showToggle: showPassword,
       setShowToggle: setShowPassword,
     },
-    {
-      name: "confirmPassword",
-      label: "Confirm Password",
-      type: "password",
-      placeholder: "••••••••",
-      icon: Lock,
-      delay: 0.2,
-      isPassword: true,
-      showToggle: showConfirmPassword,
-      setShowToggle: setShowConfirmPassword,
-    },
   ];
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
+      {googleClientId ? (
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onLoad={initGoogleButton}
+        />
+      ) : null}
+
       <Link
         href="/"
         className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-200 transition-colors text-sm font-medium"
@@ -260,6 +303,37 @@ export default function SignupPage() {
               Join thousands splitting expenses smarter
             </p>
           </div>
+
+          {googleClientId ? (
+            <div className="mb-5">
+              <div
+                ref={googleButtonRef}
+                className="w-full min-h-11 flex items-center justify-center"
+              />
+              {!googleReady && (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white/90 text-slate-800 opacity-70"
+                >
+                  Continue with Google
+                </button>
+              )}
+              {googleLoading && (
+                <p className="text-xs text-slate-400 text-center mt-2">
+                  Signing up with Google...
+                </p>
+              )}
+
+              <div className="my-4 flex items-center gap-3">
+                <div className="flex-1 h-px bg-white/6" />
+                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                  or
+                </span>
+                <div className="flex-1 h-px bg-white/6" />
+              </div>
+            </div>
+          ) : null}
 
           {/* Form */}
           <form onSubmit={handleSignup} className="space-y-3.5">

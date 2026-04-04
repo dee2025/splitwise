@@ -4,6 +4,28 @@ import { generateUniqueUsername } from "@/lib/username";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
+function getEmailLocalPart(email) {
+  return (email || "").split("@")[0] || "user";
+}
+
+function getDisplayNameFromEmail(email) {
+  const localPart = getEmailLocalPart(email);
+  const words = localPart
+    .replace(/[._-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 4);
+
+  if (!words.length) {
+    return "User";
+  }
+
+  return words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
 async function verifyGoogleCredential(credential) {
   const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`;
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -65,17 +87,17 @@ export async function POST(request) {
     await connectDB();
 
     const normalizedEmail = googleData.email.toLowerCase().trim();
-    const fallbackName = normalizedEmail.split("@")[0];
-    const fullName = (googleData.name || fallbackName || "Google User").trim();
+    const emailLocalPart = getEmailLocalPart(normalizedEmail);
+    const fullNameFromEmail = getDisplayNameFromEmail(normalizedEmail);
 
     let user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      const usernameSeed = fullName || fallbackName;
+      const usernameSeed = emailLocalPart;
       const username = await generateUniqueUsername(usernameSeed);
 
       user = await User.create({
-        fullName,
+        fullName: fullNameFromEmail,
         email: normalizedEmail,
         username,
         password: null,
@@ -87,7 +109,7 @@ export async function POST(request) {
       let shouldSave = false;
 
       if (!user.username) {
-        user.username = await generateUniqueUsername(fullName || fallbackName);
+        user.username = await generateUniqueUsername(emailLocalPart);
         shouldSave = true;
       }
 
@@ -101,8 +123,8 @@ export async function POST(request) {
         shouldSave = true;
       }
 
-      if (!user.fullName && fullName) {
-        user.fullName = fullName;
+      if (!user.fullName && fullNameFromEmail) {
+        user.fullName = fullNameFromEmail;
         shouldSave = true;
       }
 
