@@ -177,25 +177,25 @@ export default function GroupSettingsModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         onClick={onClose}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-lg border-2 border-gray-400 shadow-sketch w-full max-w-md max-h-[80vh] overflow-y-auto "
+          className="bg-slate-800 rounded-2xl border border-white/8 shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-4">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4 border-b-2 border-dashed border-gray-300 pb-3">
-              <h3 className="text-lg font-bold text-gray-900">
+            <div className="flex items-center justify-between mb-4 border-b border-white/8 pb-3">
+              <h3 className="text-lg font-bold text-slate-100">
                 Group Settings
               </h3>
               <button
                 onClick={onClose}
-                className="p-1 border border-gray-400 rounded hover:border-black transition-colors"
+                className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
               >
                 <X size={16} />
               </button>
@@ -204,7 +204,7 @@ export default function GroupSettingsModal({
             {/* Edit Group Form */}
             <form onSubmit={handleUpdateGroup} className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Group Name
                 </label>
                 <input
@@ -216,12 +216,12 @@ export default function GroupSettingsModal({
                       name: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded focus:outline-none focus:border-black transition-all duration-150"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Description
                 </label>
                 <textarea
@@ -233,13 +233,13 @@ export default function GroupSettingsModal({
                     }))
                   }
                   rows={3}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded focus:outline-none focus:border-black transition-all duration-150 resize-none"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium shadow-sketch-sm"
+                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg border border-indigo-500 hover:bg-indigo-500 transition-all duration-150 font-medium"
               >
                 <Edit size={16} />
                 Update Group
@@ -247,24 +247,24 @@ export default function GroupSettingsModal({
             </form>
 
             {/* Add Member Section */}
-            <div className="space-y-3 mb-6 p-3 bg-gray-50 rounded border border-gray-300">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2">
+            <div className="space-y-3 mb-6 p-3 bg-slate-700/30 rounded-lg border border-white/8">
+              <h4 className="font-medium text-slate-100 flex items-center gap-2">
                 <UserPlus size={16} />
                 Add Member
               </h4>
 
               {/* Search for registered users */}
               <div className="relative">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
                 <input
                   type="text"
                   placeholder="Search registered users..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-400 rounded focus:outline-none focus:border-black transition-all duration-150 text-sm"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
                 {isSearching && (
-                  <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 animate-spin" />
+                  <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 animate-spin" />
                 )}
               </div>
 
@@ -275,25 +275,25 @@ export default function GroupSettingsModal({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="border border-gray-200 rounded bg-white overflow-hidden"
+                    className="border border-white/10 rounded-lg bg-slate-800 overflow-hidden"
                   >
                     {searchResults.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        className="flex items-center justify-between p-2 hover:bg-slate-700/40 cursor-pointer border-b border-white/8 last:border-b-0"
                         onClick={() => handleAddMember(user)}
                       >
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-medium">
+                          <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-medium">
                             {getDisplayName(user)
                               ?.charAt(0)
                               .toUpperCase()}
                           </div>
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-slate-200">
                             {getDisplayName(user)}
                           </span>
                         </div>
-                        <Plus size={14} className="text-gray-400" />
+                        <Plus size={14} className="text-slate-400" />
                       </div>
                     ))}
                   </motion.div>
@@ -310,11 +310,11 @@ export default function GroupSettingsModal({
                   placeholder="Add custom member name"
                   value={newMemberName}
                   onChange={(e) => setNewMemberName(e.target.value)}
-                  className="flex-1 px-3 py-1.5 border-2 border-gray-400 rounded focus:outline-none focus:border-black transition-all duration-150 text-sm"
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
                 <button
                   type="submit"
-                  className="bg-black text-white px-3 py-1.5 rounded border-2 border-black hover:bg-gray-800 transition-all duration-150 font-medium text-sm shadow-sketch-sm"
+                  className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg border border-indigo-500 hover:bg-indigo-500 transition-all duration-150 font-medium text-sm"
                 >
                   Add
                 </button>
@@ -323,28 +323,28 @@ export default function GroupSettingsModal({
 
             {/* Members List */}
             <div className="space-y-2 mb-6">
-              <h4 className="font-medium text-gray-900 mb-3">
+              <h4 className="font-medium text-slate-100 mb-3">
                 Members ({memberCount})
               </h4>
               {group.members?.map((member) => (
                 <div
                   key={member._id}
-                  className="flex items-center justify-between p-2 bg-white rounded border border-gray-300"
+                  className="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg border border-white/8"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-xs text-white font-medium">
+                    <div className="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-xs text-white font-medium">
                       {getDisplayName(member)
                         ?.charAt(0)
                         .toUpperCase()}
                     </div>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-slate-200">
                       {getDisplayName(member)}
                     </span>
                     {member.role === "admin" && (
-                      <Crown size={12} className="text-yellow-600" />
+                      <Crown size={12} className="text-amber-400" />
                     )}
                     {member.type === "custom" && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+                      <span className="text-xs bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">
                         External
                       </span>
                     )}
@@ -352,7 +352,7 @@ export default function GroupSettingsModal({
                   {member.role !== "admin" && (
                     <button
                       onClick={() => handleRemoveMember(member._id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="p-1 text-rose-300 hover:bg-rose-500/20 rounded transition-colors"
                     >
                       <UserMinus size={14} />
                     </button>
@@ -362,11 +362,11 @@ export default function GroupSettingsModal({
             </div>
 
             {/* Danger Zone */}
-            <div className="border-t-2 border-dashed border-gray-300 pt-4">
-              <h4 className="font-medium text-red-600 mb-3">Danger Zone</h4>
+            <div className="border-t border-white/8 pt-4">
+              <h4 className="font-medium text-rose-400 mb-3">Danger Zone</h4>
               <button
                 onClick={handleDeleteGroup}
-                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded border-2 border-red-600 hover:bg-red-700 transition-all duration-150 font-medium shadow-sketch-sm w-full justify-center"
+                className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-lg border border-rose-500 hover:bg-rose-500 transition-all duration-150 font-medium w-full justify-center"
               >
                 <Trash2 size={16} />
                 Delete Group

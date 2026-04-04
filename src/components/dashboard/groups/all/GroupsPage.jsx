@@ -75,6 +75,15 @@ export default function GroupsPage() {
 
   const handleSettingsClick = (group, e) => {
     e.stopPropagation();
+
+    const currentUserId = String(user?._id || user?.id || "");
+    const isAdmin = (group?.members || []).some((member) => {
+      const memberId = String(member?.userId?._id || member?.userId || "");
+      return memberId === currentUserId && member?.role === "admin";
+    });
+
+    if (!isAdmin) return;
+
     setSelectedGroup(group);
     setShowSettingsModal(true);
   };

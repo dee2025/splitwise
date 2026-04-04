@@ -76,6 +76,7 @@ export default function GlobalAddExpenseModal() {
   const [groups, setGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [lockGroupSelection, setLockGroupSelection] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingGroupDetails, setLoadingGroupDetails] = useState(false);
 
@@ -91,6 +92,13 @@ export default function GlobalAddExpenseModal() {
   const [customSplitAmounts, setCustomSplitAmounts] = useState({});
 
   const shouldHideLauncher = pathname === "/login" || pathname === "/signup";
+  const routeGroupId = useMemo(() => {
+    const parts = (pathname || "").split("/").filter(Boolean);
+    if (parts.length >= 2 && parts[0] === "groups" && parts[1]) {
+      return parts[1];
+    }
+    return "";
+  }, [pathname]);
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group._id === selectedGroupId),
@@ -126,6 +134,7 @@ export default function GlobalAddExpenseModal() {
   const resetState = () => {
     setStep(1);
     setSelectedGroupId("");
+    setLockGroupSelection(false);
     setFormData({
       description: "",
       amount: "",
@@ -164,14 +173,16 @@ export default function GlobalAddExpenseModal() {
   useEffect(() => {
     const handler = (event) => {
       const preselectedGroupId = event?.detail?.groupId;
+      const nextGroupId = preselectedGroupId || routeGroupId || "";
       setIsOpen(true);
-      setStep(1);
-      setSelectedGroupId(preselectedGroupId || "");
+      setStep(nextGroupId ? 2 : 1);
+      setSelectedGroupId(nextGroupId);
+      setLockGroupSelection(Boolean(nextGroupId));
     };
 
     window.addEventListener("splitzy:open-add-expense", handler);
     return () => window.removeEventListener("splitzy:open-add-expense", handler);
-  }, []);
+  }, [routeGroupId]);
 
   useEffect(() => {
     if (!members.length) {
@@ -347,7 +358,17 @@ export default function GlobalAddExpenseModal() {
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          if (routeGroupId) {
+            setSelectedGroupId(routeGroupId);
+            setStep(2);
+            setLockGroupSelection(true);
+          } else {
+            setStep(1);
+            setLockGroupSelection(false);
+          }
+        }}
         className="fixed right-4 sm:right-6 bottom-24 sm:bottom-6 z-40 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg shadow-indigo-950/50 border border-indigo-500/50 p-3.5 transition-colors"
         aria-label="Add expense"
       >
@@ -691,14 +712,16 @@ export default function GlobalAddExpenseModal() {
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-300 bg-white/5 border border-white/8 hover:bg-white/8 transition-colors"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back
-                    </button>
+                    {lockGroupSelection ? <span /> : (
+                      <button
+                        type="button"
+                        onClick={() => setStep(1)}
+                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-300 bg-white/5 border border-white/8 hover:bg-white/8 transition-colors"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                      </button>
+                    )}
 
                     <button
                       type="submit"

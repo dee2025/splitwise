@@ -17,6 +17,18 @@ function getDisplayName(member) {
   );
 }
 
+function getNormalizedId(value) {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    if (value._id) return String(value._id);
+    if (value.id) return String(value.id);
+  }
+  return "";
+}
+
 export default function GroupCard({
   group,
   index,
@@ -36,9 +48,9 @@ export default function GroupCard({
   const IconComponent = config.icon;
 
   // Check if current user is admin
+  const currentUserId = getNormalizedId(currentUser);
   const isAdmin = group.members?.some((member) => {
-    const memberId = member.userId?._id || member.userId;
-    const currentUserId = currentUser?._id || currentUser?.id;
+    const memberId = getNormalizedId(member?.userId || member);
     return memberId === currentUserId && member.role === "admin";
   });
 

@@ -12,10 +12,13 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  Download,
   FileText,
   Flag,
   IndianRupee,
   Loader,
+  Mail,
+  MessageCircle,
   Music,
   Pencil,
   Plane,
@@ -23,6 +26,7 @@ import {
   Plus,
   Receipt,
   Save,
+  Share2,
   ShoppingBag,
   Trash2,
   UserPlus,
@@ -82,6 +86,99 @@ function getNormalizedId(value) {
   return "";
 }
 
+function round2(value) {
+  return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+}
+
+function formatReportDate(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "Unknown Date";
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function buildSettlementPlan(expenses = []) {
+  const balances = {};
+
+  for (const expense of expenses) {
+    const paidById = getNormalizedId(expense?.paidBy?._id || expense?.paidBy);
+    const amount = Number(expense?.amount || 0);
+
+    if (paidById && Number.isFinite(amount) && amount > 0) {
+      balances[paidById] = round2((balances[paidById] || 0) + amount);
+    }
+
+    for (const split of expense?.splitBetween || []) {
+      const splitUserId = getNormalizedId(split?.userId);
+      const splitAmount = Number(split?.amount || 0);
+      if (!splitUserId || !Number.isFinite(splitAmount)) continue;
+
+      balances[splitUserId] = round2((balances[splitUserId] || 0) - splitAmount);
+    }
+  }
+
+  const creditors = [];
+  const debtors = [];
+
+  for (const [userId, amount] of Object.entries(balances)) {
+    const normalized = round2(amount);
+    if (normalized > 0.01) creditors.push({ userId, amount: normalized });
+    if (normalized < -0.01) debtors.push({ userId, amount: Math.abs(normalized) });
+  }
+
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
+
+  const settlements = [];
+  let debtorIndex = 0;
+  let creditorIndex = 0;
+
+  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+    const debtor = debtors[debtorIndex];
+    const creditor = creditors[creditorIndex];
+
+    const settledAmount = round2(Math.min(debtor.amount, creditor.amount));
+    if (settledAmount > 0.01) {
+      settlements.push({
+        from: debtor.userId,
+        to: creditor.userId,
+        amount: settledAmount,
+      });
+    }
+
+    debtor.amount = round2(debtor.amount - settledAmount);
+    creditor.amount = round2(creditor.amount - settledAmount);
+
+    if (debtor.amount <= 0.01) debtorIndex += 1;
+    if (creditor.amount <= 0.01) creditorIndex += 1;
+  }
+
+  return settlements;
+}
+
+async function loadImageToDataUrl(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve("");
+        return;
+      }
+      ctx.drawImage(image, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    image.onerror = () => resolve("");
+    image.src = src;
+  });
+}
+
 export default function GroupPage() {
   const params = useParams();
   const router = useRouter();
@@ -95,6 +192,12 @@ export default function GroupPage() {
   const [completingTrip, setCompletingTrip] = useState(false);
   const [debts, setDebts] = useState([]);
   const [loadingDebts, setLoadingDebts] = useState(true);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [reportShare, setReportShare] = useState({
+    open: false,
+    file: null,
+    fileName: "",
+  });
   const [activeTab, setActiveTab] = useState("activity"); // "members" | "settlements" | "activity"
 
   const groupId = params.groupId;
@@ -188,12 +291,293 @@ export default function GroupPage() {
       const res = await axios.put(`/api/groups/complete-trip`, { groupId });
       setGroup(res.data.group);
       toast.success("Trip completed! Time to settle up!");
-      setActiveTab("settlements");
+      // setActiveTab("settlements");
+      setActiveTab("activity");
     } catch (error) {
       console.error("Error completing trip:", error);
       toast.error(error.response?.data?.message || "Failed to complete trip");
     } finally {
       setCompletingTrip(false);
+    }
+  };
+
+  const handleDownloadActivityPdf = async () => {
+    if (!group) return;
+    if (!expenses?.length) {
+      toast.error("No activity available to export");
+      return;
+    }
+
+    try {
+      setDownloadingPdf(true);
+
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+
+      const memberNameMap = new Map();
+      for (const member of group?.members || []) {
+        const memberId = getNormalizedId(member?.userId || member);
+        if (!memberId) continue;
+        memberNameMap.set(memberId, getMemberName(member));
+      }
+
+      const displayNameFromId = (id) => memberNameMap.get(String(id)) || "Unknown";
+
+      const reportDate = new Date();
+      const sortedExpenses = [...expenses].sort(
+        (a, b) => new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt),
+      );
+
+      const groupedByDate = sortedExpenses.reduce((acc, expense) => {
+        const keyDate = new Date(expense.date || expense.createdAt);
+        if (Number.isNaN(keyDate.getTime())) return acc;
+
+        const key = keyDate.toISOString().slice(0, 10);
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(expense);
+        return acc;
+      }, {});
+
+      const overallDebts =
+        debts?.length > 0
+          ? debts.map((d) => ({
+              fromName: d.fromUser || "Unknown",
+              toName: d.toUser || "Unknown",
+              amount: Number(d.amount || 0),
+            }))
+          : buildSettlementPlan(sortedExpenses).map((d) => ({
+              fromName: displayNameFromId(d.from),
+              toName: displayNameFromId(d.to),
+              amount: Number(d.amount || 0),
+            }));
+
+      const totalExpenseAmount = round2(
+        sortedExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
+      );
+
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Page 1: Branded summary/advertisement page
+      doc.setFillColor(30, 41, 59);
+      doc.roundedRect(24, 22, pageWidth - 48, 112, 12, 12, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.text("Money Split", 40, 54);
+
+      doc.setFontSize(12);
+      doc.setTextColor(224, 231, 255);
+      doc.text("Split smart. Settle fast. Stay stress free.", 40, 74);
+      doc.setTextColor(203, 213, 225);
+      doc.text(
+        "Money Split helps friends, roommates, and travel groups track shared expenses with full clarity.",
+        40,
+        94,
+      );
+      doc.text(
+        "This report gives a complete snapshot: overall pending settlements + date-wise activity details.",
+        40,
+        110,
+      );
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(17);
+      doc.text(`${group.name} - Group Activity Report`, 40, 166);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Generated on ${reportDate.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
+        40,
+        184,
+      );
+
+      autoTable(doc, {
+        startY: 198,
+        theme: "grid",
+        head: [["Overview", "Value"]],
+        body: [
+          ["Total activities (expenses)", `${sortedExpenses.length}`],
+          ["Total amount", `INR ${totalExpenseAmount.toFixed(2)}`],
+          ["Total members", `${group.members?.length || 0}`],
+          ["Pending overall settlements", `${overallDebts.length}`],
+        ],
+        styles: { fontSize: 10, cellPadding: 6 },
+        headStyles: { fillColor: [55, 65, 81] },
+        columnStyles: {
+          0: { cellWidth: 230 },
+          1: { cellWidth: 180 },
+        },
+      });
+
+      let cursorY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 16 : 320;
+
+      doc.setFontSize(13);
+      doc.setTextColor(20);
+      doc.text("Overall: Who Pays Whom (Till Date)", 40, cursorY);
+      cursorY += 8;
+
+      if (!overallDebts.length) {
+        doc.setFontSize(10);
+        doc.setTextColor(90);
+        doc.text("No pending settlements. Everyone is settled up.", 40, cursorY + 14);
+        cursorY += 26;
+      } else {
+        autoTable(doc, {
+          startY: cursorY,
+          theme: "striped",
+          head: [["From", "To", "Amount"]],
+          body: overallDebts.map((item) => [
+            item.fromName,
+            item.toName,
+            `INR ${Number(item.amount || 0).toFixed(2)}`,
+          ]),
+          styles: { fontSize: 10, cellPadding: 6 },
+          headStyles: { fillColor: [79, 70, 229] },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+        });
+        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 16;
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(90);
+      doc.text("Date-wise activity details start from the next page.", 40, cursorY + 10);
+
+      // Page 2 onward: strictly date-wise sections
+      doc.addPage();
+      cursorY = 50;
+
+      doc.setFontSize(16);
+      doc.setTextColor(30, 41, 59);
+      doc.text("Date-wise Activity Details", 40, cursorY);
+      cursorY += 20;
+
+      const dateKeys = Object.keys(groupedByDate).sort((a, b) => new Date(a) - new Date(b));
+
+      for (const dateKey of dateKeys) {
+        const dayExpenses = groupedByDate[dateKey] || [];
+        const dayTotal = round2(
+          dayExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
+        );
+
+        if (cursorY > 670) {
+          doc.addPage();
+          cursorY = 44;
+        }
+
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(36, cursorY - 14, pageWidth - 72, 24, 6, 6, "F");
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text(
+          `${formatReportDate(dateKey)}   |   Day Total: INR ${dayTotal.toFixed(2)}`,
+          44,
+          cursorY + 2,
+        );
+
+        autoTable(doc, {
+          startY: cursorY + 16,
+          theme: "grid",
+          head: [["#", "Paid By", "Amount", "Split Between"]],
+          body: dayExpenses.map((expense, index) => {
+            const payerName =
+              expense?.paidBy?.fullName ||
+              expense?.paidBy?.name ||
+              displayNameFromId(getNormalizedId(expense?.paidBy));
+
+            const splitNames = (expense?.splitBetween || [])
+              .map((split) => {
+                const splitId = getNormalizedId(split?.userId);
+                return (
+                  split?.userId?.fullName ||
+                  split?.userId?.name ||
+                  displayNameFromId(splitId)
+                );
+              })
+              .filter(Boolean)
+              .join(", ");
+
+            return [
+              `${index + 1}`,
+              payerName || "Unknown",
+              `INR ${Number(expense.amount || 0).toFixed(2)}`,
+              splitNames || "-",
+            ];
+          }),
+          styles: { fontSize: 9, cellPadding: 5, valign: "middle" },
+          headStyles: { fillColor: [51, 65, 85] },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          columnStyles: {
+            0: { cellWidth: 28 },
+            1: { cellWidth: 120 },
+            2: { cellWidth: 90 },
+            3: { cellWidth: "auto" },
+          },
+        });
+
+        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 12;
+
+        const daySettlements = buildSettlementPlan(dayExpenses);
+        const settlementRows = daySettlements.map((settlement) => [
+          displayNameFromId(settlement.from),
+          displayNameFromId(settlement.to),
+          `INR ${Number(settlement.amount || 0).toFixed(2)}`,
+        ]);
+
+        autoTable(doc, {
+          startY: cursorY,
+          theme: "striped",
+          head: [["Daily Settlement - From", "To", "Amount"]],
+          body:
+            settlementRows.length > 0
+              ? settlementRows
+              : [["No dues", "No dues", "INR 0.00"]],
+          styles: { fontSize: 9, cellPadding: 5 },
+          headStyles: { fillColor: [5, 150, 105] },
+          alternateRowStyles: { fillColor: [240, 253, 244] },
+        });
+
+        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 18;
+      }
+
+      const totalPages = doc.getNumberOfPages();
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+        doc.setPage(pageNumber);
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(`Prepared for ${group.name} • Money Split`, 40, pageHeight - 18);
+        doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - 110, pageHeight - 18);
+      }
+
+      const safeGroupName = (group.name || "group")
+        .replace(/[^a-z0-9]/gi, "-")
+        .toLowerCase();
+      const fileName = `${safeGroupName}-activity-report.pdf`;
+      const pdfBlob = doc.output("blob");
+      const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+      doc.save(fileName);
+      setReportShare({
+        open: true,
+        file: pdfFile,
+        fileName,
+      });
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -251,15 +635,35 @@ export default function GroupPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-1">
                   {group.name}
                 </h1>
-                {group.description && (
+                {/* {group.description && (
                   <p className="text-slate-400 text-sm truncate">
                     {group.description}
                   </p>
-                )}
+                )} */}
               </div>
+
+              <div className="shrink-0">
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ y: 1 }}
+                onClick={handleDownloadActivityPdf}
+                disabled={downloadingPdf || expenses.length === 0}
+                className="flex items-center gap-2 bg-slate-800 text-slate-100 px-3 py-2.5 rounded-lg border border-white/10 hover:bg-slate-700 transition-all duration-150 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                title="Download activity PDF report"
+              >
+                {downloadingPdf ? (
+                  <Loader size={16} className="animate-spin" />
+                ) : (
+                  <Download size={16} />
+                )}
+                {/* <span>Download PDF</span> */}
+              </motion.button>
+            </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            
+
+            {/* <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {group.tripStatus === "ongoing" &&
                 user._id === group.createdBy && (
                   <motion.button
@@ -299,7 +703,7 @@ export default function GroupPage() {
                 <span className="hidden sm:inline">Add Expense</span>
                 <span className="sm:hidden">Add</span>
               </motion.button>
-            </div>
+            </div> */}
           </div>
 
           {/* Group Stats */}
@@ -336,9 +740,9 @@ export default function GroupPage() {
             </motion.div>
           ) : (
             <div className="space-y-3">
-              <h2 className="text-lg font-bold text-slate-100 mb-4">
+              {/* <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Who Owes Who
-              </h2>
+              </h2> */}
               <div className="space-y-2">
                 {debts.map((debt, idx) => (
                   <motion.div
@@ -384,7 +788,7 @@ export default function GroupPage() {
           {/* Tabs Section */}
           <div className="mt-8 bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
             {/* Tab Headers */}
-            <div className="grid grid-cols-3 border-b border-white/8">
+            <div className="grid grid-cols-2 border-b border-white/8">
              <button
                 onClick={() => setActiveTab("activity")}
                 className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
@@ -413,10 +817,9 @@ export default function GroupPage() {
                   <span className="truncate">Members</span>
                 </div>
               </button>
-             
-             
 
-               <button
+              {/*
+              <button
                 onClick={() => setActiveTab("settlements")}
                 className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
                   activeTab === "settlements"
@@ -429,6 +832,7 @@ export default function GroupPage() {
                   <span className="truncate">Settlements</span>
                 </div>
               </button>
+              */}
             </div>
 
             {/* Tab Content */}
@@ -524,6 +928,19 @@ export default function GroupPage() {
               groupId={groupId}
               onClose={() => setShowAddMembers(false)}
               onMembersAdded={fetchGroupData}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {reportShare.open && (
+            <ReportShareModal
+              groupName={group.name}
+              fileName={reportShare.fileName}
+              file={reportShare.file}
+              onClose={() =>
+                setReportShare({ open: false, file: null, fileName: "" })
+              }
             />
           )}
         </AnimatePresence>
@@ -1595,6 +2012,11 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [openInEditMode, setOpenInEditMode] = useState(false);
   const [deletingExpenseId, setDeletingExpenseId] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    open: false,
+    expenseId: "",
+    title: "",
+  });
 
   const currentUserId = getNormalizedId(currentUser);
   const isGroupAdmin = (group?.members || []).some((member) => {
@@ -1703,20 +2125,34 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
     return Boolean(currentUserId && (payerId === currentUserId || isGroupAdmin));
   };
 
-  const handleDeleteFromList = async (item, event) => {
+  const requestDeleteFromList = (item, event) => {
     event.stopPropagation();
     const expenseId = item?.details?.expenseId;
     if (!expenseId) return;
 
-    const ok = window.confirm("Delete this expense? This action cannot be undone.");
-    if (!ok) return;
+    setDeleteConfirm({
+      open: true,
+      expenseId,
+      title: item?.title || "this expense",
+    });
+  };
+
+  const closeDeleteConfirm = () => {
+    setDeleteConfirm({ open: false, expenseId: "", title: "" });
+  };
+
+  const handleDeleteFromList = async () => {
+    if (!deleteConfirm.expenseId) return;
+
+    const deletingId = deleteConfirm.expenseId;
 
     try {
-      setDeletingExpenseId(expenseId);
-      await axios.delete(`/api/expenses/${expenseId}`);
+      setDeletingExpenseId(deletingId);
+      await axios.delete(`/api/expenses/${deletingId}`);
       toast.success("Expense deleted");
       await onExpenseChanged?.();
       await buildTimeline();
+      closeDeleteConfirm();
     } catch (error) {
       console.error("Expense delete failed:", error);
       toast.error(error.response?.data?.error || "Failed to delete expense");
@@ -1755,14 +2191,23 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
 
   return (
     <>
-      <p className="text-[11px] text-slate-400 mb-2 px-1">
+      {/* <p className="text-[11px] text-slate-400 mb-2 px-1">
         Tap any row to view details. Use the action buttons on expense rows to edit or delete quickly.
-      </p>
+      </p> */}
       <div className="space-y-2">
         {timeline.map((item, index) => {
           const cfg = getRowConfig(item);
           const canManage = canManageItem(item);
           const isDeleting = deletingExpenseId === item?.details?.expenseId;
+          const expensePaidByCurrentUser =
+            item?.type === "expense" &&
+            getNormalizedId(item?.details?.paidById) === currentUserId;
+          const amountClass =
+            item?.type === "expense"
+              ? expensePaidByCurrentUser
+                ? "text-emerald-400"
+                : "text-rose-400"
+              : "text-indigo-300";
 
           return (
             <motion.div
@@ -1785,12 +2230,10 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
               >
                 <div className="flex items-start justify-between gap-2 min-w-0">
                   <p className="text-sm text-slate-100 truncate flex-1 min-w-0">{item.title}</p>
-                  <span className="text-xs font-semibold text-slate-300 px-2 py-0.5 rounded border border-white/12 bg-slate-700/70 capitalize shrink-0">
-                    {cfg.badge}
-                  </span>
+                
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5 truncate">{item.subtitle}</p>
-                <p className="text-xs text-indigo-300 mt-1">₹{Number(item.amount || 0).toFixed(2)}</p>
+                <p className={`text-xs mt-1 ${amountClass}`}>₹{Number(item.amount || 0).toFixed(2)}</p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {new Date(item.createdAt).toLocaleDateString("en-IN", {
                     day: "numeric",
@@ -1806,19 +2249,7 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
                 <div className="flex items-center gap-1 shrink-0 self-start">
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setOpenInEditMode(true);
-                      setSelectedActivity(item);
-                    }}
-                    className="px-2 py-1.5 rounded-md border border-indigo-500/40 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition-colors"
-                    title="Edit expense"
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) => handleDeleteFromList(item, event)}
+                    onClick={(event) => requestDeleteFromList(item, event)}
                     disabled={isDeleting}
                     className="px-2 py-1.5 rounded-md border border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 transition-colors disabled:opacity-60"
                     title="Delete expense"
@@ -1847,6 +2278,17 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {deleteConfirm.open && (
+          <DeleteExpenseConfirmModal
+            title={deleteConfirm.title}
+            loading={deletingExpenseId === deleteConfirm.expenseId}
+            onCancel={closeDeleteConfirm}
+            onConfirm={handleDeleteFromList}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -1864,7 +2306,6 @@ function ActivityDetailsModal({
   const [copiedKey, setCopiedKey] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [splitMode, setSplitMode] = useState("equal");
   const [selectedSplitUsers, setSelectedSplitUsers] = useState([]);
   const [customSplitAmounts, setCustomSplitAmounts] = useState({});
@@ -2015,24 +2456,6 @@ function ActivityDetailsModal({
     }
   };
 
-  const handleDeleteExpense = async () => {
-    const ok = window.confirm("Delete this expense? This action cannot be undone.");
-    if (!ok) return;
-
-    try {
-      setDeleting(true);
-      await axios.delete(`/api/expenses/${details.expenseId}`);
-      toast.success("Expense deleted");
-      await onExpenseChanged?.();
-      onClose();
-    } catch (error) {
-      console.error("Expense delete failed:", error);
-      toast.error(error.response?.data?.error || "Failed to delete expense");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   const handleCopyId = async (value, label, key) => {
     if (!value) return;
     try {
@@ -2066,14 +2489,14 @@ function ActivityDetailsModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-24 pt-4 sm:pb-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="bg-slate-800 rounded-xl border border-white/8 w-full max-w-md overflow-hidden shadow-xl"
+        className="bg-slate-800 rounded-t-xl sm:rounded-xl border border-white/8 w-full max-w-md max-h-[calc(100vh-7rem)] sm:max-h-[85vh] overflow-y-auto shadow-xl"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-slate-700/40">
           <div>
@@ -2093,7 +2516,7 @@ function ActivityDetailsModal({
         </div>
 
         <div className="px-5 py-4 space-y-3">
-          {isExpense && isEditing ? (
+          {isExpense ? (
             <>
               <div className="space-y-1">
                 <p className="text-xs text-slate-400">Description</p>
@@ -2103,6 +2526,7 @@ function ActivityDetailsModal({
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, description: e.target.value }))
                   }
+                  disabled={!isEditing}
                   className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -2117,6 +2541,7 @@ function ActivityDetailsModal({
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, amount: e.target.value }))
                     }
+                    disabled={!isEditing}
                     className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -2128,6 +2553,7 @@ function ActivityDetailsModal({
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, date: e.target.value }))
                     }
+                    disabled={!isEditing}
                     className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -2140,6 +2566,7 @@ function ActivityDetailsModal({
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, paidBy: e.target.value }))
                     }
+                    disabled={!isEditing}
                     className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                   >
                     <option value="">Select member</option>
@@ -2157,6 +2584,7 @@ function ActivityDetailsModal({
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, category: e.target.value }))
                     }
+                    disabled={!isEditing}
                     className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                   >
                     <option value="food">Food</option>
@@ -2174,7 +2602,8 @@ function ActivityDetailsModal({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setSplitMode("equal")}
+                    onClick={() => isEditing && setSplitMode("equal")}
+                    disabled={!isEditing}
                     className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
                       splitMode === "equal"
                         ? "border-indigo-500/50 bg-indigo-500/20 text-indigo-200"
@@ -2185,7 +2614,8 @@ function ActivityDetailsModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSplitMode("custom")}
+                    onClick={() => isEditing && setSplitMode("custom")}
+                    disabled={!isEditing}
                     className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
                       splitMode === "custom"
                         ? "border-indigo-500/50 bg-indigo-500/20 text-indigo-200"
@@ -2212,6 +2642,7 @@ function ActivityDetailsModal({
                           <input
                             type="checkbox"
                             checked={checked}
+                            disabled={!isEditing}
                             onChange={() => {
                               setSelectedSplitUsers((prev) => {
                                 if (prev.includes(member.id)) {
@@ -2238,6 +2669,7 @@ function ActivityDetailsModal({
                                 [member.id]: nextValue,
                               }));
                             }}
+                            disabled={!isEditing}
                             className="w-24 rounded-md border border-white/12 bg-slate-800 px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                             placeholder="0.00"
                           />
@@ -2277,28 +2709,7 @@ function ActivityDetailsModal({
             </p>
           </div>
 
-          {isExpense ? (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">Paid By</p>
-                <p className="text-xs text-slate-300 text-right">
-                  {details.paidByName || "Unknown"}
-                </p>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">Category</p>
-                <p className="text-xs text-slate-300 text-right capitalize">
-                  {details.category || "other"}
-                </p>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">Split Count</p>
-                <p className="text-xs text-slate-300 text-right">
-                  {(details.splitBetween || []).length}
-                </p>
-              </div>
-            </>
-          ) : (
+          {!isExpense ? (
             <>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-slate-400">From</p>
@@ -2319,7 +2730,7 @@ function ActivityDetailsModal({
                 </p>
               </div>
             </>
-          )}
+          ) : null}
 
           {details.notes ? (
             <div className="pt-1">
@@ -2330,7 +2741,7 @@ function ActivityDetailsModal({
             </div>
           ) : null}
 
-          {(details.expenseId || details.settlementId) && (
+          {/* {(details.expenseId || details.settlementId) && (
             <div className="pt-1 space-y-2">
               {details.expenseId && (
                 <div className="flex items-center justify-between gap-2 bg-slate-700/30 border border-white/8 rounded-lg px-3 py-2">
@@ -2380,7 +2791,7 @@ function ActivityDetailsModal({
                 </div>
               )}
             </div>
-          )}
+          )} */}
         </div>
 
         <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
@@ -2392,49 +2803,194 @@ function ActivityDetailsModal({
               Close
             </button>
             {canManageExpense && !isEditing && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="px-3 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
-                  title="Edit expense"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteExpense}
-                  disabled={deleting}
-                  className="px-3 py-2.5 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-500 transition-colors disabled:opacity-60"
-                  title="Delete expense"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
+              >
+                Edit
+              </button>
             )}
             {canManageExpense && isEditing && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-3 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveExpense}
-                  disabled={saving}
-                  className="px-3 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-60"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Save size={14} />
-                    {saving ? "Saving" : "Save"}
-                  </span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={handleSaveExpense}
+                disabled={saving}
+                className="px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-60"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Save size={14} />
+                  {saving ? "Saving" : "Save"}
+                </span>
+              </button>
             )}
           </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function DeleteExpenseConfirmModal({ title, loading, onCancel, onConfirm }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="bg-slate-800 rounded-t-xl sm:rounded-xl border border-white/8 w-full max-w-sm overflow-hidden shadow-xl"
+      >
+        <div className="px-5 py-4 border-b border-white/8 bg-slate-700/40">
+          <h3 className="text-sm font-bold text-slate-100">Delete Expense</h3>
+          <p className="text-xs text-slate-400 mt-1">
+            Are you sure you want to delete "{title}"? This action cannot be undone.
+          </p>
+        </div>
+
+        <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-500 transition-colors disabled:opacity-60"
+            >
+              {loading ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ReportShareModal({ groupName, fileName, file, onClose }) {
+  const [nativeShareSupported, setNativeShareSupported] = useState(false);
+
+  useEffect(() => {
+    setNativeShareSupported(Boolean(typeof navigator !== "undefined" && navigator.share));
+  }, []);
+
+  const handleShareNative = async () => {
+    try {
+      if (!navigator.share || !file) return;
+
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+        throw new Error("Native file share not supported");
+      }
+
+      await navigator.share({
+        title: `Money Split report for ${groupName}`,
+        text: `Sharing group activity report for ${groupName}`,
+        files: [file],
+      });
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        toast.error("Native share is not available on this device");
+      }
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = [
+      "Money Split Report",
+      `Prepared for: ${groupName}`,
+      `File: ${fileName}`,
+      "I have downloaded the report and sharing it now.",
+    ].join("\n");
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const handleShareEmail = () => {
+    const subject = `Money Split report - ${groupName}`;
+    const body = [
+      "Hi,",
+      "",
+      `Please find the Money Split group report for ${groupName}.`,
+      `Report file: ${fileName}`,
+      "",
+      "Note: Attach the downloaded PDF from your device before sending.",
+      "",
+      "Regards,",
+      "Money Split",
+    ].join("\n");
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-800 shadow-2xl"
+      >
+        <div className="px-5 py-4 border-b border-white/8">
+          <h3 className="text-base font-bold text-slate-100">Share Report</h3>
+          <p className="text-xs text-slate-400 mt-1">
+            PDF downloaded successfully. Share it quickly using one of these actions.
+          </p>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <button
+            type="button"
+            onClick={handleShareWhatsApp}
+            className="w-full flex items-center gap-2 rounded-lg border border-white/10 bg-slate-700/50 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors"
+          >
+            <MessageCircle size={16} className="text-emerald-400" />
+            Share via WhatsApp
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShareEmail}
+            className="w-full flex items-center gap-2 rounded-lg border border-white/10 bg-slate-700/50 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors"
+          >
+            <Mail size={16} className="text-sky-400" />
+            Share via Email
+          </button>
+
+          {nativeShareSupported && (
+            <button
+              type="button"
+              onClick={handleShareNative}
+              className="w-full flex items-center gap-2 rounded-lg border border-white/10 bg-slate-700/50 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors"
+            >
+              <Share2 size={16} className="text-indigo-400" />
+              Share from device
+            </button>
+          )}
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+          >
+            Done
+          </button>
         </div>
       </motion.div>
     </motion.div>
