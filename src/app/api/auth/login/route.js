@@ -39,6 +39,16 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
+    if (!user.password || user.authProvider === "google") {
+      return NextResponse.json(
+        {
+          error: "This account uses Google sign in",
+          errors: { email: "Use Continue with Google for this account" },
+        },
+        { status: 400 },
+      );
+    }
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {

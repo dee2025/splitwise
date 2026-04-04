@@ -4,32 +4,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { generateToken, setTokenCookie } from "@/lib/auth";
 import { sendWelcomeEmail } from "@/lib/mailer";
-
-// Generate unique username from fullName
-async function generateUniqueUsername(fullName) {
-  // Create base username from fullName: remove spaces, lowercase, keep only alphanumeric + underscore
-  const baseUsername = fullName
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "")
-    .slice(0, 15); // Leave room for random suffix
-
-  if (!baseUsername) {
-    // Fallback if name has no valid characters
-    return `user_${Date.now()}`;
-  }
-
-  // Check if base username exists
-  let finalUsername = baseUsername;
-  let counter = 1;
-
-  while (await User.findOne({ username: finalUsername }).select("_id")) {
-    finalUsername = `${baseUsername}_${counter}`;
-    counter++;
-  }
-
-  return finalUsername;
-}
+import { generateUniqueUsername } from "@/lib/username";
 
 export async function POST(req) {
   try {
@@ -100,6 +75,7 @@ export async function POST(req) {
       email: normalizedEmail,
       contact: "",
       password: hashedPassword,
+      authProvider: "local",
     });
 
     // Generate JWT token

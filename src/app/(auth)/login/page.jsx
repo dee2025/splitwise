@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import Script from "next/script";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -36,6 +38,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleButtonRef = useRef(null);
 
   useEffect(() => {
     if (isAuthenticated) router.push("/dashboard");
@@ -125,6 +130,63 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleCredential = useCallback(async (googleResponse) => {
+    const credential = googleResponse?.credential;
+    if (!credential) {
+      toast.error("Google sign in failed. Please try again.");
+      return;
+    }
+
+    setGoogleLoading(true);
+    try {
+      const res = await axios.post("/api/auth/google-login", { credential });
+      if (res.data?.success) {
+        dispatch(loginSuccess({ user: res.data.user }));
+        toast.success(res.data.message || "Google login successful");
+        router.replace("/dashboard");
+        return;
+      }
+      toast.error("Google sign in failed. Please try again.");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Google sign in failed.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [dispatch, router]);
+
+  const initGoogleButton = useCallback(() => {
+    if (!googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+
+    googleButtonRef.current.innerHTML = "";
+    window.google.accounts.id.renderButton(googleButtonRef.current, {
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "pill",
+      width: 350,
+    });
+    setGoogleReady(true);
+  }, [googleClientId, handleGoogleCredential]);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    if (window.google?.accounts?.id) {
+      initGoogleButton();
+    }
+  }, [googleClientId, initGoogleButton]);
+
   if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -135,6 +197,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
+      {googleClientId ? (
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onLoad={initGoogleButton}
+        />
+      ) : null}
+
       {/* Back button */}
       <Link
         href="/"
@@ -169,6 +239,29 @@ export default function LoginPage() {
               Sign in to your account to continue
             </p>
           </div>
+
+          {googleClientId ? (
+            <div className="mb-4">
+              <div
+                ref={googleButtonRef}
+                className="w-full min-h-11 flex items-center justify-center"
+              />
+              {!googleReady && (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white/90 text-slate-800 opacity-70"
+                >
+                  Continue with Google
+                </button>
+              )}
+              {googleLoading && (
+                <p className="text-xs text-slate-400 text-center mt-2">
+                  Signing in with Google...
+                </p>
+              )}
+            </div>
+          ) : null}
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
