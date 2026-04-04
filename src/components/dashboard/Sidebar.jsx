@@ -1,14 +1,13 @@
 "use client";
 
-import { Bell, CreditCard, LayoutDashboard, User, Users } from "lucide-react";
+import { Bell, CreditCard, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 
 const menuItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Expenses", href: "/expenses", icon: CreditCard },
   { label: "Groups", href: "/groups", icon: Users },
+  { label: "Expenses", href: "/expenses", icon: CreditCard },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: User },
 ];
@@ -18,7 +17,6 @@ export default function Sidebar() {
   const { user } = useSelector((state) => state.auth);
 
   const isActive = (href) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 

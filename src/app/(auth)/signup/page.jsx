@@ -47,7 +47,7 @@ export default function SignupPage() {
   const googleButtonRef = useRef(null);
 
   useEffect(() => {
-    if (isAuthenticated) router.push("/dashboard");
+    if (isAuthenticated) router.push("/groups");
   }, [isAuthenticated, router]);
 
   const handleChange = (e) => {
@@ -142,7 +142,7 @@ export default function SignupPage() {
       if (res.data.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Account created successfully");
-        router.replace("/dashboard");
+        router.replace("/groups");
         return;
       }
       toast.error("Signup failed. Please try again.");
@@ -179,7 +179,7 @@ export default function SignupPage() {
       if (res.data?.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success("Signed up with Google successfully");
-        router.replace("/dashboard");
+        router.replace("/groups");
         return;
       }
       toast.error("Google sign up failed. Please try again.");

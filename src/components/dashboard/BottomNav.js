@@ -1,13 +1,12 @@
 "use client";
 
-import { Bell, CreditCard, LayoutDashboard, User, Users } from "lucide-react";
+import { Bell, CreditCard, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { label: "Home", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Expenses", href: "/expenses", icon: CreditCard },
   { label: "Groups", href: "/groups", icon: Users },
+  { label: "Expenses", href: "/expenses", icon: CreditCard },
   { label: "Alerts", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: User },
 ];
@@ -16,7 +15,6 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const isActive = (href) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 

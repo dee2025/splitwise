@@ -14,9 +14,9 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to dashboard if user is logged in
+    // Redirect to groups if user is logged in
     if (isAuthenticated) {
-      router.push("/dashboard");
+      router.push("/groups");
     }
   }, [isAuthenticated, router]);
 
@@ -26,7 +26,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-black" />
-          <p className="text-gray-600">Redirecting to main dashboard ...</p>
+          <p className="text-gray-600">Redirecting to groups ...</p>
         </div>
       </div>
     );

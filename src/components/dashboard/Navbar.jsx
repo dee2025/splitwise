@@ -38,7 +38,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-40 bg-slate-900 border-b border-white/6 h-16">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2.5">
+        <Link href="/groups" className="flex items-center gap-2.5">
           <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
             <span className="text-white font-bold text-xs">S</span>
           </div>
@@ -51,7 +51,7 @@ export default function Navbar() {
         <div className="flex items-center gap-1">
           {/* Notifications */}
           <Link
-            href="/dashboard/notifications"
+            href="/notifications"
             className="relative p-2 text-slate-400 hover:text-slate-100 hover:bg-white/6 rounded-lg transition-colors"
           >
             <Bell className="w-5 h-5" />
@@ -91,7 +91,7 @@ export default function Navbar() {
                     </p>
                   </div>
                   <Link
-                    href="/dashboard/profile"
+                    href="/profile"
                     onClick={() => setIsProfileOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:text-slate-100 hover:bg-white/5 transition-colors"
                   >

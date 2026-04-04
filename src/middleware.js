@@ -4,6 +4,10 @@ import { NextResponse } from 'next/server';
 // Define protected routes
 const protectedRoutes = [
   '/dashboard',
+  '/groups',
+  '/expenses',
+  '/notifications',
+  '/profile',
   '/api/user',
   '/api/expenses', 
   '/api/groups',
@@ -33,6 +37,12 @@ export async function middleware(request) {
   console.log('  - Is protected route:', isProtectedRoute);
   console.log('  - Is auth route:', isAuthRoute);
 
+  // Keep dashboard route in code but do not surface it in the app.
+  if (pathname.startsWith('/dashboard') && token) {
+    console.log('↪ Redirecting dashboard request to /groups');
+    return NextResponse.redirect(new URL('/groups', request.url));
+  }
+
   // For protected routes, check if user is authenticated
   if (isProtectedRoute) {
     if (!token) {
@@ -46,10 +56,10 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  // For auth routes, redirect to dashboard if already authenticated
+  // For auth routes, redirect to groups if already authenticated
   if (isAuthRoute && token) {
-    console.log('🔁 Already authenticated - Redirecting to dashboard');
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    console.log('🔁 Already authenticated - Redirecting to groups');
+    return NextResponse.redirect(new URL('/groups', request.url));
   }
 
   console.log('➡️ Allowing access');
@@ -59,6 +69,10 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/groups/:path*',
+    '/expenses/:path*',
+    '/notifications/:path*',
+    '/profile/:path*',
     '/login',
     '/signup',
     '/api/user/:path*',

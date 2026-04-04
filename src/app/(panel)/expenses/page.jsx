@@ -9,7 +9,6 @@ import {
   Music,
   Plane,
   Receipt,
-  Search,
   ShoppingBag,
   SlidersHorizontal,
   TrendingDown,
@@ -77,6 +76,18 @@ const CATEGORY_CONFIG = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getCurrencySymbol(currency) {
   return "₹";
+}
+
+function getNormalizedId(value) {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    if (value._id) return String(value._id);
+    if (value.id) return String(value.id);
+  }
+  return "";
 }
 
 function getUserShare(expense, userId) {
@@ -151,7 +162,7 @@ function PersonalShareBadge({ share, currencySymbol }) {
   return null;
 }
 
-function ExpenseCard({ expense, userId }) {
+function ExpenseCard({ expense, userId, onClick }) {
   const share = getUserShare(expense, userId);
   const cat = CATEGORY_CONFIG[expense.category] ?? CATEGORY_CONFIG.other;
   const CatIcon = cat.icon;
@@ -163,7 +174,8 @@ function ExpenseCard({ expense, userId }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="bg-slate-800 rounded-xl border border-white/6 hover:border-white/12 transition-all duration-200 overflow-hidden group"
+      className="bg-slate-800 rounded-xl border border-white/6 hover:border-white/12 transition-all duration-200 overflow-hidden group cursor-pointer"
+      onClick={onClick}
     >
       {/* Main row */}
       <div className="p-4 flex items-start gap-4">
@@ -227,6 +239,233 @@ function ExpenseCard({ expense, userId }) {
   );
 }
 
+function ExpenseDetailsModal({ expense, userId, onClose }) {
+  if (!expense) return null;
+
+  const sym = getCurrencySymbol(expense.groupId?.currency);
+  const cat = CATEGORY_CONFIG[expense.category] ?? CATEGORY_CONFIG.other;
+  const CatIcon = cat.icon;
+  const mySplit = (expense.splitBetween || []).find(
+    (s) => getNormalizedId(s.userId) === userId,
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 16 }}
+        className="bg-slate-800 rounded-xl border border-white/8 w-full max-w-md overflow-hidden shadow-xl"
+      >
+        <div className="px-5 py-4 border-b border-white/8 bg-slate-700/30 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-400 uppercase tracking-wider">Expense Details</p>
+            <h3 className="text-base font-bold text-slate-100 truncate mt-1">{expense.description}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg border border-white/8 hover:bg-slate-700 transition-colors"
+          >
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">Amount</p>
+            <p className="text-xl font-bold text-slate-100">
+              {sym}
+              {Number(expense.amount || 0).toLocaleString("en-IN")}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Group</p>
+            <p className="text-xs text-slate-300 text-right truncate">{expense.groupId?.name || "Unknown Group"}</p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Paid By</p>
+            <p className="text-xs text-slate-300 text-right">
+              {getNormalizedId(expense.paidBy) === userId
+                ? "You"
+                : expense.paidBy?.fullName || expense.paidBy?.username || "Unknown"}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Date</p>
+            <p className="text-xs text-slate-300 text-right">
+              {new Date(expense.date).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Category</p>
+            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold ${cat.badgeBg} ${cat.badgeText}`}>
+              <CatIcon className="w-3.5 h-3.5" />
+              {cat.label}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Your Share</p>
+            <p className="text-xs text-slate-300 text-right">
+              {mySplit
+                ? `${sym}${Number(mySplit.amount || 0).toFixed(2)} ${mySplit.settled ? "(settled)" : "(unsettled)"}`
+                : "Not part of split"}
+            </p>
+          </div>
+
+          <div className="pt-1">
+            <p className="text-xs text-slate-400 mb-2">Split Details</p>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-white/8 bg-slate-700/25 p-2">
+              {(expense.splitBetween || []).map((s, idx) => {
+                const splitUserId = getNormalizedId(s.userId);
+                const name =
+                  splitUserId === userId
+                    ? "You"
+                    : s.userId?.fullName || s.userId?.username || `Member ${idx + 1}`;
+
+                return (
+                  <div
+                    key={`${splitUserId}-${idx}`}
+                    className="flex items-center justify-between text-xs bg-slate-700/40 border border-white/8 rounded-lg px-2.5 py-2"
+                  >
+                    <span className="text-slate-300 truncate mr-2">{name}</span>
+                    <span className="text-slate-200 font-semibold">
+                      {sym}
+                      {Number(s.amount || 0).toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ExpenseFilterModal({
+  open,
+  draftCategory,
+  setDraftCategory,
+  draftGroup,
+  setDraftGroup,
+  uniqueGroups,
+  onApply,
+  onReset,
+  onClose,
+}) {
+  if (!open) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 16 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 16 }}
+          className="bg-slate-800 rounded-xl border border-white/8 w-full max-w-sm overflow-hidden shadow-xl"
+        >
+          <div className="px-5 py-4 border-b border-white/8 bg-slate-700/30 flex items-center justify-between">
+            <h3 className="text-base font-bold text-slate-100">Filter Expenses</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg border border-white/8 hover:bg-slate-700 transition-colors"
+            >
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+
+          <div className="px-5 py-4 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Group</label>
+              <select
+                value={draftGroup}
+                onChange={(e) => setDraftGroup(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-700/50 border border-white/8 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="all" className="bg-slate-800">All Groups</option>
+                {uniqueGroups.map((g) => (
+                  <option key={g.id} value={g.id} className="bg-slate-800">
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Category</label>
+              <select
+                value={draftCategory}
+                onChange={(e) => setDraftCategory(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-700/50 border border-white/8 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="all" className="bg-slate-800">All Categories</option>
+                <option value="food" className="bg-slate-800">Food & Dining</option>
+                <option value="travel" className="bg-slate-800">Travel</option>
+                <option value="accommodation" className="bg-slate-800">Accommodation</option>
+                <option value="shopping" className="bg-slate-800">Shopping</option>
+                <option value="entertainment" className="bg-slate-800">Entertainment</option>
+                <option value="other" className="bg-slate-800">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onReset}
+              className="flex-1 px-3 py-2.5 rounded-lg bg-white/8 text-slate-200 text-sm font-semibold hover:bg-white/12 transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={onApply}
+              className="flex-1 px-3 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+            >
+              Apply
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ExpensesPage() {
   const router = useRouter();
@@ -234,10 +473,12 @@ export default function ExpensesPage() {
 
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [draftCategory, setDraftCategory] = useState("all");
+  const [draftGroup, setDraftGroup] = useState("all");
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -302,45 +543,34 @@ export default function ExpensesPage() {
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((exp) => {
-      if (searchQuery.trim()) {
-        if (!exp.description?.toLowerCase().includes(searchQuery.toLowerCase()))
-          return false;
-      }
       if (categoryFilter !== "all" && exp.category !== categoryFilter)
         return false;
       if (groupFilter !== "all" && exp.groupId?._id !== groupFilter)
         return false;
-      if (statusFilter !== "all") {
-        const mine = (exp.splitBetween ?? []).find(
-          (s) => s.userId?.toString() === user.id,
-        );
-        if (statusFilter === "settled" && !mine?.settled && !exp.isSettled)
-          return false;
-        if (statusFilter === "unsettled" && (mine?.settled || exp.isSettled))
-          return false;
-      }
       return true;
     });
-  }, [
-    expenses,
-    searchQuery,
-    categoryFilter,
-    groupFilter,
-    statusFilter,
-    user.id,
-  ]);
+  }, [expenses, categoryFilter, groupFilter]);
 
-  const isFiltered =
-    searchQuery.trim() ||
-    categoryFilter !== "all" ||
-    groupFilter !== "all" ||
-    statusFilter !== "all";
+  const isFiltered = categoryFilter !== "all" || groupFilter !== "all";
 
   const clearFilters = () => {
-    setSearchQuery("");
     setCategoryFilter("all");
     setGroupFilter("all");
-    setStatusFilter("all");
+    setDraftCategory("all");
+    setDraftGroup("all");
+    setShowFilterModal(false);
+  };
+
+  const openFilterModal = () => {
+    setDraftCategory(categoryFilter);
+    setDraftGroup(groupFilter);
+    setShowFilterModal(true);
+  };
+
+  const applyFilters = () => {
+    setCategoryFilter(draftCategory);
+    setGroupFilter(draftGroup);
+    setShowFilterModal(false);
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -357,17 +587,31 @@ export default function ExpensesPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight mb-1">
-            All Expenses
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Track and manage all your expenses across groups
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-100 tracking-tight mb-1">
+                All Expenses
+              </h1>
+              <p className="text-slate-400 text-sm">
+                Track and manage all your expenses across groups
+              </p>
+            </div>
+            {!loading && expenses.length > 0 && (
+              <button
+                type="button"
+                onClick={openFilterModal}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 border border-white/8 text-slate-200 hover:bg-slate-700/50 transition-colors text-sm font-semibold"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filter
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
         {!loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               {
                 label: "Total Expenses",
@@ -396,145 +640,39 @@ export default function ExpensesPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                className="bg-slate-800 rounded-xl p-4 border border-white/6 flex items-center justify-between"
+                className="bg-slate-800 rounded-xl p-2.5 sm:p-4 border border-white/6 flex items-center justify-between min-w-0"
               >
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                <div className="min-w-0">
+                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-wide sm:tracking-wider mb-1 truncate">
                     {label}
                   </p>
-                  <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                  <p className={`text-base sm:text-2xl font-bold ${color} truncate`}>
+                    {value}
+                  </p>
                 </div>
-                <div className={`p-2.5 rounded-xl ${iconBg}`}>
-                  <Icon className={`w-5 h-5 ${color}`} />
+                <div className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl ${iconBg} shrink-0 ml-2`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${color}`} />
                 </div>
               </motion.div>
             ))}
           </div>
         )}
 
-        {/* Filters Section */}
         {!loading && expenses.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-slate-800 rounded-xl border border-white/6 p-4 space-y-3.5"
-          >
-            {/* Search + Category + Group */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search expenses..."
-                  className="w-full pl-9 pr-8 py-2.5 bg-slate-700/50 border border-white/8 text-slate-100 placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    <X className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300" />
-                  </button>
-                )}
-              </div>
-
-              {/* Category */}
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2.5 bg-slate-700/50 border border-white/8 text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-              >
-                <option value="all" className="bg-slate-800">
-                  All Categories
-                </option>
-                <option value="food" className="bg-slate-800">
-                  Food & Dining
-                </option>
-                <option value="travel" className="bg-slate-800">
-                  Travel
-                </option>
-                <option value="accommodation" className="bg-slate-800">
-                  Accommodation
-                </option>
-                <option value="shopping" className="bg-slate-800">
-                  Shopping
-                </option>
-                <option value="entertainment" className="bg-slate-800">
-                  Entertainment
-                </option>
-                <option value="other" className="bg-slate-800">
-                  Other
-                </option>
-              </select>
-
-              {/* Group */}
-              {uniqueGroups.length > 1 && (
-                <select
-                  value={groupFilter}
-                  onChange={(e) => setGroupFilter(e.target.value)}
-                  className="px-4 py-2.5 bg-slate-700/50 border border-white/8 text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                >
-                  <option value="all" className="bg-slate-800">
-                    All Groups
-                  </option>
-                  {uniqueGroups.map((g) => (
-                    <option key={g.id} value={g.id} className="bg-slate-800">
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Status Pills */}
-            <div className="flex gap-2 flex-wrap">
-              {["all", "unsettled", "settled"].map((s) => (
-                <motion.button
-                  key={s}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-3.5 py-1.5 rounded-lg border transition-all text-xs font-semibold ${
-                    statusFilter === s
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "bg-white/5 text-slate-400 border-white/8 hover:bg-white/8"
-                  }`}
-                >
-                  {s === "all"
-                    ? "All"
-                    : s === "unsettled"
-                      ? "Unsettled"
-                      : "Settled"}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Filter info and clear button */}
+          <div className="bg-slate-800 rounded-xl border border-white/6 p-3 flex items-center justify-between">
+            <p className="text-xs text-slate-400">
+              Showing <span className="font-semibold text-slate-200">{filteredExpenses.length}</span> of <span className="font-semibold text-slate-200">{expenses.length}</span> expenses
+            </p>
             {isFiltered && (
-              <div className="flex items-center justify-between pt-2 border-t border-white/6">
-                <p className="text-xs text-slate-400">
-                  Showing{" "}
-                  <span className="font-semibold text-slate-300">
-                    {filteredExpenses.length}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-semibold text-slate-300">
-                    {expenses.length}
-                  </span>{" "}
-                  expenses
-                </p>
-                <button
-                  onClick={clearFilters}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
-                >
-                  Clear filters
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs text-indigo-300 hover:text-indigo-200 font-semibold"
+              >
+                Clear filters
+              </button>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* Content Section */}
@@ -592,12 +730,38 @@ export default function ExpensesPage() {
                   key={exp._id}
                   transition={{ delay: Math.min(i * 0.04, 0.3) }}
                 >
-                  <ExpenseCard expense={exp} userId={user.id} />
+                  <ExpenseCard
+                    expense={exp}
+                    userId={getNormalizedId(user)}
+                    onClick={() => setSelectedExpense(exp)}
+                  />
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
+
+        <ExpenseFilterModal
+          open={showFilterModal}
+          draftCategory={draftCategory}
+          setDraftCategory={setDraftCategory}
+          draftGroup={draftGroup}
+          setDraftGroup={setDraftGroup}
+          uniqueGroups={uniqueGroups}
+          onApply={applyFilters}
+          onReset={clearFilters}
+          onClose={() => setShowFilterModal(false)}
+        />
+
+        <AnimatePresence>
+          {selectedExpense && (
+            <ExpenseDetailsModal
+              expense={selectedExpense}
+              userId={getNormalizedId(user)}
+              onClose={() => setSelectedExpense(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </DashboardLayout>
   );

@@ -35,6 +35,7 @@ export async function GET(request) {
     const expenses = await Expense.find(query)
       .populate("paidBy", "fullName username email")
       .populate("groupId", "name currency")
+      .populate("splitBetween.userId", "fullName username email")
       .sort({ date: -1, createdAt: -1 });
 
     return NextResponse.json({ expenses });

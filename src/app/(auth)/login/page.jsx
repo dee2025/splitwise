@@ -43,7 +43,7 @@ export default function LoginPage() {
   const googleButtonRef = useRef(null);
 
   useEffect(() => {
-    if (isAuthenticated) router.push("/dashboard");
+    if (isAuthenticated) router.push("/groups");
   }, [isAuthenticated, router]);
 
   const handleChange = (e) => {
@@ -114,7 +114,7 @@ export default function LoginPage() {
       if (res.data.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Login successful");
-        router.replace("/dashboard");
+        router.replace("/groups");
         return;
       }
       toast.error("Login failed. Please try again.");
@@ -143,7 +143,7 @@ export default function LoginPage() {
       if (res.data?.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Google login successful");
-        router.replace("/dashboard");
+        router.replace("/groups");
         return;
       }
       toast.error("Google sign in failed. Please try again.");

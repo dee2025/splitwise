@@ -17,11 +17,14 @@ import {
   IndianRupee,
   Loader,
   Music,
+  Pencil,
   Plane,
   Plug,
   Plus,
   Receipt,
+  Save,
   ShoppingBag,
+  Trash2,
   UserPlus,
   Users,
   UtensilsCrossed,
@@ -64,6 +67,19 @@ function getMemberKey(member, idx) {
     member?.email ||
     `${idx}`
   );
+}
+
+function getNormalizedId(value) {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    if (value._id) return String(value._id);
+    if (value.id) return String(value.id);
+    if (value.userId) return getNormalizedId(value.userId);
+  }
+  return "";
 }
 
 export default function GroupPage() {
@@ -429,6 +445,10 @@ export default function GroupPage() {
                     group={group}
                     expenses={expenses}
                     currentUser={user}
+                    onExpenseChanged={async () => {
+                      await fetchGroupData();
+                      await fetchDebts();
+                    }}
                   />
                 </div>
               )}
@@ -1569,14 +1589,24 @@ function SettlementsTab({ group, currentUser, onRefresh }) {
 
 // ─── Activity Tab ─────────────────────────────────────────────────────────────
 
-function ActivityTab({ group, expenses = [], currentUser }) {
+function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [openInEditMode, setOpenInEditMode] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState("");
+
+  const currentUserId = getNormalizedId(currentUser);
+  const isGroupAdmin = (group?.members || []).some((member) => {
+    return (
+      getNormalizedId(member?.userId || member) === currentUserId &&
+      member?.role === "admin"
+    );
+  });
 
   useEffect(() => {
     buildTimeline();
-  }, [group._id, expenses, currentUser?._id]);
+  }, [group._id, expenses, currentUser?._id, currentUser?.id]);
 
   const buildTimeline = async () => {
     try {
@@ -1595,6 +1625,7 @@ function ActivityTab({ group, expenses = [], currentUser }) {
         details: {
           category: expense.category || "other",
           paidByName: expense.paidBy?.fullName || expense.paidBy?.name || "Unknown",
+          paidById: expense.paidBy?._id || expense.paidBy?.id || expense.paidBy,
           date: expense.date,
           splitBetween: expense.splitBetween || [],
           notes: expense.notes || "",
@@ -1605,7 +1636,7 @@ function ActivityTab({ group, expenses = [], currentUser }) {
       const settlementEvents = settlements.map((settlement) => {
         const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
         const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
-        const currentUserId = currentUser?._id?.toString?.();
+        const currentUserId = getNormalizedId(currentUser);
 
         const normalizedFrom = settlement.fromUser?._id?.toString?.();
         const normalizedTo = settlement.toUser?._id?.toString?.();
@@ -1665,6 +1696,35 @@ function ActivityTab({ group, expenses = [], currentUser }) {
     };
   };
 
+  const canManageItem = (item) => {
+    if (item?.type !== "expense") return false;
+    if (!item?.details?.expenseId) return false;
+    const payerId = getNormalizedId(item?.details?.paidById);
+    return Boolean(currentUserId && (payerId === currentUserId || isGroupAdmin));
+  };
+
+  const handleDeleteFromList = async (item, event) => {
+    event.stopPropagation();
+    const expenseId = item?.details?.expenseId;
+    if (!expenseId) return;
+
+    const ok = window.confirm("Delete this expense? This action cannot be undone.");
+    if (!ok) return;
+
+    try {
+      setDeletingExpenseId(expenseId);
+      await axios.delete(`/api/expenses/${expenseId}`);
+      toast.success("Expense deleted");
+      await onExpenseChanged?.();
+      await buildTimeline();
+    } catch (error) {
+      console.error("Expense delete failed:", error);
+      toast.error(error.response?.data?.error || "Failed to delete expense");
+    } finally {
+      setDeletingExpenseId("");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -1695,24 +1755,34 @@ function ActivityTab({ group, expenses = [], currentUser }) {
 
   return (
     <>
+      <p className="text-[11px] text-slate-400 mb-2 px-1">
+        Tap any row to view details. Use the action buttons on expense rows to edit or delete quickly.
+      </p>
       <div className="space-y-2">
         {timeline.map((item, index) => {
           const cfg = getRowConfig(item);
+          const canManage = canManageItem(item);
+          const isDeleting = deletingExpenseId === item?.details?.expenseId;
 
           return (
-            <motion.button
+            <motion.div
               key={item.id || index}
-              type="button"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              onClick={() => setSelectedActivity(item)}
               className={`w-full text-left flex items-start gap-3 bg-slate-800 p-3 rounded-lg border ${cfg.border} hover:bg-slate-700/40 transition-colors overflow-hidden`}
             >
               <div className="w-7 h-7 rounded border border-white/12 bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
                 {cfg.icon}
               </div>
-              <div className="flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenInEditMode(false);
+                  setSelectedActivity(item);
+                }}
+                className="flex-1 min-w-0 text-left"
+              >
                 <div className="flex items-start justify-between gap-2 min-w-0">
                   <p className="text-sm text-slate-100 truncate flex-1 min-w-0">{item.title}</p>
                   <span className="text-xs font-semibold text-slate-300 px-2 py-0.5 rounded border border-white/12 bg-slate-700/70 capitalize shrink-0">
@@ -1730,8 +1800,34 @@ function ActivityTab({ group, expenses = [], currentUser }) {
                     minute: "2-digit",
                   })}
                 </p>
-              </div>
-            </motion.button>
+              </button>
+
+              {canManage && (
+                <div className="flex items-center gap-1 shrink-0 self-start">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setOpenInEditMode(true);
+                      setSelectedActivity(item);
+                    }}
+                    className="px-2 py-1.5 rounded-md border border-indigo-500/40 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 transition-colors"
+                    title="Edit expense"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => handleDeleteFromList(item, event)}
+                    disabled={isDeleting}
+                    className="px-2 py-1.5 rounded-md border border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 transition-colors disabled:opacity-60"
+                    title="Delete expense"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              )}
+            </motion.div>
           );
         })}
       </div>
@@ -1740,7 +1836,14 @@ function ActivityTab({ group, expenses = [], currentUser }) {
         {selectedActivity && (
           <ActivityDetailsModal
             activity={selectedActivity}
-            onClose={() => setSelectedActivity(null)}
+            group={group}
+            currentUser={currentUser}
+            initialEditing={openInEditMode}
+            onExpenseChanged={onExpenseChanged}
+            onClose={() => {
+              setSelectedActivity(null);
+              setOpenInEditMode(false);
+            }}
           />
         )}
       </AnimatePresence>
@@ -1748,10 +1851,187 @@ function ActivityTab({ group, expenses = [], currentUser }) {
   );
 }
 
-function ActivityDetailsModal({ activity, onClose }) {
+function ActivityDetailsModal({
+  activity,
+  group,
+  currentUser,
+  initialEditing = false,
+  onClose,
+  onExpenseChanged,
+}) {
   const isExpense = activity.type === "expense";
   const details = activity.details || {};
   const [copiedKey, setCopiedKey] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [splitMode, setSplitMode] = useState("equal");
+  const [selectedSplitUsers, setSelectedSplitUsers] = useState([]);
+  const [customSplitAmounts, setCustomSplitAmounts] = useState({});
+
+  const memberOptions = (group?.members || [])
+    .map((member, idx) => {
+      const id = getNormalizedId(member?.userId || member);
+      if (!id) return null;
+
+      return {
+        id,
+        name: getMemberName(member) || `Member ${idx + 1}`,
+      };
+    })
+    .filter(Boolean);
+
+  const buildEqualSplit = (memberIds, totalAmount) => {
+    if (!Array.isArray(memberIds) || memberIds.length === 0) return [];
+
+    const n = memberIds.length;
+    const base = Number((totalAmount / n).toFixed(2));
+    const amounts = memberIds.map(() => base);
+    const used = amounts.reduce((sum, v) => sum + v, 0);
+    const diff = Number((totalAmount - used).toFixed(2));
+    amounts[n - 1] = Number((amounts[n - 1] + diff).toFixed(2));
+
+    return memberIds.map((id, idx) => ({ userId: id, amount: amounts[idx] }));
+  };
+
+  const [form, setForm] = useState({
+    description: activity.title || "",
+    amount: Number(activity.amount || 0),
+    category: details.category || "other",
+    date: details.date
+      ? new Date(details.date).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10),
+    paidBy: getNormalizedId(details.paidById),
+  });
+
+  useEffect(() => {
+    const normalizedSplit = (details.splitBetween || [])
+      .map((split) => ({
+        userId: getNormalizedId(split?.userId),
+        amount: Number(split?.amount || 0),
+      }))
+      .filter((split) => split.userId);
+
+    const splitIds = normalizedSplit.map((split) => split.userId);
+    const splitAmounts = Object.fromEntries(
+      normalizedSplit.map((split) => [split.userId, split.amount]),
+    );
+
+    const total = Number(activity.amount || 0);
+    const average = splitIds.length ? total / splitIds.length : 0;
+    const isEqualLike =
+      splitIds.length > 0 &&
+      normalizedSplit.every(
+        (split) => Math.abs(Number(split.amount || 0) - average) <= 0.02,
+      );
+
+    setIsEditing(Boolean(initialEditing && activity.type === "expense"));
+    setForm({
+      description: activity.title || "",
+      amount: Number(activity.amount || 0),
+      category: details.category || "other",
+      date: details.date
+        ? new Date(details.date).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+      paidBy: getNormalizedId(details.paidById),
+    });
+    setSelectedSplitUsers(splitIds);
+    setCustomSplitAmounts(splitAmounts);
+    setSplitMode(isEqualLike ? "equal" : "custom");
+  }, [activity.id, activity.type, initialEditing]);
+
+  const currentUserId = getNormalizedId(currentUser);
+  const paidById = getNormalizedId(details.paidById);
+  const isGroupAdmin = (group?.members || []).some((member) => {
+    const memberId = getNormalizedId(member?.userId || member);
+    return memberId === currentUserId && member?.role === "admin";
+  });
+  const canManageExpense =
+    isExpense && !!details.expenseId && (currentUserId === paidById || isGroupAdmin);
+
+  const handleSaveExpense = async () => {
+    try {
+      const amountNumber = Number(form.amount);
+      if (!form.description.trim()) {
+        toast.error("Description is required");
+        return;
+      }
+      if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+        toast.error("Amount must be greater than 0");
+        return;
+      }
+      if (!form.paidBy) {
+        toast.error("Please select who paid");
+        return;
+      }
+      if (selectedSplitUsers.length === 0) {
+        toast.error("Please select at least one member in split");
+        return;
+      }
+
+      let splitBetween = [];
+      if (splitMode === "equal") {
+        splitBetween = buildEqualSplit(selectedSplitUsers, amountNumber);
+      } else {
+        splitBetween = selectedSplitUsers.map((userId) => ({
+          userId,
+          amount: Number(customSplitAmounts[userId] || 0),
+        }));
+
+        const hasInvalidAmount = splitBetween.some(
+          (split) => !Number.isFinite(split.amount) || split.amount <= 0,
+        );
+        if (hasInvalidAmount) {
+          toast.error("Each custom split amount must be greater than 0");
+          return;
+        }
+
+        const splitTotal = splitBetween.reduce((sum, split) => sum + split.amount, 0);
+        if (Math.abs(splitTotal - amountNumber) > 0.01) {
+          toast.error("Custom split total must match expense amount");
+          return;
+        }
+      }
+
+      setSaving(true);
+      await axios.put(`/api/expenses/${details.expenseId}`, {
+        description: form.description.trim(),
+        amount: amountNumber,
+        category: form.category,
+        date: form.date,
+        paidBy: form.paidBy,
+        splitBetween,
+      });
+
+      toast.success("Expense updated");
+      setIsEditing(false);
+      await onExpenseChanged?.();
+      onClose();
+    } catch (error) {
+      console.error("Expense update failed:", error);
+      toast.error(error.response?.data?.error || "Failed to update expense");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteExpense = async () => {
+    const ok = window.confirm("Delete this expense? This action cannot be undone.");
+    if (!ok) return;
+
+    try {
+      setDeleting(true);
+      await axios.delete(`/api/expenses/${details.expenseId}`);
+      toast.success("Expense deleted");
+      await onExpenseChanged?.();
+      onClose();
+    } catch (error) {
+      console.error("Expense delete failed:", error);
+      toast.error(error.response?.data?.error || "Failed to delete expense");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleCopyId = async (value, label, key) => {
     if (!value) return;
@@ -1813,12 +2093,169 @@ function ActivityDetailsModal({ activity, onClose }) {
         </div>
 
         <div className="px-5 py-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400">Amount</p>
-            <p className="text-xl font-bold text-slate-100">
-              ₹{Number(activity.amount || 0).toFixed(2)}
-            </p>
-          </div>
+          {isExpense && isEditing ? (
+            <>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400">Description</p>
+                <input
+                  type="text"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, description: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-400">Amount</p>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, amount: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-400">Date</p>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, date: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-400">Paid By</p>
+                  <select
+                    value={form.paidBy}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, paidBy: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="">Select member</option>
+                    {memberOptions.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-400">Category</p>
+                  <select
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, category: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="food">Food</option>
+                    <option value="travel">Travel</option>
+                    <option value="accommodation">Accommodation</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400">Split Type</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSplitMode("equal")}
+                    className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                      splitMode === "equal"
+                        ? "border-indigo-500/50 bg-indigo-500/20 text-indigo-200"
+                        : "border-white/12 bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    }`}
+                  >
+                    Equal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitMode("custom")}
+                    className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                      splitMode === "custom"
+                        ? "border-indigo-500/50 bg-indigo-500/20 text-indigo-200"
+                        : "border-white/12 bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400">Split Between</p>
+                <div className="max-h-44 overflow-y-auto space-y-1.5 rounded-lg border border-white/10 bg-slate-700/30 p-2">
+                  {memberOptions.map((member) => {
+                    const checked = selectedSplitUsers.includes(member.id);
+
+                    return (
+                      <label
+                        key={member.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-slate-700/40 px-2.5 py-2"
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedSplitUsers((prev) => {
+                                if (prev.includes(member.id)) {
+                                  return prev.filter((id) => id !== member.id);
+                                }
+                                return [...prev, member.id];
+                              });
+                            }}
+                            className="accent-indigo-500"
+                          />
+                          <span className="text-xs text-slate-200 truncate">{member.name}</span>
+                        </span>
+
+                        {splitMode === "custom" && checked ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={customSplitAmounts[member.id] ?? ""}
+                            onChange={(e) => {
+                              const nextValue = e.target.value;
+                              setCustomSplitAmounts((prev) => ({
+                                ...prev,
+                                [member.id]: nextValue,
+                              }));
+                            }}
+                            className="w-24 rounded-md border border-white/12 bg-slate-800 px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                            placeholder="0.00"
+                          />
+                        ) : null}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-400">Amount</p>
+              <p className="text-xl font-bold text-slate-100">
+                ₹{Number(activity.amount || 0).toFixed(2)}
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-400">Status</p>
@@ -1947,12 +2384,57 @@ function ActivityDetailsModal({ activity, onClose }) {
         </div>
 
         <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+            >
+              Close
+            </button>
+            {canManageExpense && !isEditing && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="px-3 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
+                  title="Edit expense"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteExpense}
+                  disabled={deleting}
+                  className="px-3 py-2.5 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-500 transition-colors disabled:opacity-60"
+                  title="Delete expense"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </>
+            )}
+            {canManageExpense && isEditing && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-3 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveExpense}
+                  disabled={saving}
+                  className="px-3 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-60"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Save size={14} />
+                    {saving ? "Saving" : "Save"}
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </motion.div>
     </motion.div>
