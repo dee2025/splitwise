@@ -25,6 +25,48 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://moneysplit.in/features</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://moneysplit.in/articles</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://moneysplit.in/articles/how-to-split-expenses-with-friends-effectively</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://moneysplit.in/articles/planning-a-trip-with-friends-budget-tips</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://moneysplit.in/articles/managing-group-expenses-for-shared-living</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://moneysplit.in/articles/best-practices-for-expense-sharing-in-couples</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://moneysplit.in/articles/organizing-expenses-for-family-vacations</loc>
+    <lastmod>2026-04-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://moneysplit.in/contact</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>monthly</changefreq>

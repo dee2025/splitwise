@@ -65,8 +65,33 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Money Split",
+    url: "https://moneysplit.in",
+    logo: "https://moneysplit.in/logo.png",
+    description: "Split bills with friends, roommates, and travel groups without drama",
+    sameAs: [
+      "https://twitter.com/moneysplit",
+      "https://facebook.com/moneysplit",
+      "https://instagram.com/moneysplit",
+    ],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "Customer Support",
+      url: "https://moneysplit.in/contact",
+    },
+  };
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

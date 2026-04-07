@@ -12,6 +12,7 @@ import {
   PartyPopper,
   Receipt,
   Shield,
+  Tag,
   TrendingDown,
   UserPlus,
   Users,
@@ -19,6 +20,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
+
+// ── Import Articles ───────────────────────────────────────────────────────────
+import { articles } from "../../data/articles";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const TICKER = [
@@ -487,7 +491,7 @@ export default function LandingPage() {
       <Ticker />
 
       {/* ── Features (Bento) ────────────────────────────────────────────────── */}
-      <section ref={featuresRef} className="py-28 px-5 sm:px-8">
+      <section ref={featuresRef} className="py-20 px-5 sm:px-8">
         <div className="max-w-6xl mx-auto">
 
           {/* Header */}
@@ -595,65 +599,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── How It Works ─────────────────────────────────────────────────────── */}
-      <section ref={howRef} className="py-28 px-5 sm:px-8 border-t border-white/6">
-        <div className="max-w-6xl mx-auto">
-
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={howInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-            className="mb-14"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-4 h-px bg-indigo-400" />
-              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
-                How it works
-              </span>
-            </div>
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
-              Three moves.
-              <br />
-              <span className="text-slate-500">That&apos;s all it takes.</span>
-            </h2>
-          </motion.div>
-
-          {/* Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {STEPS.map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 24 }}
-                animate={howInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.12, duration: 0.5 }}
-                className="bg-slate-800 border border-white/6 rounded-2xl p-7 hover:border-white/10 transition-all relative overflow-hidden group"
-              >
-                {/* Big background number */}
-                <span className="absolute -bottom-4 -right-2 text-[100px] font-black text-white/3 leading-none select-none group-hover:text-white/5 transition-colors">
-                  {step.n}
-                </span>
-
-                {/* Step badge */}
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="text-[11px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2.5 py-1.5 tracking-wider">
-                    {step.n}
-                  </span>
-                  {i < STEPS.length - 1 && (
-                    <ChevronRight className="w-4 h-4 text-slate-700" />
-                  )}
-                </div>
-
-                <h3 className="text-lg font-bold text-slate-100 mb-3">{step.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed relative z-10">{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+     
 
       {/* ── App Journey ──────────────────────────────────────────────────────── */}
-      <section className="py-24 px-5 sm:px-8 border-t border-white/6">
+      <section className="pb-20 px-5 sm:px-8 border-t border-white/6">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -697,8 +646,114 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Articles Section ─────────────────────────────────────────────────── */}  
+      <section className="pb-20 px-5 sm:px-8 border-t border-white/6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            viewport={{ once: true }}
+            className="mb-12"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-4 h-px bg-indigo-400" />
+              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
+                Learn & grow
+              </span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight mb-4">
+              Master expense sharing
+              <br />
+              <span className="text-slate-500">with expert tips.</span>
+            </h2>
+            <p className="text-slate-400 max-w-3xl leading-7">
+              From planning trips with friends to managing shared living expenses, 
+              our guides help you split costs fairly and keep relationships strong.
+            </p>
+          </motion.div>
+
+          {/* Scrollable Articles */}
+          <div className="relative">
+            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+              {articles.map((article, i) => (
+                <motion.div
+                  key={article.slug}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                  viewport={{ once: true }}
+                  className="flex-shrink-0 w-80 bg-slate-800 border border-white/6 rounded-2xl p-6 hover:border-white/10 transition-all group overflow-hidden"
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-[16/9] -m-6 mb-6 overflow-hidden rounded-t-2xl">
+                    <img
+                      src={article.thumbnail}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+                    {/* Category Badge */}
+                    <div className="absolute top-3 left-3">
+                      <span className="px-2 py-1 bg-slate-900/80 backdrop-blur-sm border border-white/10 rounded-full text-xs font-semibold text-slate-300">
+                        {article.category}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2.5 py-1 tracking-wider uppercase">
+                      Article
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-100 mb-3 line-clamp-2 group-hover:text-indigo-300 transition-colors">
+                    <Link href={`/articles/${article.slug}`}>
+                      {article.title}
+                    </Link>
+                  </h3>
+                  <p className="text-sm text-slate-400 leading-relaxed mb-4 line-clamp-3">
+                    {article.excerpt}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">{article.readTime} min read</span>
+                    <Link 
+                      href={`/articles/${article.slug}`}
+                      className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+                    >
+                      Read more
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            
+            {/* Fade gradients for scroll indication */}
+            <div className="absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
+          </div>
+
+          {/* View All Articles CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="mt-8 text-center"
+          >
+            <Link
+              href="/articles"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 hover:border-white/20 transition-all text-sm"
+            >
+              View all articles
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ── Final CTA ────────────────────────────────────────────────────────── */}
-      <section className="py-28 px-5 sm:px-8 border-t border-white/6">
+      <section className="pb-20 px-5 sm:px-8 border-t border-white/6">
         <div className="max-w-3xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -706,13 +761,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            {/* Logo mark with glow */}
-            <div className="relative inline-flex mb-10">
-              <div className="absolute inset-0 -z-10 bg-indigo-600/25 blur-2xl rounded-full scale-150" />
-              <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-950/60">
-                <span className="text-white font-black text-2xl">S</span>
-              </div>
-            </div>
+           
 
             <h2 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight mb-5">
               Start splitting smarter

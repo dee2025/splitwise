@@ -30,6 +30,7 @@ export default function SiteFooter() {
               <Link href="/signup" className="block text-sm text-slate-300 hover:text-white transition-colors">Create Account</Link>
               <Link href="/login" className="block text-sm text-slate-300 hover:text-white transition-colors">Sign In</Link>
               <Link href="/about" className="block text-sm text-slate-300 hover:text-white transition-colors">About Money Split</Link>
+              <Link href="/articles" className="block text-sm text-slate-300 hover:text-white transition-colors">Articles</Link>
               <Link href="/contact" className="block text-sm text-slate-300 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
