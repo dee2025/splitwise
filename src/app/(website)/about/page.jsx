@@ -18,13 +18,6 @@ export default function AboutPage() {
           </p>
         </section>
 
-        <section className="rounded-2xl border border-dashed border-indigo-400/40 bg-slate-900/70 p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-indigo-300 font-semibold">Image Space</p>
-          <div className="mt-3 h-52 sm:h-64 rounded-xl border border-white/10 bg-slate-800/60 flex items-center justify-center">
-            <p className="text-sm text-slate-400">Future image area: team photo, product story visual, or timeline graphic</p>
-          </div>
-        </section>
-
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <article className="rounded-xl border border-white/10 bg-slate-800/40 p-4">
             <h2 className="text-base font-semibold">Our Mission</h2>

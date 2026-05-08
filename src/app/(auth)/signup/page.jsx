@@ -293,7 +293,7 @@ export default function SignupPage() {
                 <span className="text-white font-bold text-sm">S</span>
               </div>
               <span className="text-lg font-bold text-slate-100 tracking-tight">
-                Split<span className="text-indigo-400">Wise</span>
+                Money<span className="text-indigo-400">Split</span>
               </span>
             </Link>
             <h1 className="text-2xl font-bold text-slate-100 mb-1.5">
@@ -437,14 +437,14 @@ export default function SignupPage() {
         <p className="text-center text-xs text-slate-600 mt-6">
           By creating an account, you agree to our{" "}
           <Link
-            href="#terms"
+            href="/terms-of-service"
             className="hover:text-slate-400 transition-colors"
           >
             Terms
           </Link>{" "}
           and{" "}
           <Link
-            href="#privacy"
+            href="/privacy-policy"
             className="hover:text-slate-400 transition-colors"
           >
             Privacy Policy

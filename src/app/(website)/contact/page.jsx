@@ -15,13 +15,6 @@ export default function ContactPage() {
           through the details below.
         </p>
 
-        <section className="rounded-2xl border border-dashed border-indigo-400/40 bg-slate-900/70 p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-indigo-300 font-semibold">Image Space</p>
-          <div className="mt-3 h-48 sm:h-60 rounded-xl border border-white/10 bg-slate-800/60 flex items-center justify-center">
-            <p className="text-sm text-slate-400">Future image area: office map, support banner, or customer success visual</p>
-          </div>
-        </section>
-
         <div className="rounded-xl border border-white/10 bg-slate-800/40 p-5 space-y-3">
           <p className="text-slate-200 font-medium">Money Split Support</p>
           <p className="text-slate-300">Email: deepaksingh@moneysplit.in</p>
