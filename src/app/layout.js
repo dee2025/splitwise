@@ -18,21 +18,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://moneysplit.in"),
+  metadataBase: new URL("https://www.moneysplit.in"),
   title: "Money Split - Easy Bill Splitting & Expense Tracking App",
   description: "Split bills with friends, roommates, and travel groups without drama. Track shared expenses, settle up instantly with optimal algorithms. Free expense splitter app for groups.",
   keywords: "bill splitter, expense tracker, split bills, money management, group expenses, travel expenses, roommate expenses, settle debts",
-  url: "https://moneysplit.in",
   siteName: "Money Split",
   locale: "en_IN",
   openGraph: {
     type: "website",
-    url: "https://moneysplit.in",
     title: "Money Split - Easy Bill Splitting & Expense Tracking",
     description: "Split expenses with friends instantly. Track shared bills, balance calculations, and one-click settlements.",
     images: [
       {
-        url: "https://moneysplit.in/og-image.jpg",
+        url: "https://www.moneysplit.in/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Money Split - Expense Splitting App",
@@ -43,7 +41,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Money Split - Easy Bill Splitting App",
     description: "Split expenses with friends instantly. No math, no drama.",
-    images: ["https://moneysplit.in/og-image.jpg"],
+    images: ["https://www.moneysplit.in/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -56,9 +54,6 @@ export const metadata = {
       "max-video-preview": -1,
     },
   },
-  alternates: {
-    canonical: "https://moneysplit.in",
-  },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || "",
   },
@@ -69,8 +64,8 @@ export default function RootLayout({ children }) {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Money Split",
-    url: "https://moneysplit.in",
-    logo: "https://moneysplit.in/logo.png",
+    url: "https://www.moneysplit.in",
+    logo: "https://www.moneysplit.in/logo.png",
     description: "Split bills with friends, roommates, and travel groups without drama",
     sameAs: [
       "https://twitter.com/moneysplit",
@@ -80,7 +75,7 @@ export default function RootLayout({ children }) {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Support",
-      url: "https://moneysplit.in/contact",
+      url: "https://www.moneysplit.in/contact",
     },
   };
 
@@ -106,3 +101,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+

@@ -1,97 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://moneysplit.in</loc>
+    <loc>https://www.moneysplit.in</loc>
     <lastmod>2026-03-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/signup</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://moneysplit.in/login</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://moneysplit.in/about</loc>
+    <loc>https://www.moneysplit.in/about</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/features</loc>
+    <loc>https://www.moneysplit.in/features</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/articles</loc>
+    <loc>https://www.moneysplit.in/articles</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/articles/how-to-split-expenses-with-friends-effectively</loc>
+    <loc>https://www.moneysplit.in/articles/how-to-split-expenses-with-friends-effectively</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/articles/planning-a-trip-with-friends-budget-tips</loc>
+    <loc>https://www.moneysplit.in/articles/planning-a-trip-with-friends-budget-tips</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/articles/managing-group-expenses-for-shared-living</loc>
+    <loc>https://www.moneysplit.in/articles/managing-group-expenses-for-shared-living</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/articles/best-practices-for-expense-sharing-in-couples</loc>
+    <loc>https://www.moneysplit.in/articles/best-practices-for-expense-sharing-in-couples</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/articles/organizing-expenses-for-family-vacations</loc>
+    <loc>https://www.moneysplit.in/articles/organizing-expenses-for-family-vacations</loc>
     <lastmod>2026-04-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/contact</loc>
+    <loc>https://www.moneysplit.in/contact</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/privacy-policy</loc>
-    <lastmod>2026-04-04</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://moneysplit.in/terms-of-service</loc>
+    <loc>https://www.moneysplit.in/privacy-policy</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/cookie-policy</loc>
+    <loc>https://www.moneysplit.in/terms-of-service</loc>
+    <lastmod>2026-04-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.moneysplit.in/cookie-policy</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://moneysplit.in/disclaimer</loc>
+    <loc>https://www.moneysplit.in/disclaimer</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>

@@ -38,7 +38,9 @@ export async function GET(req) {
     });
 
   } catch (error) {
-    console.error('Auth check error:', error);
+    if (error?.name !== "TokenExpiredError") {
+      console.error("Auth check error:", error);
+    }
     const response = NextResponse.json({ 
       isAuthenticated: false 
     });

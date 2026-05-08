@@ -14,10 +14,11 @@ export const metadata = {
     "settle up app",
   ],
   alternates: {
-    canonical: "https://moneysplit.in",
+    canonical: "https://www.moneysplit.in",
   },
 };
 
 export default function HomePage() {
   return <LandingPageModern />;
 }
+

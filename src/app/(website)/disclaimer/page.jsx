@@ -2,7 +2,7 @@ export const metadata = {
   title: "Disclaimer | Money Split",
   description:
     "Important disclaimer regarding informational use, financial responsibility, and service limitations on Money Split.",
-  alternates: { canonical: "https://moneysplit.in/disclaimer" },
+  alternates: { canonical: "https://www.moneysplit.in/disclaimer" },
 };
 
 export default function DisclaimerPage() {
@@ -52,3 +52,4 @@ export default function DisclaimerPage() {
     </main>
   );
 }
+

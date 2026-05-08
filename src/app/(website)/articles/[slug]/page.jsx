@@ -19,13 +19,13 @@ export async function generateMetadata({ params }) {
     description: article.excerpt,
     keywords: article.keywords,
     alternates: {
-      canonical: `https://moneysplit.in/articles/${slug}`,
+      canonical: `https://www.moneysplit.in/articles/${slug}`,
     },
     openGraph: {
       title: article.title,
       description: article.excerpt,
       type: 'article',
-      url: `https://moneysplit.in/articles/${slug}`,
+      url: `https://www.moneysplit.in/articles/${slug}`,
       images: [
         {
           url: article.thumbnail,
@@ -66,19 +66,19 @@ export default async function ArticlePage({ params }) {
     author: {
       "@type": "Organization",
       name: "Money Split",
-      url: "https://moneysplit.in",
+      url: "https://www.moneysplit.in",
     },
     publisher: {
       "@type": "Organization",
       name: "Money Split",
       logo: {
         "@type": "ImageObject",
-        url: "https://moneysplit.in/logo.png",
+        url: "https://www.moneysplit.in/logo.png",
       },
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://moneysplit.in/articles/${slug}`,
+      "@id": `https://www.moneysplit.in/articles/${slug}`,
     },
   };
 

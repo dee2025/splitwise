@@ -390,7 +390,7 @@ export default function LandingPage() {
             "@type": "SoftwareApplication",
             "name": "Money Split",
             "description": "Easy expense splitter and bill tracker app for groups, trips, and roommates",
-            "url": "https://moneysplit.in",
+            "url": "https://www.moneysplit.in",
             "applicationCategory": "FinanceApplication",
             "offers": {
               "@type": "Offer",
@@ -720,7 +720,7 @@ export default function LandingPage() {
                       href={`/articles/${article.slug}`}
                       className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
                     >
-                      Read more
+                      Read more about {article.title}
                       <ArrowRight className="w-3 h-3" />
                     </Link>
                   </div>
@@ -795,3 +795,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
