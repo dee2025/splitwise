@@ -3,6 +3,7 @@ import { Providers } from "@/redux/Providers";
 import GlobalAddExpenseModal from "@/components/global/GlobalAddExpenseModal";
 import WebsiteShell from "@/components/site/WebsiteShell";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
@@ -60,6 +61,9 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const gaMeasurementId =
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-QENC54FHEQ";
+
   const schemaData = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -82,6 +86,18 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${gaMeasurementId}');
+          `}
+        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
