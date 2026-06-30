@@ -25,7 +25,6 @@ const CATEGORY_OPTIONS = [
   { value: "accommodation", label: "Accommodation" },
   { value: "shopping", label: "Shopping" },
   { value: "entertainment", label: "Entertainment" },
-  { value: "utilities", label: "Utilities" },
   { value: "other", label: "Other" },
 ];
 
@@ -69,7 +68,7 @@ function buildEqualSplit(amount, userIds) {
 export default function GlobalAddExpenseModal() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
@@ -111,6 +110,8 @@ export default function GlobalAddExpenseModal() {
       .map(normalizeMember)
       .filter((member) => member.userId);
   }, [selectedGroup]);
+
+  const currentUserId = String(user?.id || user?._id || "");
 
   const splitBetween = useMemo(() => {
     if (splitType === "custom") {
@@ -193,6 +194,7 @@ export default function GlobalAddExpenseModal() {
     }
 
     const memberIds = members.map((member) => member.userId);
+    const currentUserIsMember = currentUserId && memberIds.includes(currentUserId);
     setPaidTo(memberIds);
     const equalSplit = buildEqualSplit(formData.amount, memberIds);
     const nextCustomSplit = {};
@@ -202,13 +204,12 @@ export default function GlobalAddExpenseModal() {
     setCustomSplitAmounts(nextCustomSplit);
 
     setFormData((prev) => {
-      const paidByStillValid = memberIds.includes(prev.paidBy);
       return {
         ...prev,
-        paidBy: paidByStillValid ? prev.paidBy : memberIds[0],
+        paidBy: currentUserIsMember ? currentUserId : "",
       };
     });
-  }, [members]);
+  }, [members, currentUserId]);
 
   useEffect(() => {
     if (splitType !== "custom" || paidTo.length === 0) return;
@@ -288,8 +289,13 @@ export default function GlobalAddExpenseModal() {
       return;
     }
 
-    if (!formData.description.trim() || !formData.amount || !formData.paidBy) {
+    if (!formData.description.trim() || !formData.amount) {
       toast.error("Please fill all required fields");
+      return;
+    }
+
+    if (!formData.paidBy) {
+      toast.error("Your account must be a member of this group");
       return;
     }
 
@@ -547,29 +553,7 @@ export default function GlobalAddExpenseModal() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-300 mb-1.5">
-                        Paid By *
-                      </label>
-                      <select
-                        value={formData.paidBy}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, paidBy: e.target.value }))
-                        }
-                        className="w-full px-3.5 py-2.5 rounded-lg bg-slate-700/50 border border-white/8 text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        required
-                      >
-                        <option value="">Select member</option>
-                        {members.map((member) => (
-                          <option key={member.userId} value={member.userId}>
-                            {member.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
+                  <div>
                       <label className="block text-sm font-semibold text-slate-300 mb-1.5">
                         Category
                       </label>
@@ -592,7 +576,6 @@ export default function GlobalAddExpenseModal() {
                           ))}
                         </select>
                       </div>
-                    </div>
                   </div>
 
                   <div>

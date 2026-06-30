@@ -13,14 +13,14 @@ export default function PrivacyPolicyPage() {
         <p className="text-slate-300">Effective date: April 4, 2026</p>
         <p className="text-slate-300 leading-7">
           Money Split collects only the information necessary to provide group
-          expense tracking, settlements, and account security. We do not sell user
+          expense tracking, group management, and account security. We do not sell user
           personal data.
         </p>
 
         <section className="space-y-5 text-slate-300 leading-7">
           <div>
             <h2 className="text-lg font-semibold text-slate-100">1. Data We Collect</h2>
-            <p>Account details, group and expense records, settlement actions, and technical logs needed for security and performance.</p>
+            <p>Account details, group and expense records, member activity, and technical logs needed for security and performance.</p>
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-100">2. How We Use Data</h2>

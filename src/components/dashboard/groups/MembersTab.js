@@ -97,7 +97,7 @@ export default function MembersTab({ members = [], groupId, onMemberAdded, reloa
                     <div className="bg-white w-full max-w-md rounded-xl p-6">
                         <h3 className="text-lg font-semibold mb-3">Add Member</h3>
                         <p className="text-sm text-gray-500 mb-4">
-                            Enter email, username or contact. If the user doesn't exist a custom member will be created in the group.
+                            Enter email, username or contact. If the user doesn&apos;t exist a custom member will be created in the group.
                         </p>
 
                         <input

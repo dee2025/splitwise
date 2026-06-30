@@ -7,7 +7,7 @@ import {
   CheckCircle,
   ChevronRight,
   Coins,
-  HandCoins,
+  FileText,
   MapPin,
   PartyPopper,
   Receipt,
@@ -27,7 +27,7 @@ import { articles } from "../../data/articles";
 // ── Data ──────────────────────────────────────────────────────────────────────
 const TICKER = [
   "10K+ Users Active",
-  "₹1M+ Settled",
+  "₹1M+ Tracked",
   "Zero Math Required",
   "Real-time Sync",
   "Group Trips",
@@ -59,9 +59,9 @@ const FEATURES = [
     accentBg: "bg-emerald-500/10",
   },
   {
-    icon: CheckCircle,
-    title: "One-click Settle",
-    desc: "Optimal settlement plans with minimum transactions. Everyone pays their fair share.",
+    icon: FileText,
+    title: "Expense History",
+    desc: "Review who paid, who joined each split, and when every cost was added.",
     accent: "text-indigo-400",
     accentBg: "bg-indigo-500/10",
   },
@@ -94,8 +94,8 @@ const STEPS = [
   },
   {
     n: "03",
-    title: "Settle up",
-    desc: "Review the summary and pay. One click, everyone's square.",
+    title: "Review activity",
+    desc: "View group history, members, and split details whenever you need them.",
   },
 ];
 
@@ -133,10 +133,10 @@ const JOURNEY_STEPS = [
     chip: "bg-indigo-500/15 border-indigo-400/30 text-indigo-200",
   },
   {
-    icon: HandCoins,
-    title: "Settle Dues",
-    desc: "Follow settlement suggestions and close pending balances.",
-    state: "Trip settled",
+    icon: FileText,
+    title: "Review Records",
+    desc: "Open the activity timeline and export a group report when needed.",
+    state: "Report ready",
     accent: "text-emerald-300",
     chip: "bg-emerald-500/15 border-emerald-400/30 text-emerald-200",
   },
@@ -235,12 +235,12 @@ function HeroCard() {
             <p className="text-base font-bold text-emerald-400">₹2,300</p>
           </div>
           <button className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-950/60">
-            Settle Up
+            View Report
           </button>
         </div>
       </motion.div>
 
-      {/* Floating: settled notification */}
+      {/* Floating: activity notification */}
       <motion.div
         initial={{ opacity: 0, x: 20, scale: 0.9 }}
         animate={{
@@ -259,9 +259,9 @@ function HeroCard() {
       >
         <p className="text-[11px] font-bold text-slate-100 flex items-center gap-1.5">
           <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
-          Rahul settled up
+          Report exported
         </p>
-        <p className="text-[10px] text-slate-500 mt-0.5">₹1,150 received · just now</p>
+        <p className="text-[10px] text-slate-500 mt-0.5">Group activity PDF · just now</p>
       </motion.div>
 
       {/* Floating: balance chip */}
@@ -438,7 +438,7 @@ export default function LandingPage() {
 
               {/* Subtitle */}
               <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-md">
-                Track shared costs, settle up instantly, and keep every
+                Track shared costs, add members quickly, and keep every
                 friendship intact — no matter how messy the tab gets.
               </p>
 
@@ -620,12 +620,12 @@ export default function LandingPage() {
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
               Watch the full flow,
               <br />
-              <span className="text-slate-500">from first click to happy settle.</span>
+              <span className="text-slate-500">from first click to clear records.</span>
             </h2>
             <p className="text-slate-400 mt-4 max-w-3xl leading-7">
               This is the exact journey your users follow: create a group, add members,
-              record expenses, auto-split the amount, settle dues, and finish the trip
-              with clear balances and zero awkward follow-ups.
+              record expenses, auto-split the amount, review activity, and manage the group
+              with clear records and zero awkward follow-ups.
             </p>
           </motion.div>
 

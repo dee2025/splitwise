@@ -16,7 +16,7 @@ export default function SiteFooter() {
               </span>
             </Link>
             <p className="mt-4 text-sm text-slate-400 leading-relaxed max-w-xs">
-              Split bills with clarity, track group expenses in real time, and settle faster with fewer transactions.
+              Split bills with clarity, track group expenses in real time, and keep clear shared records.
             </p>
             <div className="mt-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 text-[11px] font-semibold text-emerald-300 uppercase tracking-wide">
               <CheckCircle className="w-3.5 h-3.5" />

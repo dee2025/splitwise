@@ -64,12 +64,12 @@ const CATEGORY_CONFIG = {
     label: "Entertainment",
   },
   other: {
-    icon: Receipt,
-    bgColor: "bg-white/6",
-    iconColor: "text-slate-400",
-    badgeBg: "bg-white/6",
-    badgeText: "text-slate-400",
-    label: "Other",
+      icon: Receipt,
+      bgColor: "bg-white/6",
+      iconColor: "text-slate-400",
+      badgeBg: "bg-white/6",
+      badgeText: "text-slate-400",
+      label: "Other",
   },
 };
 
@@ -97,18 +97,14 @@ function getUserShare(expense, userId) {
   const isPayer = expense.paidBy?._id?.toString() === userId;
 
   if (!split) {
-    return { type: "unknown", amount: 0, settled: true };
+    return { type: "unknown", amount: 0 };
   }
 
   if (isPayer) {
-    return { type: "paid", amount: split.amount, settled: split.settled };
+    return { type: "paid", amount: split.amount };
   }
 
-  if (split.settled) {
-    return { type: "settled", amount: split.amount, settled: true };
-  }
-
-  return { type: "owes", amount: split.amount, settled: false };
+  return { type: "share", amount: split.amount };
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -144,17 +140,10 @@ function PersonalShareBadge({ share, currencySymbol }) {
       </span>
     );
   }
-  if (share.type === "settled") {
-    return (
-      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shrink-0">
-        settled
-      </span>
-    );
-  }
-  if (share.type === "owes") {
+  if (share.type === "share") {
     return (
       <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 shrink-0">
-        you owe {currencySymbol}
+        your share {currencySymbol}
         {share.amount.toFixed(2)}
       </span>
     );
@@ -325,7 +314,7 @@ function ExpenseDetailsModal({ expense, userId, onClose }) {
             <p className="text-xs text-slate-400">Your Share</p>
             <p className="text-xs text-slate-300 text-right">
               {mySplit
-                ? `${sym}${Number(mySplit.amount || 0).toFixed(2)} ${mySplit.settled ? "(settled)" : "(unsettled)"}`
+                ? `${sym}${Number(mySplit.amount || 0).toFixed(2)}`
                 : "Not part of split"}
             </p>
           </div>
@@ -502,29 +491,24 @@ export default function ExpensesPage() {
 
   // ── Derived data ─────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    let totalOwed = 0;
-    let totalOwedToUser = 0;
+    let paidByUser = 0;
+    let userShare = 0;
 
     expenses.forEach((exp) => {
       const isPayer = exp.paidBy?._id?.toString() === user.id;
       if (isPayer) {
-        (exp.splitBetween ?? []).forEach((s) => {
-          if (s.userId?.toString() !== user.id && !s.settled) {
-            totalOwedToUser += s.amount ?? 0;
-          }
-        });
-      } else {
-        const mine = (exp.splitBetween ?? []).find(
-          (s) => s.userId?.toString() === user.id,
-        );
-        if (mine && !mine.settled) totalOwed += mine.amount ?? 0;
+        paidByUser += Number(exp.amount || 0);
       }
+      const mine = (exp.splitBetween ?? []).find(
+        (s) => s.userId?.toString() === user.id,
+      );
+      if (mine) userShare += Number(mine.amount || 0);
     });
 
     return {
       totalCount: expenses.length,
-      totalOwed: Math.round(totalOwed * 100) / 100,
-      totalOwedToUser: Math.round(totalOwedToUser * 100) / 100,
+      paidByUser: Math.round(paidByUser * 100) / 100,
+      userShare: Math.round(userShare * 100) / 100,
     };
   }, [expenses, user.id]);
 
@@ -621,15 +605,15 @@ export default function ExpensesPage() {
                 iconBg: "bg-indigo-500/10",
               },
               {
-                label: "You Owe",
-                value: `₹${stats.totalOwed.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+                label: "You Paid",
+                value: `₹${stats.paidByUser.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
                 icon: TrendingDown,
                 color: "text-rose-400",
                 iconBg: "bg-rose-500/10",
               },
               {
-                label: "You'll Receive",
-                value: `₹${stats.totalOwedToUser.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+                label: "Your Share",
+                value: `₹${stats.userShare.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
                 icon: TrendingUp,
                 color: "text-emerald-400",
                 iconBg: "bg-emerald-500/10",

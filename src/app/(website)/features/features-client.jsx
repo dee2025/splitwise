@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   BarChart3,
   CheckCircle,
+  FileText,
   HandCoins,
   Shield,
   TrendingDown,
@@ -54,16 +55,16 @@ const FEATURES = [
     ],
   },
   {
-    icon: CheckCircle,
-    title: "One-click Settle",
-    desc: "Optimal settlement plans with minimum transactions. Everyone pays their fair share.",
+    icon: FileText,
+    title: "Expense History",
+    desc: "Review every group expense, payer, participant, and split from one clear timeline.",
     accent: "text-indigo-400",
     accentBg: "bg-indigo-500/10",
     details: [
-      "Smart settlement algorithm",
-      "Minimum transaction paths",
-      "Payment recommendations",
-      "Settlement verification",
+      "Date-wise activity timeline",
+      "Expense detail views",
+      "PDF activity reports",
+      "Clear split records",
     ],
   },
   {
@@ -251,7 +252,7 @@ export function FeaturesPageClient() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">Why Choose Money Split?</h2>
-            <p className="text-lg text-slate-400">Compare features and see why we're the smart choice for expense splitting.</p>
+            <p className="text-lg text-slate-400">Compare features and see why we&apos;re the smart choice for expense splitting.</p>
           </motion.div>
 
           <motion.div

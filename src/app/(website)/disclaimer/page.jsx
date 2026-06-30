@@ -15,13 +15,13 @@ export default function DisclaimerPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-100">1. Informational Use</h2>
             <p>
-              Money Split provides expense tracking and settlement support tools for informational and organizational use.
+              Money Split provides expense tracking tools for informational and organizational use.
             </p>
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-100">2. User Responsibility</h2>
             <p>
-              Final payment actions, debt decisions, and settlement confirmations are the responsibility of users and group members.
+              Financial decisions and any real-world transfers outside the app are the responsibility of users and group members.
             </p>
           </div>
           <div>

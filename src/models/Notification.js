@@ -13,12 +13,6 @@ const notificationSchema = new mongoose.Schema({
       "group_invitation",
       "expense_added", 
       "expense_updated",
-      "settlement_request",
-      "settlement_confirmed",
-      "settlement_completed",
-      "settlement_cancelled",
-      "settlement_disputed",
-      "payment_received",
       "system"
     ]
   },

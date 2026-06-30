@@ -1,12 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Clock, UserPlus, FileText, CheckCircle } from "lucide-react";
+import { Clock, UserPlus, FileText } from "lucide-react";
 
 /*
   Props:
     - activity: array of { type, message, createdAt, meta }
-    - types: "expense_added", "member_added", "settlement", etc.
+    - types: "expense_added", "member_added", etc.
 */
 export default function ActivityTab({ activity = [] }) {
     if (!activity.length) {
@@ -17,7 +17,6 @@ export default function ActivityTab({ activity = [] }) {
         switch (type) {
             case "member_added": return <UserPlus />;
             case "expense_added": return <FileText />;
-            case "settlement": return <CheckCircle />;
             default: return <Clock />;
         }
     };

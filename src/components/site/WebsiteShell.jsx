@@ -10,7 +10,6 @@ const PANEL_PREFIXES = [
   "/expenses",
   "/notifications",
   "/profile",
-  "/settlements",
 ];
 
 export default function WebsiteShell({ children }) {

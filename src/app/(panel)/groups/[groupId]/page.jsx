@@ -35,7 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 
@@ -100,63 +100,180 @@ function formatReportDate(dateValue) {
   });
 }
 
-function buildSettlementPlan(expenses = []) {
-  const balances = {};
+function formatMoney(value) {
+  return `INR ${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
-  for (const expense of expenses) {
-    const paidById = getNormalizedId(expense?.paidBy?._id || expense?.paidBy);
-    const amount = Number(expense?.amount || 0);
+function formatDateHeading(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "Unknown Date";
+  return date.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-    if (paidById && Number.isFinite(amount) && amount > 0) {
-      balances[paidById] = round2((balances[paidById] || 0) + amount);
+function getExpenseDateKey(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return date.toISOString().slice(0, 10);
+}
+
+function getSplitMemberCount(expense) {
+  const ids = new Set(
+    (expense?.splitBetween || [])
+      .map((split) => getNormalizedId(split?.userId))
+      .filter(Boolean),
+  );
+  return ids.size || expense?.splitBetween?.length || 0;
+}
+
+function buildMemberLookup(members = [], expenses = []) {
+  const lookup = new Map();
+
+  for (const member of members || []) {
+    const id = getNormalizedId(member?.userId || member);
+    if (!id) continue;
+    lookup.set(id, {
+      id,
+      name: getMemberName(member),
+      secondary: getMemberSecondary(member),
+    });
+  }
+
+  for (const expense of expenses || []) {
+    const payerId = getNormalizedId(expense?.paidBy);
+    if (payerId && !lookup.has(payerId)) {
+      lookup.set(payerId, {
+        id: payerId,
+        name:
+          expense?.paidBy?.fullName ||
+          expense?.paidBy?.username ||
+          "Unknown User",
+        secondary: expense?.paidBy?.email || "Expense payer",
+      });
     }
 
     for (const split of expense?.splitBetween || []) {
-      const splitUserId = getNormalizedId(split?.userId);
-      const splitAmount = Number(split?.amount || 0);
-      if (!splitUserId || !Number.isFinite(splitAmount)) continue;
-
-      balances[splitUserId] = round2((balances[splitUserId] || 0) - splitAmount);
+      const splitId = getNormalizedId(split?.userId);
+      if (splitId && !lookup.has(splitId)) {
+        lookup.set(splitId, {
+          id: splitId,
+          name:
+            split?.userId?.fullName ||
+            split?.userId?.username ||
+            "Unknown User",
+          secondary: split?.userId?.email || "Split member",
+        });
+      }
     }
   }
 
-  const creditors = [];
-  const debtors = [];
+  return lookup;
+}
 
-  for (const [userId, amount] of Object.entries(balances)) {
-    const normalized = round2(amount);
-    if (normalized > 0.01) creditors.push({ userId, amount: normalized });
-    if (normalized < -0.01) debtors.push({ userId, amount: Math.abs(normalized) });
+function buildPayPlan(expenses = [], members = []) {
+  const memberLookup = buildMemberLookup(members, expenses);
+  const balances = {};
+
+  for (const id of memberLookup.keys()) {
+    balances[id] = 0;
   }
 
-  creditors.sort((a, b) => b.amount - a.amount);
-  debtors.sort((a, b) => b.amount - a.amount);
+  for (const expense of expenses || []) {
+    const payerId = getNormalizedId(expense?.paidBy);
+    const amount = Number(expense?.amount || 0);
+    if (payerId && Number.isFinite(amount)) {
+      balances[payerId] = round2((balances[payerId] || 0) + amount);
+    }
 
-  const settlements = [];
+    for (const split of expense?.splitBetween || []) {
+      const splitId = getNormalizedId(split?.userId);
+      const splitAmount = Number(split?.amount || 0);
+      if (!splitId || !Number.isFinite(splitAmount)) continue;
+      balances[splitId] = round2((balances[splitId] || 0) - splitAmount);
+    }
+  }
+
+  const balanceRows = Array.from(memberLookup.values())
+    .map((member) => ({
+      ...member,
+      balance: round2(balances[member.id] || 0),
+    }))
+    .sort((a, b) => b.balance - a.balance);
+
+  const creditors = balanceRows
+    .filter((member) => member.balance > 0.01)
+    .map((member) => ({ ...member, remaining: member.balance }));
+
+  const debtors = balanceRows
+    .filter((member) => member.balance < -0.01)
+    .map((member) => ({ ...member, remaining: Math.abs(member.balance) }));
+
+  const payments = [];
   let debtorIndex = 0;
   let creditorIndex = 0;
 
   while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
     const debtor = debtors[debtorIndex];
     const creditor = creditors[creditorIndex];
+    const amount = round2(Math.min(debtor.remaining, creditor.remaining));
 
-    const settledAmount = round2(Math.min(debtor.amount, creditor.amount));
-    if (settledAmount > 0.01) {
-      settlements.push({
-        from: debtor.userId,
-        to: creditor.userId,
-        amount: settledAmount,
+    if (amount > 0.01) {
+      payments.push({
+        fromId: debtor.id,
+        fromName: debtor.name,
+        toId: creditor.id,
+        toName: creditor.name,
+        amount,
       });
     }
 
-    debtor.amount = round2(debtor.amount - settledAmount);
-    creditor.amount = round2(creditor.amount - settledAmount);
+    debtor.remaining = round2(debtor.remaining - amount);
+    creditor.remaining = round2(creditor.remaining - amount);
 
-    if (debtor.amount <= 0.01) debtorIndex += 1;
-    if (creditor.amount <= 0.01) creditorIndex += 1;
+    if (debtor.remaining <= 0.01) debtorIndex += 1;
+    if (creditor.remaining <= 0.01) creditorIndex += 1;
   }
 
-  return settlements;
+  return {
+    payments,
+    balances: balanceRows,
+    totalExpenses: round2(
+      expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
+    ),
+  };
+}
+
+function groupExpensesByDate(items = []) {
+  const groups = new Map();
+
+  for (const item of items) {
+    const key = getExpenseDateKey(item?.details?.date || item?.createdAt);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: formatDateHeading(item?.details?.date || item?.createdAt),
+        total: 0,
+        items: [],
+      });
+    }
+
+    const group = groups.get(key);
+    group.items.push(item);
+    group.total = round2(group.total + Number(item.amount || 0));
+  }
+
+  return Array.from(groups.values()).sort((a, b) => {
+    if (a.key === "unknown") return 1;
+    if (b.key === "unknown") return -1;
+    return new Date(b.key).getTime() - new Date(a.key).getTime();
+  });
 }
 
 async function loadImageToDataUrl(src) {
@@ -189,18 +306,19 @@ export default function GroupPage() {
   const [loading, setLoading] = useState(true);
   const [expandMembers, setExpandMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
-  const [completingTrip, setCompletingTrip] = useState(false);
-  const [debts, setDebts] = useState([]);
-  const [loadingDebts, setLoadingDebts] = useState(true);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [reportShare, setReportShare] = useState({
     open: false,
     file: null,
     fileName: "",
   });
-  const [activeTab, setActiveTab] = useState("activity"); // "members" | "settlements" | "activity"
+  const [activeTab, setActiveTab] = useState("activity");
 
   const groupId = params.groupId;
+  const payPlan = useMemo(
+    () => buildPayPlan(expenses, group?.members || []),
+    [expenses, group?.members],
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -209,24 +327,6 @@ export default function GroupPage() {
     }
     fetchGroupData();
   }, [groupId, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (group) {
-      fetchDebts();
-    }
-  }, [group?._id]);
-
-  const fetchDebts = async () => {
-    try {
-      setLoadingDebts(true);
-      const res = await axios.get(`/api/groups/${group._id}/balances`);
-      setDebts(res.data?.debts || []);
-    } catch (error) {
-      console.error("Error fetching debts:", error);
-    } finally {
-      setLoadingDebts(false);
-    }
-  };
 
   const fetchGroupData = async () => {
     try {
@@ -285,22 +385,6 @@ export default function GroupPage() {
     );
   };
 
-  const handleCompleteTrip = async () => {
-    try {
-      setCompletingTrip(true);
-      const res = await axios.put(`/api/groups/complete-trip`, { groupId });
-      setGroup(res.data.group);
-      toast.success("Trip completed! Time to settle up!");
-      // setActiveTab("settlements");
-      setActiveTab("activity");
-    } catch (error) {
-      console.error("Error completing trip:", error);
-      toast.error(error.response?.data?.message || "Failed to complete trip");
-    } finally {
-      setCompletingTrip(false);
-    }
-  };
-
   const handleDownloadActivityPdf = async () => {
     if (!group) return;
     if (!expenses?.length) {
@@ -316,15 +400,6 @@ export default function GroupPage() {
         import("jspdf-autotable"),
       ]);
 
-      const memberNameMap = new Map();
-      for (const member of group?.members || []) {
-        const memberId = getNormalizedId(member?.userId || member);
-        if (!memberId) continue;
-        memberNameMap.set(memberId, getMemberName(member));
-      }
-
-      const displayNameFromId = (id) => memberNameMap.get(String(id)) || "Unknown";
-
       const reportDate = new Date();
       const sortedExpenses = [...expenses].sort(
         (a, b) => new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt),
@@ -339,19 +414,6 @@ export default function GroupPage() {
         acc[key].push(expense);
         return acc;
       }, {});
-
-      const overallDebts =
-        debts?.length > 0
-          ? debts.map((d) => ({
-              fromName: d.fromUser || "Unknown",
-              toName: d.toUser || "Unknown",
-              amount: Number(d.amount || 0),
-            }))
-          : buildSettlementPlan(sortedExpenses).map((d) => ({
-              fromName: displayNameFromId(d.from),
-              toName: displayNameFromId(d.to),
-              amount: Number(d.amount || 0),
-            }));
 
       const totalExpenseAmount = round2(
         sortedExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
@@ -371,15 +433,15 @@ export default function GroupPage() {
 
       doc.setFontSize(12);
       doc.setTextColor(224, 231, 255);
-      doc.text("Split smart. Settle fast. Stay stress free.", 40, 74);
+      doc.text("Track shared expenses with clarity.", 40, 74);
       doc.setTextColor(203, 213, 225);
       doc.text(
-        "Money Split helps friends, roommates, and travel groups track shared expenses with full clarity.",
+        "Money Split helps friends, roommates, and travel groups record shared costs in one place.",
         40,
         94,
       );
       doc.text(
-        "This report gives a complete snapshot: overall pending settlements + date-wise activity details.",
+        "This report gives a complete snapshot of date-wise group expense activity.",
         40,
         110,
       );
@@ -410,7 +472,6 @@ export default function GroupPage() {
           ["Total activities (expenses)", `${sortedExpenses.length}`],
           ["Total amount", `INR ${totalExpenseAmount.toFixed(2)}`],
           ["Total members", `${group.members?.length || 0}`],
-          ["Pending overall settlements", `${overallDebts.length}`],
         ],
         styles: { fontSize: 10, cellPadding: 6 },
         headStyles: { fillColor: [55, 65, 81] },
@@ -421,33 +482,6 @@ export default function GroupPage() {
       });
 
       let cursorY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 16 : 320;
-
-      doc.setFontSize(13);
-      doc.setTextColor(20);
-      doc.text("Overall: Who Pays Whom (Till Date)", 40, cursorY);
-      cursorY += 8;
-
-      if (!overallDebts.length) {
-        doc.setFontSize(10);
-        doc.setTextColor(90);
-        doc.text("No pending settlements. Everyone is settled up.", 40, cursorY + 14);
-        cursorY += 26;
-      } else {
-        autoTable(doc, {
-          startY: cursorY,
-          theme: "striped",
-          head: [["From", "To", "Amount"]],
-          body: overallDebts.map((item) => [
-            item.fromName,
-            item.toName,
-            `INR ${Number(item.amount || 0).toFixed(2)}`,
-          ]),
-          styles: { fontSize: 10, cellPadding: 6 },
-          headStyles: { fillColor: [79, 70, 229] },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
-        });
-        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 16;
-      }
 
       doc.setFontSize(10);
       doc.setTextColor(90);
@@ -493,7 +527,7 @@ export default function GroupPage() {
             const payerName =
               expense?.paidBy?.fullName ||
               expense?.paidBy?.name ||
-              displayNameFromId(getNormalizedId(expense?.paidBy));
+              "Unknown";
 
             const splitNames = (expense?.splitBetween || [])
               .map((split) => {
@@ -501,7 +535,8 @@ export default function GroupPage() {
                 return (
                   split?.userId?.fullName ||
                   split?.userId?.name ||
-                  displayNameFromId(splitId)
+                  splitId ||
+                  "Unknown"
                 );
               })
               .filter(Boolean)
@@ -526,28 +561,7 @@ export default function GroupPage() {
         });
 
         cursorY = (doc.lastAutoTable?.finalY || cursorY) + 12;
-
-        const daySettlements = buildSettlementPlan(dayExpenses);
-        const settlementRows = daySettlements.map((settlement) => [
-          displayNameFromId(settlement.from),
-          displayNameFromId(settlement.to),
-          `INR ${Number(settlement.amount || 0).toFixed(2)}`,
-        ]);
-
-        autoTable(doc, {
-          startY: cursorY,
-          theme: "striped",
-          head: [["Daily Settlement - From", "To", "Amount"]],
-          body:
-            settlementRows.length > 0
-              ? settlementRows
-              : [["No dues", "No dues", "INR 0.00"]],
-          styles: { fontSize: 9, cellPadding: 5 },
-          headStyles: { fillColor: [5, 150, 105] },
-          alternateRowStyles: { fillColor: [240, 253, 244] },
-        });
-
-        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 18;
+        cursorY += 6;
       }
 
       const totalPages = doc.getNumberOfPages();
@@ -661,27 +675,7 @@ export default function GroupPage() {
             </div>
             </div>
 
-            
-
-            {/* <div className="flex items-center gap-2 shrink-0 flex-wrap">
-              {group.tripStatus === "ongoing" &&
-                user._id === group.createdBy && (
-                  <motion.button
-                    whileHover={{ y: -1 }}
-                    whileTap={{ y: 1 }}
-                    onClick={handleCompleteTrip}
-                    disabled={completingTrip}
-                    className="flex items-center gap-2 bg-amber-600 text-white px-3 py-2.5 rounded-lg border border-amber-600 hover:bg-amber-500 transition-all duration-150 font-medium text-sm disabled:opacity-60"
-                  >
-                    {completingTrip ? (
-                      <Loader size={16} className="animate-spin" />
-                    ) : (
-                      <Flag size={16} />
-                    )}
-                    <span className="hidden sm:inline">End Trip</span>
-                    <span className="sm:hidden">End</span>
-                  </motion.button>
-                )}
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <motion.button
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 1 }}
@@ -696,97 +690,34 @@ export default function GroupPage() {
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 1 }}
                 onClick={openGlobalAddExpense}
-                disabled={group.tripStatus === "completed"}
                 className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-indigo-600 hover:bg-indigo-500 transition-all duration-150 font-medium text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Plus size={16} className="sm:w-5 sm:h-5" />
                 <span className="hidden sm:inline">Add Expense</span>
                 <span className="sm:hidden">Add</span>
               </motion.button>
-            </div> */}
+            </div>
           </div>
 
           {/* Group Stats */}
           {/* REMOVED - Keeping page clean and focused */}
         </motion.div>
 
-        {/* Who Owes Who - Main Content */}
+        {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="w-full "
+          className="w-full space-y-5"
         >
-          {/* Who Owes Who Section */}
-          {loadingDebts ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : debts.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-12 border border-white/8 rounded-xl bg-slate-800"
-            >
-              <div className="w-14 h-14 border border-white/8 rounded-lg flex items-center justify-center mx-auto mb-4 bg-slate-700">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">
-                All Settled Up! ✓
-              </h3>
-              <p className="text-slate-400 text-sm">
-                No pending payments in this group.
-              </p>
-            </motion.div>
-          ) : (
-            <div className="space-y-3">
-              {/* <h2 className="text-lg font-bold text-slate-100 mb-4">
-                Who Owes Who
-              </h2> */}
-              <div className="space-y-2">
-                {debts.map((debt, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="bg-slate-800 rounded-xl border border-white/8 p-4 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {/* <div className="w-8 h-8 rounded-full border border-white/12 bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300 shrink-0">
-                          {debt.fromUser?.charAt(0).toUpperCase()}
-                        </div> */}
-                        <span className="text-sm  text-slate-100 truncate">
-                          {debt.fromUser}
-                        </span>
-                      </div>
-                      <ArrowRight
-                        size={16}
-                        className="text-slate-500 shrink-0"
-                      />
-                      <div className="flex items-center gap-2 min-w-0">
-                        {/* <div className="w-8 h-8 rounded-full border border-white/12 bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300 shrink-0">
-                          {debt.toUser?.charAt(0).toUpperCase()}
-                        </div> */}
-                        <span className="text-sm  text-slate-100 truncate">
-                          {debt.toUser}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <p className="text-lg font-bold text-emerald-400">
-                        ₹{debt.amount.toFixed(0)}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          )}
+          <PayPlanPanel
+            payPlan={payPlan}
+            expenseCount={expenses.length}
+            memberCount={group?.members?.length || 0}
+          />
 
           {/* Tabs Section */}
-          <div className="mt-8 bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
+          <div className="bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
             {/* Tab Headers */}
             <div className="grid grid-cols-2 border-b border-white/8">
              <button
@@ -818,21 +749,6 @@ export default function GroupPage() {
                 </div>
               </button>
 
-              {/*
-              <button
-                onClick={() => setActiveTab("settlements")}
-                className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
-                  activeTab === "settlements"
-                    ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
-                    : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1 sm:gap-2 min-w-0">
-                  <CreditCard size={18} />
-                  <span className="truncate">Settlements</span>
-                </div>
-              </button>
-              */}
             </div>
 
             {/* Tab Content */}
@@ -851,20 +767,6 @@ export default function GroupPage() {
                     currentUser={user}
                     onExpenseChanged={async () => {
                       await fetchGroupData();
-                      await fetchDebts();
-                    }}
-                  />
-                </div>
-              )}
-
-
-                {activeTab === "settlements" && (
-                <div className="p-4">
-                  <SettlementsTab
-                    group={group}
-                    currentUser={user}
-                    onRefresh={() => {
-                      fetchDebts();
                     }}
                   />
                 </div>
@@ -950,6 +852,172 @@ export default function GroupPage() {
 }
 
 // ─── Collapsible Expenses Section ─────────────────────────────────────────
+
+function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
+  const hasPayments = payPlan.payments.length > 0;
+
+  return (
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
+      <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800">
+        <div className="border-b border-white/8 bg-slate-700/35 px-4 py-3 sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-300">
+                Who pays whom
+              </p>
+              <h2 className="mt-1 text-base font-bold text-slate-100">
+                Group Pay Plan
+              </h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Calculated from recorded expenses and split amounts.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center sm:min-w-[330px]">
+              <div className="rounded-lg border border-white/8 bg-slate-900/45 px-2 py-2">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                  Total
+                </p>
+                <p className="mt-1 text-xs font-bold text-slate-100 sm:text-sm">
+                  {formatMoney(payPlan.totalExpenses)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/8 bg-slate-900/45 px-2 py-2">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                  Expenses
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-100">
+                  {expenseCount}
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/8 bg-slate-900/45 px-2 py-2">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                  Members
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-100">
+                  {memberCount}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          {!hasPayments ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-10 text-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+              <h3 className="mt-3 text-sm font-bold text-slate-100">
+                No payments needed
+              </h3>
+              <p className="mt-1 max-w-sm text-xs text-slate-400">
+                The recorded expenses are balanced for the current group data.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {payPlan.payments.map((payment, index) => (
+                <motion.div
+                  key={`${payment.fromId}-${payment.toId}-${index}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04 }}
+                  className="rounded-xl border border-white/8 bg-slate-900/45 p-3.5"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <MemberPill name={payment.fromName} tone="rose" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800">
+                        <ArrowRight className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <MemberPill name={payment.toName} tone="emerald" />
+                    </div>
+
+                    <div className="rounded-lg border border-indigo-500/25 bg-indigo-500/10 px-3 py-2 text-right">
+                      <p className="text-[10px] uppercase tracking-wide text-indigo-300">
+                        Amount
+                      </p>
+                      <p className="text-sm font-bold text-indigo-100">
+                        {formatMoney(payment.amount)}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800">
+        <div className="border-b border-white/8 bg-slate-700/35 px-4 py-3">
+          <h3 className="text-sm font-bold text-slate-100">Member Balances</h3>
+          <p className="mt-1 text-xs text-slate-400">
+            Positive means receives, negative means pays.
+          </p>
+        </div>
+        <div className="max-h-[360px] divide-y divide-white/6 overflow-y-auto">
+          {payPlan.balances.map((member) => {
+            const isNeutral = Math.abs(member.balance) <= 0.01;
+            const isPositive = member.balance > 0.01;
+            return (
+              <div
+                key={member.id}
+                className="flex items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-slate-700 text-xs font-bold text-slate-200">
+                    {member.name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-100">
+                      {member.name}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {member.secondary}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-right ${
+                    isNeutral
+                      ? "border-white/8 bg-slate-700/60 text-slate-300"
+                      : isPositive
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                  }`}
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-wide">
+                    {isNeutral ? "Even" : isPositive ? "Receives" : "Pays"}
+                  </p>
+                  <p className="text-xs font-bold">
+                    {formatMoney(Math.abs(member.balance))}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MemberPill({ name, tone }) {
+  const toneClass =
+    tone === "emerald"
+      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-100"
+      : "border-rose-500/25 bg-rose-500/10 text-rose-100";
+
+  return (
+    <div className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-3 py-2 ${toneClass}`}>
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-950/35 text-xs font-bold">
+        {name?.charAt(0)?.toUpperCase() || "?"}
+      </div>
+      <p className="truncate text-sm font-semibold">{name || "Unknown"}</p>
+    </div>
+  );
+}
 
 function CollapsibleExpensesSection({ expenses }) {
   const [expanded, setExpanded] = useState(false);
@@ -1258,752 +1326,6 @@ function MembersTab({ members, group, onRefresh }) {
   );
 }
 
-// ─── Balances Tab ─────────────────────────────────────────────────────────────
-
-function BalancesTab({ group, currentUser }) {
-  const [balanceData, setBalanceData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedDebt, setSelectedDebt] = useState(null);
-
-  useEffect(() => {
-    fetchBalances();
-  }, [group._id]);
-
-  const fetchBalances = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`/api/groups/${group._id}/balances`);
-      setBalanceData(res.data);
-    } catch (error) {
-      console.error("Error fetching balances:", error);
-      toast.error("Failed to load balances");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!balanceData) {
-    return (
-      <div className="text-center py-12 border border-white/8 rounded-xl bg-slate-800">
-        <p className="text-slate-400 text-sm">Could not load balance data.</p>
-      </div>
-    );
-  }
-
-  const { balances, debts } = balanceData;
-  const currencySymbol = "₹";
-  const allSettled = debts.length === 0;
-
-  return (
-    <div className="space-y-6">
-      {/* Net Balances */}
-      <div className="bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/50">
-          <h3 className="font-bold text-slate-100 text-sm">Net Balances</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            After all expenses and confirmed payments
-          </p>
-        </div>
-        <div className="divide-y divide-white/5">
-          {balances.map((member) => (
-            <div
-              key={member.userId}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 ${
-                member.isCurrentUser ? "bg-slate-700/30" : ""
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2 sm:mb-0">
-                <div className="w-8 h-8 rounded border border-white/8 bg-slate-700 flex items-center justify-center text-slate-300 font-semibold text-xs">
-                  {member.userName?.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-100">
-                    {member.userName}
-                    {member.isCurrentUser && (
-                      <span className="ml-1.5 text-xs font-normal text-slate-400">
-                        (you)
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-slate-400">{member.userEmail}</p>
-                </div>
-              </div>
-              <div className="text-right sm:text-right">
-                {Math.abs(member.balance) < 0.01 ? (
-                  <span className="text-xs font-medium text-slate-400 border border-white/8 px-2 py-0.5 rounded">
-                    Settled
-                  </span>
-                ) : member.balance > 0 ? (
-                  <div>
-                    <p className="text-sm font-bold text-emerald-400">
-                      +{currencySymbol}
-                      {member.owed.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-emerald-400/80">gets back</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-sm font-bold text-red-400">
-                      -{currencySymbol}
-                      {member.owes.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-red-400/80">owes</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Settlement Plan */}
-      <div className="bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/50">
-          <h3 className="font-bold text-slate-100 text-sm">Settlement Plan</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {allSettled
-              ? "Everyone is fully settled up!"
-              : "Optimized payments to clear all debts"}
-          </p>
-        </div>
-
-        {allSettled ? (
-          <div className="flex flex-col items-center py-10 gap-3">
-            <div className="w-12 h-12 rounded-full border border-emerald-500/50 bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-            </div>
-            <p className="text-sm font-semibold text-emerald-400">
-              All settled up!
-            </p>
-            <p className="text-xs text-slate-400">
-              No pending payments in this group.
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-white/5">
-            {debts.map((debt, idx) => {
-              const isMyDebt =
-                currentUser &&
-                debt.fromUserId?.toString() === currentUser._id?.toString();
-
-              return (
-                <div
-                  key={idx}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 gap-3 ${
-                    isMyDebt ? "bg-red-500/10" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto">
-                      <div className="w-7 h-7 rounded border border-white/8 bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300 shrink-0">
-                        {debt.fromUser?.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-100 truncate">
-                          {isMyDebt ? "You" : debt.fromUser}
-                        </p>
-                      </div>
-                      <ArrowRight
-                        size={14}
-                        className="text-slate-500 shrink-0"
-                      />
-                      <div className="w-7 h-7 rounded border border-white/8 bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300 shrink-0">
-                        {debt.toUser?.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-100 truncate">
-                          {debt.toUser}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <p className="text-sm font-bold text-slate-100 whitespace-nowrap">
-                      {currencySymbol}
-                      {debt.amount.toFixed(2)}
-                    </p>
-                    {isMyDebt && (
-                      <motion.button
-                        whileHover={{ y: -1 }}
-                        whileTap={{ y: 1 }}
-                        onClick={() => setSelectedDebt(debt)}
-                        className="flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 rounded-lg border border-indigo-600 hover:bg-indigo-500 text-xs font-medium transition-all whitespace-nowrap"
-                      >
-                        <CreditCard size={12} />
-                        Pay
-                      </motion.button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}{" "}
-          </div>
-        )}
-      </div>
-
-      {/* Record Payment Modal */}
-      <AnimatePresence>
-        {selectedDebt && (
-          <RecordPaymentModal
-            debt={selectedDebt}
-            group={group}
-            currencySymbol={currencySymbol}
-            onClose={() => setSelectedDebt(null)}
-            onSuccess={() => {
-              setSelectedDebt(null);
-              fetchBalances();
-            }}
-          />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Record Payment Modal ──────────────────────────────────────────────────
-
-function RecordPaymentModal({
-  debt,
-  group,
-  currencySymbol,
-  onClose,
-  onSuccess,
-}) {
-  const [method, setMethod] = useState("cash");
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const methodOptions = [
-    { value: "cash", label: "Cash" },
-    { value: "upi", label: "UPI" },
-    { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "other", label: "Other" },
-  ];
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      await axios.post("/api/settlements", {
-        groupId: group._id,
-        fromUserId: debt.fromUserId,
-        toUserId: debt.toUserId,
-        amount: debt.amount,
-        method,
-        notes: notes.trim() || undefined,
-      });
-      toast.success("Settlement request recorded. Waiting for receiver approval.");
-      onSuccess();
-    } catch (error) {
-      console.error("Payment error:", error);
-      if (
-        error.response?.status === 409 ||
-        error.response?.data?.code === "OPEN_SETTLEMENT_EXISTS"
-      ) {
-        toast.error(
-          "An open settlement already exists for this pair. Check Pending/Waiting sections.",
-        );
-      } else {
-        toast.error(error.response?.data?.error || "Failed to record payment");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="bg-slate-800 rounded-xl border border-white/8 w-full max-w-sm overflow-hidden shadow-xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 bg-slate-700/50">
-          <div>
-            <h3 className="font-bold text-slate-100">Record Payment</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {debt.fromUser ? `${debt.fromUser} → ${debt.toUser}` : `Paying ${debt.toUser}`}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg border border-white/8 hover:bg-slate-700 transition-colors"
-          >
-            <X size={16} className="text-slate-400" />
-          </button>
-        </div>
-
-        {/* Amount display */}
-        <div className="px-6 py-4 bg-slate-700/30 border-b border-white/8">
-          <p className="text-xs text-slate-400 mb-1">Amount</p>
-          <p className="text-3xl font-bold text-slate-100">
-            {currencySymbol}
-            {debt.amount.toFixed(2)}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">You → {debt.toUser}</p>
-          {debt.fromUser && (
-            <p className="text-xs text-slate-400 mt-1">
-              {debt.fromUser} → {debt.toUser}
-            </p>
-          )}
-        </div>
-
-        <div className="px-6 py-4 space-y-4">
-          {/* Payment method */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-2">
-              Payment Method
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {methodOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setMethod(opt.value)}
-                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                    method === opt.value
-                      ? "border-indigo-600 bg-indigo-600/20 text-indigo-300"
-                      : "border-white/8 bg-slate-700 text-slate-400 hover:border-white/12 hover:bg-slate-600"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-2">
-              Notes{" "}
-              <span className="font-normal text-slate-400">(optional)</span>
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Sent via PhonePe"
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-white/8 bg-slate-700 focus:border-indigo-600 focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 resize-none transition-colors"
-            />
-          </div>
-
-          {/* Submit */}
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ y: 1 }}
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 rounded-lg border border-indigo-600 hover:bg-indigo-500 font-medium text-sm transition-all disabled:opacity-60"
-          >
-            {loading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <CreditCard size={16} />
-                Record Payment
-              </>
-            )}
-          </motion.button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// ─── Settlements Tab ──────────────────────────────────────────────────────────
-
-function SettlementsTab({ group, currentUser, onRefresh }) {
-  const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState("");
-  const [settlements, setSettlements] = useState([]);
-  const [suggestedSettlements, setSuggestedSettlements] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [netBalance, setNetBalance] = useState(0);
-  const [selectedDebt, setSelectedDebt] = useState(null);
-
-  const getUserId = (value) =>
-    value?._id?.toString?.() || value?.toString?.() || "";
-
-  const currencySymbol = "₹";
-
-  const fetchSettlementData = async () => {
-    try {
-      setLoading(true);
-      const [summaryRes, calculateRes] = await Promise.all([
-        axios.get(`/api/settlements/summary?groupId=${group._id}`),
-        axios.get(`/api/settlements/calculate?groupId=${group._id}`),
-      ]);
-
-      setSettlements(summaryRes.data?.settlements || []);
-      setSummary(summaryRes.data?.summary || null);
-      setSuggestedSettlements(calculateRes.data?.settlements || []);
-
-      const currentUserId = currentUser?._id?.toString?.() || "";
-      const calculatedNet = Number(
-        calculateRes.data?.balances?.[currentUserId] || 0,
-      );
-      setNetBalance(calculatedNet);
-    } catch (error) {
-      console.error("Settlement fetch error:", error);
-      toast.error("Failed to load settlements");
-      setSettlements([]);
-      setSuggestedSettlements([]);
-      setNetBalance(0);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (group?._id) {
-      fetchSettlementData();
-    }
-  }, [group?._id]);
-
-  const handleSettlementAction = async (settlement, action) => {
-    try {
-      setUpdatingId(settlement._id);
-      await axios.post("/api/settlements/verify", {
-        settlementId: settlement._id,
-        action,
-      });
-      toast.success(
-        action === "confirm"
-          ? "Marked as payment sent"
-          : "Marked as payment received",
-      );
-      await fetchSettlementData();
-    } catch (error) {
-      console.error("Settlement action error:", error);
-      toast.error(error.response?.data?.error || "Failed to update settlement");
-    } finally {
-      setUpdatingId("");
-    }
-  };
-
-  const myId = currentUser?._id?.toString?.() || "";
-
-  const suggestedDebts = suggestedSettlements;
-
-  const pendingAction = settlements.filter((settlement) => {
-    const fromId = getUserId(settlement.fromUser);
-    const toId = getUserId(settlement.toUser);
-
-    if (settlement.status === "pending" && fromId === myId) return true;
-    if (settlement.status === "confirmed" && toId === myId)
-      return true;
-    return false;
-  });
-
-  const waitingForOthers = settlements.filter((settlement) => {
-    const fromId = getUserId(settlement.fromUser);
-    const toId = getUserId(settlement.toUser);
-    return (
-      fromId === myId &&
-      toId !== myId &&
-      settlement.status === "confirmed"
-    );
-  });
-
-  const historyList = settlements.filter((settlement) =>
-    ["completed", "cancelled", "disputed"].includes(settlement.status),
-  );
-
-  const openSettlementByPair = settlements.reduce((map, settlement) => {
-    if (!["pending", "confirmed"].includes(settlement.status)) {
-      return map;
-    }
-
-    const fromId = getUserId(settlement.fromUser);
-    const toId = getUserId(settlement.toUser);
-    const pairKey = `${fromId}-${toId}`;
-
-    if (!map.has(pairKey)) {
-      map.set(pairKey, settlement);
-    }
-
-    return map;
-  }, new Map());
-
-  const suggestedCount = suggestedDebts.length;
-  const pendingCount = pendingAction.length;
-  const waitingCount = waitingForOthers.length;
-  const historyCount = historyList.length;
-  const youOweFromExpenses = netBalance < 0 ? Math.abs(netBalance) : 0;
-  const youGetFromExpenses = netBalance > 0 ? netBalance : 0;
-
-  const getStatusBadge = (status) => {
-    if (status === "completed") {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
-          Completed
-        </span>
-      );
-    }
-    if (status === "confirmed") {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-sky-500/30 bg-sky-500/15 text-sky-400">
-          Sent
-        </span>
-      );
-    }
-    if (status === "cancelled") {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-rose-500/30 bg-rose-500/15 text-rose-400">
-          Cancelled
-        </span>
-      );
-    }
-    if (status === "disputed") {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30 bg-amber-500/15 text-amber-400">
-          Disputed
-        </span>
-      );
-    }
-
-    return (
-      <span className="px-2 py-0.5 rounded text-[10px] font-semibold border border-white/20 bg-white/8 text-slate-300">
-        Pending
-      </span>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-slate-700/30 border border-white/8 rounded-lg p-3">
-          <p className="text-xs text-slate-400">You Owe (Net)</p>
-          <p className="text-lg font-bold text-rose-400">
-            {currencySymbol}
-            {Number(youOweFromExpenses || 0).toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-slate-700/30 border border-white/8 rounded-lg p-3">
-          <p className="text-xs text-slate-400">You Get (Net)</p>
-          <p className="text-lg font-bold text-emerald-400">
-            {currencySymbol}
-            {Number(youGetFromExpenses || 0).toFixed(2)}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-[11px] text-slate-400 px-1">
-        Net is calculated from expenses and completed settlements only. Pending requests do not change net balances.
-      </p>
-
-      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
-          <h3 className="text-sm font-bold text-slate-100">Suggested Settlements ({suggestedCount})</h3>
-        </div>
-        {suggestedDebts.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-slate-400">No suggested settlements right now.</p>
-        ) : (
-          <div className="divide-y divide-white/8">
-            {suggestedDebts.map((debt, idx) => (
-              <div key={`${getUserId(debt.fromUser)}-${getUserId(debt.toUser)}-${idx}`} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
-                {(() => {
-                  const fromId = getUserId(debt.fromUser);
-                  const toId = getUserId(debt.toUser);
-                  const pairKey = `${fromId}-${toId}`;
-                  const openSettlement = openSettlementByPair.get(pairKey);
-                  const isPending = Boolean(openSettlement);
-
-                  return (
-                    <>
-                      <div className="min-w-0 w-full sm:w-auto">
-                        <p className="text-sm text-slate-100 truncate">
-                          {debt.fromUser?.fullName || debt.fromUser?.username || "Member"} → {debt.toUser?.fullName || debt.toUser?.username || "Member"}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {isPending
-                            ? "Settlement request already raised for this pair"
-                            : "Create settlement request for this pair"}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
-                        <p className="text-sm font-bold text-slate-100">
-                          {currencySymbol}
-                          {Number(debt.amount || 0).toFixed(2)}
-                        </p>
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() =>
-                            setSelectedDebt({
-                              fromUser: debt.fromUser?.fullName || debt.fromUser?.username || "Member",
-                              fromUserId: fromId,
-                              toUser: debt.toUser?.fullName || debt.toUser?.username || "Member",
-                              toUserId: toId,
-                              amount: Number(debt.amount || 0),
-                            })
-                          }
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                            isPending
-                              ? "bg-slate-600 text-slate-300 cursor-not-allowed"
-                              : "bg-indigo-600 text-white hover:bg-indigo-500"
-                          }`}
-                        >
-                          {isPending ? "Pending" : "Record"}
-                        </button>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
-          <h3 className="text-sm font-bold text-slate-100">Pending Your Action ({pendingCount})</h3>
-        </div>
-        {pendingAction.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-slate-400">No pending actions for you.</p>
-        ) : (
-          <div className="divide-y divide-white/8">
-            {pendingAction.map((settlement) => {
-              const fromId = getUserId(settlement.fromUser);
-              const toId = getUserId(settlement.toUser);
-              const isPayer = fromId === myId;
-              const action = isPayer ? "confirm" : "complete";
-              const actionLabel = isPayer ? "Mark Sent" : "Confirm Received";
-              const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
-              const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
-
-              return (
-                <div key={settlement._id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
-                  <div className="min-w-0 w-full sm:w-auto">
-                    <p className="text-sm text-slate-100 truncate">
-                      {isPayer ? "You" : fromName} → {isPayer ? toName : "You"}
-                    </p>
-                    <div className="mt-1">{getStatusBadge(settlement.status)}</div>
-                  </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
-                    <p className="text-sm font-bold text-slate-100">
-                      {currencySymbol}
-                      {Number(settlement.amount || 0).toFixed(2)}
-                    </p>
-                    <button
-                      type="button"
-                      disabled={updatingId === settlement._id}
-                      onClick={() => handleSettlementAction(settlement, action)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-60"
-                    >
-                      {updatingId === settlement._id ? "Saving..." : actionLabel}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
-          <h3 className="text-sm font-bold text-slate-100">Waiting For Others ({waitingCount})</h3>
-        </div>
-        {waitingForOthers.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-slate-400">Nothing is waiting for others right now.</p>
-        ) : (
-          <div className="divide-y divide-white/8">
-            {waitingForOthers.map((settlement) => {
-              const toName =
-                settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
-
-              return (
-                <div key={settlement._id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
-                  <div className="min-w-0 w-full sm:w-auto">
-                    <p className="text-sm text-slate-100 truncate">You → {toName}</p>
-                    <div className="mt-1">{getStatusBadge(settlement.status)}</div>
-                  </div>
-                  <p className="text-sm font-bold text-slate-100 shrink-0">
-                    {currencySymbol}
-                    {Number(settlement.amount || 0).toFixed(2)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-slate-700/20 border border-white/8 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/8 bg-slate-700/30">
-          <h3 className="text-sm font-bold text-slate-100">History ({historyCount})</h3>
-        </div>
-        {historyList.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-slate-400">No completed or cancelled settlements yet.</p>
-        ) : (
-          <div className="divide-y divide-white/8">
-            {historyList.map((settlement) => {
-              const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
-              const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
-
-              return (
-                <div key={settlement._id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 overflow-hidden">
-                  <div className="min-w-0 w-full sm:w-auto">
-                    <p className="text-sm text-slate-100 truncate">
-                      {fromName} → {toName}
-                    </p>
-                    <div className="mt-1">{getStatusBadge(settlement.status)}</div>
-                  </div>
-                  <p className="text-sm font-bold text-slate-100 shrink-0">
-                    {currencySymbol}
-                    {Number(settlement.amount || 0).toFixed(2)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <AnimatePresence>
-        {selectedDebt && (
-          <RecordPaymentModal
-            debt={selectedDebt}
-            group={group}
-            currencySymbol={currencySymbol}
-            onClose={() => setSelectedDebt(null)}
-            onSuccess={async () => {
-              setSelectedDebt(null);
-              await fetchSettlementData();
-              onRefresh?.();
-            }}
-          />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 // ─── Activity Tab ─────────────────────────────────────────────────────────────
 
 function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
@@ -2019,12 +1341,6 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
   });
 
   const currentUserId = getNormalizedId(currentUser);
-  const isGroupAdmin = (group?.members || []).some((member) => {
-    return (
-      getNormalizedId(member?.userId || member) === currentUserId &&
-      member?.role === "admin"
-    );
-  });
 
   useEffect(() => {
     buildTimeline();
@@ -2033,9 +1349,6 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
   const buildTimeline = async () => {
     try {
       setLoading(true);
-      const settlementsRes = await axios.get(`/api/settlements?groupId=${group._id}`);
-      const settlements = settlementsRes.data?.settlements || [];
-
       const expenseEvents = (expenses || []).map((expense) => ({
         id: `expense-${expense._id}`,
         type: "expense",
@@ -2043,7 +1356,7 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
         title: expense.description,
         subtitle: `Paid by ${expense.paidBy?.fullName || expense.paidBy?.name || "Unknown"}`,
         amount: Number(expense.amount || 0),
-        status: expense.isSettled ? "settled" : "open",
+        status: "expense",
         details: {
           category: expense.category || "other",
           paidByName: expense.paidBy?.fullName || expense.paidBy?.name || "Unknown",
@@ -2055,40 +1368,7 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
         },
       }));
 
-      const settlementEvents = settlements.map((settlement) => {
-        const fromName = settlement.fromUser?.fullName || settlement.fromUser?.username || "Unknown";
-        const toName = settlement.toUser?.fullName || settlement.toUser?.username || "Unknown";
-        const currentUserId = getNormalizedId(currentUser);
-
-        const normalizedFrom = settlement.fromUser?._id?.toString?.();
-        const normalizedTo = settlement.toUser?._id?.toString?.();
-
-        const fromDisplay =
-          currentUserId && normalizedFrom === currentUserId ? "You" : fromName;
-        const toDisplay =
-          currentUserId && normalizedTo === currentUserId ? "You" : toName;
-
-        return {
-          id: `settlement-${settlement._id}`,
-          type: "settlement",
-          createdAt: settlement.updatedAt || settlement.createdAt,
-          title: `${fromDisplay} → ${toDisplay}`,
-          subtitle: "Settlement",
-          amount: Number(settlement.amount || 0),
-          status: settlement.status,
-          details: {
-            fromName,
-            toName,
-            method: settlement.method || "cash",
-            notes: settlement.notes || "",
-            requestedAt: settlement.createdAt,
-            updatedAt: settlement.updatedAt,
-            settlementId: settlement._id,
-          },
-        };
-      });
-
-      const merged = [...expenseEvents, ...settlementEvents].sort(
+      const merged = expenseEvents.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
 
@@ -2102,27 +1382,14 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
     }
   };
 
-  const getRowConfig = (item) => {
-    if (item.type === "expense") {
-      return {
-        icon: <Receipt size={14} className="text-indigo-400" />,
-        border: "border-indigo-500/20",
-        badge: item.status === "settled" ? "Settled" : "Open",
-      };
-    }
-
-    return {
-      icon: <CreditCard size={14} className="text-emerald-400" />,
-      border: "border-emerald-500/20",
-      badge: item.status,
-    };
-  };
+  const getExpenseCategoryLabel = (category) =>
+    String(category || "other").replace(/^\w/, (char) => char.toUpperCase());
 
   const canManageItem = (item) => {
     if (item?.type !== "expense") return false;
     if (!item?.details?.expenseId) return false;
     const payerId = getNormalizedId(item?.details?.paidById);
-    return Boolean(currentUserId && (payerId === currentUserId || isGroupAdmin));
+    return Boolean(currentUserId && payerId === currentUserId);
   };
 
   const requestDeleteFromList = (item, event) => {
@@ -2183,84 +1450,128 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
           No activity yet
         </h3>
         <p className="text-slate-400 text-xs">
-          Expenses and settlements of this group will appear here.
+          Expenses for this group will appear here.
         </p>
       </motion.div>
     );
   }
 
+  const groupedTimeline = groupExpensesByDate(timeline);
+
   return (
     <>
-      {/* <p className="text-[11px] text-slate-400 mb-2 px-1">
-        Tap any row to view details. Use the action buttons on expense rows to edit or delete quickly.
-      </p> */}
-      <div className="space-y-2">
-        {timeline.map((item, index) => {
-          const cfg = getRowConfig(item);
-          const canManage = canManageItem(item);
-          const isDeleting = deletingExpenseId === item?.details?.expenseId;
-          const expensePaidByCurrentUser =
-            item?.type === "expense" &&
-            getNormalizedId(item?.details?.paidById) === currentUserId;
-          const amountClass =
-            item?.type === "expense"
-              ? expensePaidByCurrentUser
-                ? "text-emerald-400"
-                : "text-rose-400"
-              : "text-indigo-300";
-
-          return (
-            <motion.div
-              key={item.id || index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className={`w-full text-left flex items-start gap-3 bg-slate-800 p-3 rounded-lg border ${cfg.border} hover:bg-slate-700/40 transition-colors overflow-hidden`}
-            >
-              <div className="w-7 h-7 rounded border border-white/12 bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-                {cfg.icon}
+      <div className="space-y-6">
+        {groupedTimeline.map((section, sectionIndex) => (
+          <section key={section.key} className="space-y-2.5">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-slate-900/95 px-3 py-2 backdrop-blur">
+              <div className="flex min-w-0 items-center gap-2">
+                <Calendar className="h-4 w-4 shrink-0 text-indigo-300" />
+                <h3 className="truncate text-sm font-bold text-slate-100">
+                  {section.label}
+                </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpenInEditMode(false);
-                  setSelectedActivity(item);
-                }}
-                className="flex-1 min-w-0 text-left"
-              >
-                <div className="flex items-start justify-between gap-2 min-w-0">
-                  <p className="text-sm text-slate-100 truncate flex-1 min-w-0">{item.title}</p>
-                
-                </div>
-                <p className="text-xs text-slate-400 mt-0.5 truncate">{item.subtitle}</p>
-                <p className={`text-xs mt-1 ${amountClass}`}>₹{Number(item.amount || 0).toFixed(2)}</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </button>
+              <div className="shrink-0 rounded-md border border-white/8 bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">
+                {section.items.length} expense
+                {section.items.length === 1 ? "" : "s"} - {formatMoney(section.total)}
+              </div>
+            </div>
 
-              {canManage && (
-                <div className="flex items-center gap-1 shrink-0 self-start">
-                  <button
-                    type="button"
-                    onClick={(event) => requestDeleteFromList(item, event)}
-                    disabled={isDeleting}
-                    className="px-2 py-1.5 rounded-md border border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 transition-colors disabled:opacity-60"
-                    title="Delete expense"
+            <div className="space-y-2.5">
+              {section.items.map((item, itemIndex) => {
+                const canManage = canManageItem(item);
+                const isDeleting = deletingExpenseId === item?.details?.expenseId;
+                const payerId = getNormalizedId(item?.details?.paidById);
+                const expensePaidByCurrentUser = payerId === currentUserId;
+                const splitCount = getSplitMemberCount({
+                  splitBetween: item?.details?.splitBetween || [],
+                });
+                const amountClass = expensePaidByCurrentUser
+                  ? "text-emerald-300"
+                  : "text-rose-300";
+                const splitLabel =
+                  splitCount === 1
+                    ? "Split with 1 member"
+                    : `Split with ${splitCount} members`;
+
+                return (
+                  <motion.div
+                    key={item.id || `${section.key}-${itemIndex}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (sectionIndex + itemIndex) * 0.02 }}
+                    className="group overflow-hidden rounded-xl border border-white/8 bg-slate-800 transition-colors hover:border-indigo-500/35 hover:bg-slate-700/35"
                   >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+                    <div className="flex items-start gap-3 p-3.5">
+                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10">
+                        <Receipt className="h-5 w-5 text-indigo-300" />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenInEditMode(false);
+                          setSelectedActivity(item);
+                        }}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-100">
+                              {item.title}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-slate-400">
+                              {item.subtitle}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className={`text-sm font-bold ${amountClass}`}>
+                              {formatMoney(item.amount)}
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {expensePaidByCurrentUser
+                                ? "You paid"
+                                : "Group expense"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-700/70 px-2 py-1 text-[11px] font-semibold text-slate-300">
+                            <FileText className="h-3 w-3 text-slate-400" />
+                            {getExpenseCategoryLabel(item?.details?.category)}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-700/70 px-2 py-1 text-[11px] font-semibold text-slate-300">
+                            <Users className="h-3 w-3 text-slate-400" />
+                            {splitLabel}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-700/70 px-2 py-1 text-[11px] font-semibold text-slate-300">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            {new Date(item.createdAt).toLocaleTimeString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </button>
+
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={(event) => requestDeleteFromList(item, event)}
+                          disabled={isDeleting}
+                          className="shrink-0 rounded-md border border-rose-500/40 bg-rose-500/15 p-2 text-rose-200 transition-colors hover:bg-rose-500/25 disabled:opacity-60"
+                          title="Delete expense"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
 
       <AnimatePresence>
@@ -2303,7 +1614,6 @@ function ActivityDetailsModal({
 }) {
   const isExpense = activity.type === "expense";
   const details = activity.details || {};
-  const [copiedKey, setCopiedKey] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [splitMode, setSplitMode] = useState("equal");
@@ -2383,12 +1693,8 @@ function ActivityDetailsModal({
 
   const currentUserId = getNormalizedId(currentUser);
   const paidById = getNormalizedId(details.paidById);
-  const isGroupAdmin = (group?.members || []).some((member) => {
-    const memberId = getNormalizedId(member?.userId || member);
-    return memberId === currentUserId && member?.role === "admin";
-  });
   const canManageExpense =
-    isExpense && !!details.expenseId && (currentUserId === paidById || isGroupAdmin);
+    isExpense && !!details.expenseId && currentUserId === paidById;
 
   const handleSaveExpense = async () => {
     try {
@@ -2399,10 +1705,6 @@ function ActivityDetailsModal({
       }
       if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
         toast.error("Amount must be greater than 0");
-        return;
-      }
-      if (!form.paidBy) {
-        toast.error("Please select who paid");
         return;
       }
       if (selectedSplitUsers.length === 0) {
@@ -2440,7 +1742,6 @@ function ActivityDetailsModal({
         amount: amountNumber,
         category: form.category,
         date: form.date,
-        paidBy: form.paidBy,
         splitBetween,
       });
 
@@ -2456,33 +1757,8 @@ function ActivityDetailsModal({
     }
   };
 
-  const handleCopyId = async (value, label, key) => {
-    if (!value) return;
-    try {
-      await navigator.clipboard.writeText(String(value));
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(""), 1500);
-      toast.success(`${label} copied`);
-    } catch (error) {
-      console.error("Copy failed:", error);
-      toast.error("Failed to copy");
-    }
-  };
-
-  const statusLabel = isExpense
-    ? activity.status === "settled"
-      ? "Settled"
-      : "Open"
-    : activity.status;
-
-  const statusClass =
-    activity.status === "completed" || activity.status === "settled"
-      ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
-      : activity.status === "pending"
-        ? "border-white/20 bg-white/10 text-slate-300"
-        : activity.status === "confirmed"
-          ? "border-sky-500/30 bg-sky-500/15 text-sky-400"
-          : "border-white/20 bg-white/10 text-slate-300";
+  const statusLabel = "Expense";
+  const statusClass = "border-white/20 bg-white/10 text-slate-300";
 
   return (
     <motion.div
@@ -2501,7 +1777,7 @@ function ActivityDetailsModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-slate-700/40">
           <div>
             <p className="text-xs text-slate-400 uppercase tracking-wide">
-              {isExpense ? "Expense" : "Settlement"} Details
+              Expense Details
             </p>
             <h3 className="font-bold text-slate-100 mt-0.5 truncate">
               {activity.title}
@@ -2558,26 +1834,7 @@ function ActivityDetailsModal({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <p className="text-xs text-slate-400">Paid By</p>
-                  <select
-                    value={form.paidBy}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, paidBy: e.target.value }))
-                    }
-                    disabled={!isEditing}
-                    className="w-full rounded-lg border border-white/12 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="">Select member</option>
-                    {memberOptions.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
+              <div className="space-y-1">
                   <p className="text-xs text-slate-400">Category</p>
                   <select
                     value={form.category}
@@ -2592,9 +1849,8 @@ function ActivityDetailsModal({
                     <option value="accommodation">Accommodation</option>
                     <option value="shopping">Shopping</option>
                     <option value="entertainment">Entertainment</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+                      <option value="other">Other</option>
+                    </select>
               </div>
 
               <div className="space-y-2">
@@ -2709,29 +1965,6 @@ function ActivityDetailsModal({
             </p>
           </div>
 
-          {!isExpense ? (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">From</p>
-                <p className="text-xs text-slate-300 text-right">
-                  {details.fromName || "Unknown"}
-                </p>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">To</p>
-                <p className="text-xs text-slate-300 text-right">
-                  {details.toName || "Unknown"}
-                </p>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-400">Method</p>
-                <p className="text-xs text-slate-300 text-right capitalize">
-                  {(details.method || "cash").replace("_", " ")}
-                </p>
-              </div>
-            </>
-          ) : null}
-
           {details.notes ? (
             <div className="pt-1">
               <p className="text-xs text-slate-400 mb-1">Notes</p>
@@ -2741,57 +1974,6 @@ function ActivityDetailsModal({
             </div>
           ) : null}
 
-          {/* {(details.expenseId || details.settlementId) && (
-            <div className="pt-1 space-y-2">
-              {details.expenseId && (
-                <div className="flex items-center justify-between gap-2 bg-slate-700/30 border border-white/8 rounded-lg px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-slate-400">Expense ID</p>
-                    <p className="text-xs text-slate-300 truncate">{details.expenseId}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyId(details.expenseId, "Expense ID", "expenseId")
-                    }
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors shrink-0 ${
-                      copiedKey === "expenseId"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-600 text-slate-200 hover:bg-slate-500"
-                    }`}
-                  >
-                    {copiedKey === "expenseId" ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              )}
-
-              {details.settlementId && (
-                <div className="flex items-center justify-between gap-2 bg-slate-700/30 border border-white/8 rounded-lg px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-slate-400">Settlement ID</p>
-                    <p className="text-xs text-slate-300 truncate">{details.settlementId}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyId(
-                        details.settlementId,
-                        "Settlement ID",
-                        "settlementId",
-                      )
-                    }
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors shrink-0 ${
-                      copiedKey === "settlementId"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-600 text-slate-200 hover:bg-slate-500"
-                    }`}
-                  >
-                    {copiedKey === "settlementId" ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              )}
-            </div>
-          )} */}
         </div>
 
         <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
@@ -2849,7 +2031,7 @@ function DeleteExpenseConfirmModal({ title, loading, onCancel, onConfirm }) {
         <div className="px-5 py-4 border-b border-white/8 bg-slate-700/40">
           <h3 className="text-sm font-bold text-slate-100">Delete Expense</h3>
           <p className="text-xs text-slate-400 mt-1">
-            Are you sure you want to delete "{title}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{title}&quot;? This action cannot be undone.
           </p>
         </div>
 

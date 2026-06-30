@@ -4,6 +4,16 @@ import User from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
+const HIDDEN_LEGACY_TYPES = new Set([
+  "settlement",
+  "settlement_request",
+  "settlement_confirmed",
+  "settlement_completed",
+  "settlement_cancelled",
+  "settlement_disputed",
+  "payment_received",
+]);
+
 export async function GET(request) {
   try {
     await connectDB();
@@ -25,8 +35,11 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .limit(50);
 
-    const normalizedNotifications = notifications.map((notification) => {
+    const normalizedNotifications = notifications.flatMap((notification) => {
       const normalized = notification.toObject();
+      if (HIDDEN_LEGACY_TYPES.has(normalized.type)) {
+        return [];
+      }
 
       // Normalize payload field shape (legacy: metadata, current: data)
       const mergedData = {
@@ -36,14 +49,7 @@ export async function GET(request) {
       normalized.data = mergedData;
       delete normalized.metadata;
 
-      // Normalize legacy notification types to current lifecycle set
-      if (normalized.type === "settlement") {
-        normalized.type = "settlement_request";
-      } else if (normalized.type === "payment_received") {
-        normalized.type = "settlement_completed";
-      }
-
-      return normalized;
+      return [normalized];
     });
 
     return NextResponse.json({ notifications: normalizedNotifications });

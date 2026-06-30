@@ -40,10 +40,6 @@ const expenseSchema = new mongoose.Schema(
         },
         amount: Number,
         percentage: Number,
-        settled: {
-          type: Boolean,
-          default: false,
-        },
       },
     ],
     category: {
@@ -57,10 +53,6 @@ const expenseSchema = new mongoose.Schema(
         "other",
       ],
       default: "other",
-    },
-    isSettled: {
-      type: Boolean,
-      default: false,
     },
   },
   {

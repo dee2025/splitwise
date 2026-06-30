@@ -7,18 +7,65 @@ import CreateGroupForm from "@/components/dashboard/groups/CreateGroupForm";
 import DashboardLayout from "@/components/DashboardLayout";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Plus, Search, Users } from "lucide-react";
+import {
+  Crown,
+  FolderOpen,
+  Loader2,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
+
+function getNormalizedId(value) {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    if (value._id) return String(value._id);
+    if (value.id) return String(value.id);
+    if (value.userId) return getNormalizedId(value.userId);
+  }
+  return "";
+}
+
+function getMemberName(member) {
+  return (
+    member?.fullName ||
+    member?.name ||
+    member?.username ||
+    member?.userId?.fullName ||
+    member?.userId?.name ||
+    member?.userId?.username ||
+    ""
+  );
+}
+
+function formatMoney(value) {
+  return `INR ${Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+function isGroupAdmin(group, user) {
+  const currentUserId = getNormalizedId(user);
+  return (group?.members || []).some((member) => {
+    const memberId = getNormalizedId(member?.userId || member);
+    return memberId === currentUserId && member?.role === "admin";
+  });
+}
 
 export default function GroupsPage() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const router = useRouter();
 
   const [groups, setGroups] = useState([]);
-  const [filteredGroups, setFilteredGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -31,58 +78,70 @@ export default function GroupsPage() {
       router.push("/login");
       return;
     }
+
+    const fetchGroups = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get("/api/groups");
+        setGroups(res.data.groups || []);
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+        toast.error("Failed to load groups");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchGroups();
   }, [isAuthenticated, router]);
 
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get("/api/groups");
-      setGroups(res.data.groups || []);
-      setFilteredGroups(res.data.groups || []);
-    } catch (error) {
-      console.error("Error fetching groups:", error);
-      toast.error("Failed to load groups");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filteredGroups = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
 
-  // Filter groups based on search and filter
-  useEffect(() => {
-    let filtered = groups;
+    return groups.filter((group) => {
+      const matchesSearch =
+        !query ||
+        group.name?.toLowerCase().includes(query) ||
+        group.description?.toLowerCase().includes(query) ||
+        (group.members || []).some((member) =>
+          getMemberName(member).toLowerCase().includes(query),
+        );
 
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (group) =>
-          group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          group.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
+      if (!matchesSearch) return false;
 
-    if (activeFilter === "active") {
-      filtered = filtered.filter((group) => group.isActive);
-    } else if (activeFilter === "archived") {
-      filtered = filtered.filter((group) => !group.isActive);
-    }
+      if (activeFilter === "admin") return isGroupAdmin(group, user);
+      if (activeFilter === "member") return !isGroupAdmin(group, user);
 
-    setFilteredGroups(filtered);
-  }, [searchQuery, activeFilter, groups]);
+      return true;
+    });
+  }, [activeFilter, groups, searchQuery, user]);
+
+  const stats = useMemo(() => {
+    const totalExpenses = groups.reduce(
+      (sum, group) => sum + Number(group.totalExpenses || 0),
+      0,
+    );
+    const totalMembers = groups.reduce(
+      (sum, group) => sum + (group.members?.length || 0),
+      0,
+    );
+    const adminGroups = groups.filter((group) => isGroupAdmin(group, user)).length;
+
+    return {
+      totalGroups: groups.length,
+      totalMembers,
+      totalExpenses,
+      adminGroups,
+    };
+  }, [groups, user]);
 
   const handleGroupClick = (groupId) => {
     router.push(`/groups/${groupId}`);
   };
 
-  const handleSettingsClick = (group, e) => {
-    e.stopPropagation();
-
-    const currentUserId = String(user?._id || user?.id || "");
-    const isAdmin = (group?.members || []).some((member) => {
-      const memberId = String(member?.userId?._id || member?.userId || "");
-      return memberId === currentUserId && member?.role === "admin";
-    });
-
-    if (!isAdmin) return;
+  const handleSettingsClick = (group, event) => {
+    event.stopPropagation();
+    if (!isGroupAdmin(group, user)) return;
 
     setSelectedGroup(group);
     setShowSettingsModal(true);
@@ -110,16 +169,21 @@ export default function GroupsPage() {
     setSelectedGroup(null);
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setActiveFilter("all");
+  };
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center p-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-white/10 shadow-2xl shadow-black/50"
+          className="rounded-xl border border-white/10 bg-slate-900 p-8 text-center shadow-2xl shadow-black/50"
         >
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mx-auto mb-4" />
-          <p className="text-slate-200 font-medium">Redirecting to login...</p>
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-indigo-400" />
+          <p className="font-medium text-slate-200">Redirecting to login...</p>
         </motion.div>
       </div>
     );
@@ -127,20 +191,23 @@ export default function GroupsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-5 sm:space-y-6">
-        {/* Header */}
+      <div className="space-y-6">
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+          className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
         >
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+          <div className="min-w-0">
+            <p className="mb-2 inline-flex items-center gap-2 rounded-md border border-indigo-500/25 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-200">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Group workspace
+            </p>
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               Your Groups
             </h1>
-            <p className="text-sm text-slate-400">
-              {groups.length} {groups.length === 1 ? "group" : "groups"} total •
-              Manage shared expenses
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+              Open a group to add expenses, edit details, invite members, and
+              review the latest split summary.
             </p>
           </div>
 
@@ -148,87 +215,97 @@ export default function GroupsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowCreateGroup(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-500 hover:to-indigo-400 active:scale-95 transition-all shadow-lg shadow-indigo-950/50 w-full sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/40 transition-colors hover:bg-indigo-500 sm:w-auto"
           >
             <Plus size={18} />
             <span>Create Group</span>
           </motion.button>
         </motion.div>
 
-        {/* Search and Filters */}
+        <StatsGrid stats={stats} />
+
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-col gap-3 sm:flex-row"
+          transition={{ delay: 0.08 }}
+          className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
         >
-          {/* <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <div className="relative w-full lg:max-w-md">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
-              placeholder="Search groups..."
+              placeholder="Search by group, description, or member"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-white/8 text-slate-100 placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="w-full rounded-lg border border-white/8 bg-slate-900 py-2.5 pl-10 pr-4 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20"
             />
-          </div> */}
+          </div>
 
-          {/* Status filter */}
-          {/* <div className="flex gap-2 overflow-x-auto pb-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-900 px-2.5 py-2 text-xs font-semibold text-slate-400">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              View
+            </span>
             {[
-              { id: "all", label: "All Groups" },
-              { id: "active", label: "Active" },
-              { id: "archived", label: "Archived" },
-            ].map((f) => (
+              { id: "all", label: "All", count: groups.length },
+              { id: "admin", label: "Admin", count: stats.adminGroups },
+              {
+                id: "member",
+                label: "Member",
+                count: Math.max(groups.length - stats.adminGroups, 0),
+              },
+            ].map((filter) => (
               <button
-                key={f.id}
-                onClick={() => setActiveFilter(f.id)}
-                className={`px-4 py-2 rounded-lg border whitespace-nowrap transition-all text-xs font-semibold ${
-                  activeFilter === f.id
-                    ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-950/50"
-                    : "bg-slate-800/50 border-white/8 text-slate-300 hover:bg-slate-700/30 hover:border-white/12"
+                key={filter.id}
+                type="button"
+                onClick={() => setActiveFilter(filter.id)}
+                className={`whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                  activeFilter === filter.id
+                    ? "border-indigo-500/50 bg-indigo-600 text-white"
+                    : "border-white/8 bg-slate-900 text-slate-300 hover:border-white/14 hover:bg-slate-800"
                 }`}
               >
-                {f.label}
+                {filter.label} ({filter.count})
               </button>
             ))}
-          </div> */}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.16 }}
+        >
+          {loading ? (
+            <GroupsLoadingState />
+          ) : filteredGroups.length === 0 ? (
+            <EmptyGroupsState
+              searchQuery={searchQuery}
+              activeFilter={activeFilter}
+              onClearFilters={clearFilters}
+              onCreateGroup={() => setShowCreateGroup(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+              <AnimatePresence>
+                {filteredGroups.map((group, index) => (
+                  <GroupCard
+                    key={group._id}
+                    group={group}
+                    index={index}
+                    onClick={() => handleGroupClick(group._id)}
+                    onSettingsClick={(event) =>
+                      handleSettingsClick(group, event)
+                    }
+                    currentUser={user}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </motion.div>
       </div>
 
-      {/* Groups Grid */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        {loading ? (
-          <GroupsLoadingState />
-        ) : filteredGroups.length === 0 ? (
-          <EmptyGroupsState
-            searchQuery={searchQuery}
-            activeFilter={activeFilter}
-            onCreateGroup={() => setShowCreateGroup(true)}
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            <AnimatePresence>
-              {filteredGroups.map((group, index) => (
-                <GroupCard
-                  key={group._id}
-                  group={group}
-                  index={index}
-                  onClick={() => handleGroupClick(group._id)}
-                  onSettingsClick={(e) => handleSettingsClick(group, e)}
-                  currentUser={user}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </motion.div>
-
-      {/* Create Group Modal */}
       <AnimatePresence>
         {showCreateGroup && (
           <CreateGroupForm
@@ -238,7 +315,6 @@ export default function GroupsPage() {
         )}
       </AnimatePresence>
 
-      {/* Group Settings Modal */}
       <AnimatePresence>
         {showSettingsModal && selectedGroup && (
           <GroupSettingsModal
@@ -253,90 +329,149 @@ export default function GroupsPage() {
           />
         )}
       </AnimatePresence>
-      {/* </div>
-      </div> */}
     </DashboardLayout>
   );
 }
 
-// Loading State Component
-function GroupsLoadingState() {
+function StatsGrid({ stats }) {
+  const cards = [
+    {
+      label: "Groups",
+      value: stats.totalGroups,
+      detail: "active workspaces",
+      icon: FolderOpen,
+      tone: "border-indigo-500/25 bg-indigo-500/10 text-indigo-300",
+    },
+    {
+      label: "Members",
+      value: stats.totalMembers,
+      detail: "across all groups",
+      icon: Users,
+      tone: "border-sky-500/25 bg-sky-500/10 text-sky-300",
+    },
+    {
+      label: "Total Spend",
+      value: formatMoney(stats.totalExpenses),
+      detail: "tracked in groups",
+      icon: WalletCards,
+      tone: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+    },
+    {
+      label: "Admin",
+      value: stats.adminGroups,
+      detail: "groups you manage",
+      icon: Crown,
+      tone: "border-amber-500/25 bg-amber-500/10 text-amber-300",
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: i * 0.1 }}
-          className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-white/8 p-4 self-start"
-        >
-          <div className="flex items-start gap-3 mb-3">
-            <div className="w-12 h-12 bg-slate-700 rounded-lg animate-pulse" />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-4 bg-slate-700 rounded-lg w-32 animate-pulse" />
-              <div className="h-3 bg-slate-700 rounded-lg w-24 animate-pulse" />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <div
+            key={card.label}
+            className="rounded-xl border border-white/8 bg-slate-900 p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {card.label}
+                </p>
+                <p className="mt-2 truncate text-2xl font-bold text-slate-100">
+                  {card.value}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{card.detail}</p>
+              </div>
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${card.tone}`}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="h-8 bg-slate-700 rounded-lg animate-pulse" />
-            <div className="h-8 bg-slate-700 rounded-lg animate-pulse" />
+        );
+      })}
+    </div>
+  );
+}
+
+function GroupsLoadingState() {
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((item) => (
+        <motion.div
+          key={item}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: item * 0.05 }}
+          className="rounded-xl border border-white/8 bg-slate-900 p-4"
+        >
+          <div className="mb-4 flex items-start gap-3">
+            <div className="h-12 w-12 animate-pulse rounded-lg bg-slate-800" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-36 animate-pulse rounded bg-slate-800" />
+              <div className="h-3 w-48 animate-pulse rounded bg-slate-800" />
+            </div>
           </div>
-          <div className="h-8 bg-slate-700 rounded-lg animate-pulse" />
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            <div className="h-16 animate-pulse rounded-lg bg-slate-800" />
+            <div className="h-16 animate-pulse rounded-lg bg-slate-800" />
+            <div className="h-16 animate-pulse rounded-lg bg-slate-800" />
+          </div>
+          <div className="h-10 animate-pulse rounded-lg bg-slate-800" />
         </motion.div>
       ))}
     </div>
   );
 }
 
-// Empty State Component
-function EmptyGroupsState({ searchQuery, activeFilter, onCreateGroup }) {
-  const isFiltered = searchQuery || activeFilter !== "all";
+function EmptyGroupsState({
+  searchQuery,
+  activeFilter,
+  onClearFilters,
+  onCreateGroup,
+}) {
+  const isFiltered = Boolean(searchQuery || activeFilter !== "all");
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="py-16 px-6 text-center"
+      className="rounded-xl border border-dashed border-white/10 bg-slate-900 px-6 py-14 text-center"
     >
-      <motion.div
-        initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-        className="w-16 h-16 border-2 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-gradient-to-br from-slate-800/50 to-slate-900/50"
-      >
-        <Users className="w-8 h-8 text-slate-600" />
-      </motion.div>
-      <h3 className="text-lg font-bold text-slate-100 mb-2">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/8 bg-slate-800">
+        <Users className="h-8 w-8 text-slate-500" />
+      </div>
+      <h3 className="mb-2 text-lg font-bold text-slate-100">
         {isFiltered ? "No groups found" : "No groups yet"}
       </h3>
-      <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
-        {isFiltered ? (
-          <>
-            Try adjusting your search or{" "}
-            <button
-              onClick={() => {
-                // Reset filters
-              }}
-              className="text-indigo-400 hover:text-indigo-300 underline"
-            >
-              clear filters
-            </button>
-          </>
-        ) : (
-          "Create your first group to start sharing expenses with friends"
-        )}
+      <p className="mx-auto mb-6 max-w-sm text-sm text-slate-400">
+        {isFiltered
+          ? "Try a different search term or reset the current view."
+          : "Create your first group, add members, and start tracking shared expenses."}
       </p>
-      {!isFiltered && (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+
+      <div className="flex flex-col items-center justify-center gap-2 sm:flex-row">
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700"
+          >
+            Clear filters
+          </button>
+        )}
+        <button
+          type="button"
           onClick={onCreateGroup}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-6 py-3 rounded-xl border border-indigo-500/50 hover:from-indigo-500 hover:to-indigo-400 transition-all font-semibold shadow-lg shadow-indigo-950/50 text-sm"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
         >
           <Plus size={18} />
-          Create First Group
-        </motion.button>
-      )}
+          Create Group
+        </button>
+      </div>
     </motion.div>
   );
 }

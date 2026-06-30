@@ -9,7 +9,6 @@ import {
   CheckCheck, 
   Users, 
   IndianRupee, 
-  UserPlus, 
   AlertCircle,
   Calendar,
   MessageCircle,
@@ -111,18 +110,6 @@ export default function NotificationBell() {
         case 'expense_updated':
           router.push(`/groups/${notification.data.groupId}`);
           break;
-        case 'settlement_request':
-        case 'settlement_confirmed':
-        case 'settlement_completed':
-        case 'settlement_cancelled':
-        case 'settlement_disputed':
-        case 'payment_received':
-          if (notification.data.groupId) {
-            router.push(`/groups/${notification.data.groupId}`);
-          } else {
-            router.push(`/notifications`);
-          }
-          break;
         default:
           break;
       }
@@ -140,16 +127,6 @@ export default function NotificationBell() {
         return <IndianRupee className={`${iconClass} text-green-500`} />;
       case 'expense_updated':
         return <IndianRupee className={`${iconClass} text-yellow-500`} />;
-      case 'settlement_request':
-        return <IndianRupee className={`${iconClass} text-purple-500`} />;
-      case 'settlement_confirmed':
-        return <Check className={`${iconClass} text-sky-500`} />;
-      case 'settlement_completed':
-      case 'payment_received':
-        return <CheckCheck className={`${iconClass} text-emerald-500`} />;
-      case 'settlement_cancelled':
-      case 'settlement_disputed':
-        return <UserPlus className={`${iconClass} text-purple-500`} />;
       case 'reminder':
         return <Calendar className={`${iconClass} text-orange-500`} />;
       case 'alert':
@@ -169,16 +146,6 @@ export default function NotificationBell() {
         return 'border-l-green-400';
       case 'expense_updated':
         return 'border-l-yellow-400';
-      case 'settlement_request':
-        return 'border-l-purple-400';
-      case 'settlement_confirmed':
-        return 'border-l-sky-400';
-      case 'settlement_completed':
-      case 'payment_received':
-        return 'border-l-emerald-400';
-      case 'settlement_cancelled':
-      case 'settlement_disputed':
-        return 'border-l-rose-400';
       case 'reminder':
         return 'border-l-orange-400';
       case 'alert':
@@ -292,7 +259,7 @@ export default function NotificationBell() {
                     No notifications yet
                   </p>
                   <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-                    We'll notify you when something arrives
+                    We&apos;ll notify you when something arrives
                   </p>
                 </motion.div>
               ) : (

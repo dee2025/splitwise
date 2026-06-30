@@ -76,8 +76,7 @@ export async function POST(request) {
       !amount ||
       !groupId ||
       !splitBetween ||
-      splitBetween.length === 0 ||
-      !paidBy
+      splitBetween.length === 0
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -108,7 +107,14 @@ export async function POST(request) {
       );
     }
 
-    const paidById = String(paidBy);
+    const paidById = String(user._id);
+
+    if (paidBy && String(paidBy) !== paidById) {
+      return NextResponse.json(
+        { error: "You can only add expenses paid by your own account" },
+        { status: 403 },
+      );
+    }
 
     // Validate paidBy user is in the group
     const paidByUser = group.members.find(
@@ -176,10 +182,8 @@ export async function POST(request) {
         userId: sb.userId,
         amount: sb.amount,
         percentage: sb.percentage,
-        settled: false,
       })),
       category: category || "other",
-      isSettled: false,
     });
 
     // Update group total

@@ -64,7 +64,6 @@ export default function ExpensesTab({ expenses = [], group, onExpenseUpdated }) 
                                     {(exp.splitBetween || []).slice(0, 4).map((s) => (
                                         <div key={s.userId?._id || s.userId} className="bg-gray-50 px-2 py-1 rounded text-xs">
                                             {s.userId?.fullName || s.userId?.username || "User"}: ₹{(s.amount).toFixed(2)}
-                                            {s.settled ? <span className="ml-2 text-green-600">●</span> : null}
                                         </div>
                                     ))}
                                     {(exp.splitBetween || []).length > 4 && (
@@ -77,9 +76,6 @@ export default function ExpensesTab({ expenses = [], group, onExpenseUpdated }) 
                                 <div className="text-lg font-bold text-gray-900 flex items-center gap-1 justify-end">
                                     <IndianRupee size={16} />
                                     {(exp.amount).toLocaleString()}
-                                </div>
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {(exp.isSettled) ? "Settled" : "Open"}
                                 </div>
                             </div>
                         </div>

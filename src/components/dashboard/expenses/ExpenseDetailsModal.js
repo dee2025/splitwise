@@ -3,7 +3,6 @@
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  CheckCircle,
   Image as ImageIcon,
   IndianRupee,
   Send,
@@ -15,7 +14,6 @@ import toast from "react-hot-toast";
 export default function ExpenseDetailsModal({ expense, onClose, onUpdate }) {
   const [comment, setComment] = useState("");
   const [image, setImage] = useState(null);
-  const [markingPaid, setMarkingPaid] = useState(false);
 
   const handleCommentSubmit = async () => {
     try {
@@ -47,25 +45,6 @@ export default function ExpenseDetailsModal({ expense, onClose, onUpdate }) {
       toast.success("Image uploaded");
     } catch (error) {
       toast.error("Upload failed");
-    }
-  };
-
-  const handleMarkPaid = async () => {
-    try {
-      setMarkingPaid(true);
-      const res = await axios.post("/api/expenses/mark-paid", {
-        expenseId: expense._id,
-        userId: currentUserId,
-        method: "upi",
-        notes: "Paid via GPay",
-      });
-
-      onUpdate(res.data.expense);
-      toast.success("Marked as paid");
-    } catch {
-      toast.error("Failed to update");
-    } finally {
-      setMarkingPaid(false);
     }
   };
 
@@ -152,15 +131,6 @@ export default function ExpenseDetailsModal({ expense, onClose, onUpdate }) {
             </div>
           </div>
 
-          {/* MARK AS PAID */}
-          <button
-            onClick={handleMarkPaid}
-            disabled={markingPaid}
-            className="flex w-full items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition"
-          >
-            <CheckCircle size={20} />
-            {markingPaid ? "Processing..." : "Mark as Paid"}
-          </button>
         </motion.div>
       </motion.div>
     </AnimatePresence>

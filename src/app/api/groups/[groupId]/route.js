@@ -55,7 +55,7 @@ export async function GET(request, context) {
           error: "Invalid group ID format",
           providedId: groupId,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -75,7 +75,7 @@ export async function GET(request, context) {
         userGroups.map((g) => ({
           id: g._id.toString(),
           name: g.name,
-        }))
+        })),
       );
 
       return NextResponse.json(
@@ -89,7 +89,7 @@ export async function GET(request, context) {
             })),
           },
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -114,16 +114,6 @@ export async function GET(request, context) {
       return memberUserId === userIdString;
     });
 
-    console.log("  - Is user a member?", isMember);
-    console.log(
-      "  - Group members:",
-      group.members.map((m) => ({
-        userId: m.userId?._id?.toString() || m.userId?.toString(),
-        name: m.name,
-        role: m.role,
-      }))
-    );
-
     if (!isMember) {
       return NextResponse.json(
         {
@@ -137,17 +127,16 @@ export async function GET(request, context) {
             })),
           },
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    console.log("✅ Access granted to group:", group.name);
     return NextResponse.json({ group: normalizeGroup(group) });
   } catch (error) {
     console.error("Group fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -177,7 +166,7 @@ export async function PUT(request, context) {
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       return NextResponse.json(
         { error: "Invalid group ID format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -193,23 +182,23 @@ export async function PUT(request, context) {
       (member) =>
         (member.userId?._id?.toString() === user._id.toString() ||
           member.userId?.toString() === user._id.toString()) &&
-        member.role === "admin"
+        member.role === "admin",
     );
 
     if (!isAdmin) {
       return NextResponse.json(
         { error: "Only group admins can update group settings" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     const body = await request.json();
-    const { 
-      name, 
-      description, 
-      privacy, 
+    const {
+      name,
+      description,
+      privacy,
       members, // For adding/removing members
-      removeMemberId // For removing specific member
+      removeMemberId, // For removing specific member
     } = body;
 
     // Update basic group info
@@ -222,9 +211,10 @@ export async function PUT(request, context) {
     if (members && Array.isArray(members)) {
       // Add new members (similar to create group form logic)
       for (const memberData of members) {
-        const existingMember = group.members.find(m => 
-          m.email === memberData.email || 
-          (memberData.userId && m.userId?.toString() === memberData.userId)
+        const existingMember = group.members.find(
+          (m) =>
+            m.email === memberData.email ||
+            (memberData.userId && m.userId?.toString() === memberData.userId),
         );
 
         if (!existingMember) {
@@ -237,8 +227,8 @@ export async function PUT(request, context) {
                 name: userToAdd.fullName,
                 email: userToAdd.email,
                 contact: userToAdd.contact,
-                role: 'member',
-                type: 'registered'
+                role: "member",
+                type: "registered",
               });
             }
           } else {
@@ -248,8 +238,8 @@ export async function PUT(request, context) {
               name: memberData.name,
               email: memberData.email || null,
               contact: memberData.contact || null,
-              role: 'member',
-              type: 'custom'
+              role: "member",
+              type: "custom",
             });
           }
         }
@@ -259,29 +249,36 @@ export async function PUT(request, context) {
     // Handle member removal
     if (removeMemberId) {
       // Prevent removing yourself if you're the only admin
-      const memberToRemove = group.members.find(m => 
-        m._id?.toString() === removeMemberId || 
-        m.userId?.toString() === removeMemberId
+      const memberToRemove = group.members.find(
+        (m) =>
+          m._id?.toString() === removeMemberId ||
+          m.userId?.toString() === removeMemberId,
       );
-      
+
       if (memberToRemove) {
         // Check if removing the last admin
-        const adminCount = group.members.filter(m => m.role === 'admin').length;
-        if (memberToRemove.role === 'admin' && adminCount <= 1) {
+        const adminCount = group.members.filter(
+          (m) => m.role === "admin",
+        ).length;
+        if (memberToRemove.role === "admin" && adminCount <= 1) {
           return NextResponse.json(
             { error: "Cannot remove the only admin from the group" },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
-        group.members = group.members.filter(m => 
-          !(m._id?.toString() === removeMemberId || m.userId?.toString() === removeMemberId)
+        group.members = group.members.filter(
+          (m) =>
+            !(
+              m._id?.toString() === removeMemberId ||
+              m.userId?.toString() === removeMemberId
+            ),
         );
       }
     }
 
     // Handle group deletion
-    if (body.action === 'delete') {
+    if (body.action === "delete") {
       await Group.findByIdAndDelete(groupObjectId);
       return NextResponse.json({ message: "Group deleted successfully" });
     }
@@ -293,15 +290,15 @@ export async function PUT(request, context) {
       .populate("createdBy", "fullName username email")
       .populate("members.userId", "fullName username email contact");
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: "Group updated successfully",
-      group: normalizeGroup(updatedGroup), 
+      group: normalizeGroup(updatedGroup),
     });
   } catch (error) {
     console.error("Group update error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

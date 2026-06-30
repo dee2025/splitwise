@@ -108,13 +108,12 @@ async function authorizeExpenseMutation(request, expenseId) {
     };
   }
 
-  const isAdmin = member.role === "admin";
   const isPayer = expense.paidBy?.toString() === userId;
 
-  if (!isAdmin && !isPayer) {
+  if (!isPayer) {
     return {
       error: NextResponse.json(
-        { error: "Only the payer or a group admin can modify this expense" },
+        { error: "Only the payer can modify this expense" },
         { status: 403 },
       ),
     };
@@ -194,6 +193,12 @@ export async function PUT(request, context) {
 
     if (body.paidBy !== undefined) {
       const paidById = String(body.paidBy);
+      if (paidById !== user._id.toString()) {
+        return NextResponse.json(
+          { error: "You can only mark expenses as paid by your own account" },
+          { status: 403 },
+        );
+      }
       if (!groupMemberIds.has(paidById)) {
         return NextResponse.json(
           { error: "Paid by user must belong to this group" },
@@ -256,11 +261,9 @@ export async function PUT(request, context) {
         userId: sb.userId,
         amount: sb.amount,
         percentage: Number(((sb.amount / effectiveAmount) * 100).toFixed(2)),
-        settled: false,
       }));
 
       updates.paidTo = normalizedSplit.map((sb) => sb.userId);
-      updates.isSettled = false;
     }
 
     if (Object.keys(updates).length === 0) {

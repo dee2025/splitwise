@@ -14,7 +14,7 @@ export default function AboutPage() {
           <p className="text-slate-300 leading-7">
             Money Split is built to remove confusion from shared spending. Whether you are
             planning a trip, managing household costs, or splitting event bills, we help every
-            member understand who paid, who owes, and what to settle next.
+            member understand who paid, who joined each split, and how costs were shared.
           </p>
         </section>
 
@@ -28,7 +28,7 @@ export default function AboutPage() {
           <article className="rounded-xl border border-white/10 bg-slate-800/40 p-4">
             <h2 className="text-base font-semibold">What We Focus On</h2>
             <p className="text-slate-300 mt-2 text-sm leading-6">
-              Accurate splits, simple workflows, and clear settlement suggestions with minimal transactions.
+              Accurate splits, simple workflows, and clear expense history for every group.
             </p>
           </article>
           <article className="rounded-xl border border-white/10 bg-slate-800/40 p-4">
