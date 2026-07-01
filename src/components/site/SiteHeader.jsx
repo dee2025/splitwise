@@ -9,6 +9,8 @@ export default function SiteHeader() {
 
   const navLinks = [
     { label: "Features", href: "/features" },
+    { label: "Bill Splitter", href: "/bill-splitter" },
+    { label: "Trip Expenses", href: "/trip-expense-splitter" },
     { label: "About", href: "/about" },
     { label: "Articles", href: "/articles" },
     { label: "Contact", href: "/contact" },

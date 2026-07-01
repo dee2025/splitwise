@@ -1,4 +1,5 @@
 import { getPublishedArticles } from "@/lib/articles";
+import { seoPageList } from "@/data/seoPages";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,12 @@ export default async function sitemap() {
       lastModified: now,
       changeFrequency: route.changeFrequency,
       priority: route.priority,
+    })),
+    ...seoPageList.map((page) => ({
+      url: `${SITE_URL}/${page.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.82,
     })),
     ...articles.map((article) => ({
       url: `${SITE_URL}/articles/${article.slug}`,

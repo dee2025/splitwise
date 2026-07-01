@@ -5,17 +5,20 @@ import { getPublishedArticles } from "@/lib/articles";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Money Split - Smart Expense Splitter for Friends, Trips & Roommates",
+  title: "Money Split - Free Bill Splitter & Group Expense Tracker",
   description:
-    "Money Split helps you split bills and track group expenses clearly. Perfect for trips, roommates, events, and shared living.",
+    "Split bills, track group expenses, and manage shared balances for friends, trips, roommates, events, and family plans with Money Split.",
   keywords: [
+    "bill splitter",
+    "free bill splitter",
     "expense splitter",
     "split bills app",
     "group expense tracker",
+    "shared expense tracker",
+    "splitwise alternative",
     "roommate expense app",
-    "trip expense manager",
+    "trip expense splitter",
     "money split app",
-    "shared expense app",
   ],
   alternates: {
     canonical: "https://www.moneysplit.in",

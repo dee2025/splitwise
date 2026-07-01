@@ -21,6 +21,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { seoPageList } from "@/data/seoPages";
 import Link from "next/link";
 import { useRef } from "react";
 
@@ -494,6 +495,45 @@ export default function LandingPage({ articles = [], faqs = [] }) {
 
       {/* ── Ticker ──────────────────────────────────────────────────────────── */}
       <Ticker />
+
+      <section className="px-5 pb-16 sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 max-w-3xl">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="h-px w-4 bg-indigo-400" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-400">
+                Popular use cases
+              </span>
+            </div>
+            <h2 className="text-3xl font-bold leading-tight tracking-tight text-slate-100 sm:text-4xl">
+              Find the right expense splitter for your group
+            </h2>
+            <p className="mt-4 text-slate-400 leading-7">
+              Money Split works as a bill splitter, group expense tracker, trip expense
+              splitter, roommate bill splitter, and simple Splitwise alternative.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {seoPageList.map((page) => (
+              <Link
+                key={page.slug}
+                href={`/${page.slug}`}
+                className="group rounded-xl border border-white/8 bg-slate-900 p-4 transition-colors hover:border-indigo-400/30 hover:bg-slate-900/80"
+              >
+                <p className="text-sm font-bold text-slate-100">{page.shortTitle}</p>
+                <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">
+                  {page.description}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-300">
+                  Open guide
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Features (Bento) ────────────────────────────────────────────────── */}
       <section ref={featuresRef} className="py-20 px-5 sm:px-8">

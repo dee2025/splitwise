@@ -29,6 +29,11 @@ export default function SiteFooter() {
             <div className="space-y-2.5">
               <Link href="/signup" className="block text-sm text-slate-300 hover:text-white transition-colors">Create Account</Link>
               <Link href="/login" className="block text-sm text-slate-300 hover:text-white transition-colors">Sign In</Link>
+              <Link href="/bill-splitter" className="block text-sm text-slate-300 hover:text-white transition-colors">Bill Splitter</Link>
+              <Link href="/group-expense-tracker" className="block text-sm text-slate-300 hover:text-white transition-colors">Group Expense Tracker</Link>
+              <Link href="/trip-expense-splitter" className="block text-sm text-slate-300 hover:text-white transition-colors">Trip Expense Splitter</Link>
+              <Link href="/roommate-bill-splitter" className="block text-sm text-slate-300 hover:text-white transition-colors">Roommate Bill Splitter</Link>
+              <Link href="/splitwise-alternative" className="block text-sm text-slate-300 hover:text-white transition-colors">Splitwise Alternative</Link>
               <Link href="/about" className="block text-sm text-slate-300 hover:text-white transition-colors">About Money Split</Link>
               <Link href="/articles" className="block text-sm text-slate-300 hover:text-white transition-colors">Articles</Link>
               <Link href="/contact" className="block text-sm text-slate-300 hover:text-white transition-colors">Contact</Link>

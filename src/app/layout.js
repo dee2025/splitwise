@@ -21,9 +21,22 @@ const geistMono = Geist_Mono({
 export const metadata = {
   metadataBase: new URL("https://www.moneysplit.in"),
   applicationName: "Money Split",
-  title: "Money Split - Easy Bill Splitting & Expense Tracking App",
+  title: {
+    default: "Money Split - Free Bill Splitter & Group Expense Tracker",
+    template: "%s",
+  },
   description: "Split bills with friends, roommates, and travel groups without drama. Track shared expenses and group records in one place. Free expense splitter app for groups.",
-  keywords: "bill splitter, expense tracker, split bills, money management, group expenses, travel expenses, roommate expenses",
+  keywords: [
+    "bill splitter",
+    "expense tracker",
+    "split bills",
+    "group expense tracker",
+    "shared expense tracker",
+    "splitwise alternative",
+    "trip expense splitter",
+    "roommate bill splitter",
+    "money management",
+  ],
   siteName: "Money Split",
   locale: "en_IN",
   openGraph: {
