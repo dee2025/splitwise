@@ -2,11 +2,10 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /groups/
+Disallow: /expenses/
+Disallow: /notifications/
+Disallow: /profile/
 
 Sitemap: https://www.moneysplit.in/sitemap.xml
-
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /

@@ -31,6 +31,10 @@ export async function GET(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     const notifications = await Notification.find({ userId: user._id })
       .sort({ createdAt: -1 })
       .limit(50);
@@ -79,6 +83,10 @@ export async function PUT(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { notificationId, markAllAsRead } = body;
 
@@ -123,6 +131,10 @@ export async function DELETE(request) {
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
     }
 
     const body = await request.json();

@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   metadataBase: new URL("https://www.moneysplit.in"),
+  applicationName: "Money Split",
   title: "Money Split - Easy Bill Splitting & Expense Tracking App",
   description: "Split bills with friends, roommates, and travel groups without drama. Track shared expenses and group records in one place. Free expense splitter app for groups.",
   keywords: "bill splitter, expense tracker, split bills, money management, group expenses, travel expenses, roommate expenses",
@@ -27,13 +28,14 @@ export const metadata = {
   locale: "en_IN",
   openGraph: {
     type: "website",
+    siteName: "Money Split",
     title: "Money Split - Easy Bill Splitting & Expense Tracking",
     description: "Split expenses with friends instantly. Track shared bills, groups, and members.",
     images: [
       {
-        url: "https://www.moneysplit.in/og-image.jpg",
-        width: 1200,
-        height: 630,
+        url: "https://www.moneysplit.in/dashboard.png",
+        width: 1894,
+        height: 925,
         alt: "Money Split - Expense Splitting App",
       },
     ],
@@ -42,7 +44,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Money Split - Easy Bill Splitting App",
     description: "Split expenses with friends instantly. No math, no drama.",
-    images: ["https://www.moneysplit.in/og-image.jpg"],
+    images: ["https://www.moneysplit.in/dashboard.png"],
   },
   robots: {
     index: true,
@@ -66,21 +68,38 @@ export default function RootLayout({ children }) {
 
   const schemaData = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Money Split",
-    url: "https://www.moneysplit.in",
-    logo: "https://www.moneysplit.in/logo.png",
-    description: "Split bills with friends, roommates, and travel groups without drama",
-    sameAs: [
-      "https://twitter.com/moneysplit",
-      "https://facebook.com/moneysplit",
-      "https://instagram.com/moneysplit",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.moneysplit.in/#organization",
+        name: "Money Split",
+        url: "https://www.moneysplit.in",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://www.moneysplit.in/logo.svg",
+        },
+        description: "Split bills with friends, roommates, and travel groups without drama",
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "Customer Support",
+          url: "https://www.moneysplit.in/contact",
+          email: "deepaksingh@moneysplit.in",
+          telephone: "+918112260346",
+          areaServed: "IN",
+          availableLanguage: ["en", "hi"],
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.moneysplit.in/#website",
+        url: "https://www.moneysplit.in",
+        name: "Money Split",
+        publisher: {
+          "@id": "https://www.moneysplit.in/#organization",
+        },
+        inLanguage: "en-IN",
+      },
     ],
-    contactPoint: {
-      "@type": "ContactPoint",
-      contactType: "Customer Support",
-      url: "https://www.moneysplit.in/contact",
-    },
   };
 
   return (

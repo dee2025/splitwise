@@ -74,6 +74,10 @@ async function authorizeExpenseMutation(request, expenseId) {
     return { error: NextResponse.json({ error: "User not found" }, { status: 404 }) };
   }
 
+  if (user.isBlocked) {
+    return { error: NextResponse.json({ error: "Account blocked" }, { status: 403 }) };
+  }
+
   if (!mongoose.Types.ObjectId.isValid(expenseId)) {
     return {
       error: NextResponse.json(

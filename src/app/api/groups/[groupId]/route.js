@@ -47,6 +47,10 @@ export async function GET(request, context) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     // Check if the groupId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       console.log("❌ Invalid Group ID format");
@@ -160,6 +164,10 @@ export async function PUT(request, context) {
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
     }
 
     // Validate group ID

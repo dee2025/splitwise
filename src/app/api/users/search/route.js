@@ -15,6 +15,7 @@ export async function GET(request) {
     }
 
     const users = await User.find({
+      isBlocked: { $ne: true },
       $or: [
         { fullName: { $regex: query, $options: 'i' } },
         { username: { $regex: query, $options: 'i' } },

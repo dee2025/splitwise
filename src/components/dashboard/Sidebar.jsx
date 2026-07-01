@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CreditCard, User, Users } from "lucide-react";
+import { Bell, CreditCard, Shield, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -27,12 +27,16 @@ export default function Sidebar() {
       .join("")
       .toUpperCase()
       .slice(0, 2) || "U";
+  const visibleItems =
+    user?.role === "admin"
+      ? [{ label: "Admin", href: "/admin", icon: Shield }, ...menuItems]
+      : menuItems;
 
   return (
     <aside className="hidden lg:flex flex-col w-56 bg-slate-900 border-r border-white/6 sticky top-16 h-[calc(100vh-64px)] shrink-0">
       {/* Nav items */}
       <nav className="flex-1 px-3 pt-5 pb-3 space-y-0.5 overflow-y-auto">
-        {menuItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
 

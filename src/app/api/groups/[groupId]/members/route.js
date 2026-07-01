@@ -40,6 +40,10 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (currentUser.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     const { groupId } = await params;
     const body = await request.json();
     const { members } = body;

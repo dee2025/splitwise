@@ -106,6 +106,16 @@ export async function POST(request) {
         googleId: googleData.sub,
       });
     } else {
+      if (user.isBlocked) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "This account has been blocked",
+          },
+          { status: 403 },
+        );
+      }
+
       let shouldSave = false;
 
       if (!user.username) {

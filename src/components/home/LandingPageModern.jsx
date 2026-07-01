@@ -4,8 +4,11 @@ import { motion, useInView } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
+  BookOpen,
+  Calendar,
   CheckCircle,
-  ChevronRight,
+  ChevronDown,
+  Clock,
   Coins,
   FileText,
   MapPin,
@@ -22,7 +25,6 @@ import Link from "next/link";
 import { useRef } from "react";
 
 // ── Import Articles ───────────────────────────────────────────────────────────
-import { articles } from "../../data/articles";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const TICKER = [
@@ -373,7 +375,7 @@ function AppJourneyDemo() {
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
-export default function LandingPage() {
+export default function LandingPage({ articles = [], faqs = [] }) {
   const featuresRef = useRef(null);
   const howRef = useRef(null);
   const featuresInView = useInView(featuresRef, { once: true, margin: "-80px" });
@@ -397,11 +399,14 @@ export default function LandingPage() {
               "price": "0",
               "priceCurrency": "INR"
             },
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": "4.8",
-              "ratingCount": "1000"
-            }
+            "operatingSystem": "Web",
+            "isAccessibleForFree": true,
+            "featureList": [
+              "Create shared expense groups",
+              "Split bills across members",
+              "Track balances and expense history",
+              "Manage trip and roommate expenses"
+            ]
           }),
         }}
       />
@@ -646,7 +651,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Articles Section ─────────────────────────────────────────────────── */}  
+      {/* ── Articles Section ─────────────────────────────────────────────────── */}
       <section className="pb-20 px-5 sm:px-8 border-t border-white/6">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -654,100 +659,179 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
             viewport={{ once: true }}
-            className="mb-12"
+            className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-4 h-px bg-indigo-400" />
-              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
-                Learn & grow
-              </span>
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-4 h-px bg-indigo-400" />
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
+                  Expense guides
+                </span>
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight mb-4">
+                Practical guides for
+                <br />
+                <span className="text-slate-500">cleaner shared money decisions.</span>
+              </h2>
+              <p className="text-slate-400 max-w-3xl leading-7">
+                Fresh articles from the admin panel appear here automatically. Use them to
+                answer real user questions about trips, roommates, family costs, and fair splits.
+              </p>
             </div>
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight mb-4">
-              Master expense sharing
-              <br />
-              <span className="text-slate-500">with expert tips.</span>
-            </h2>
-            <p className="text-slate-400 max-w-3xl leading-7">
-              From planning trips with friends to managing shared living expenses, 
-              our guides help you split costs fairly and keep relationships strong.
-            </p>
+            <Link
+              href="/articles"
+              className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-300 transition-all hover:border-white/20 hover:bg-white/5"
+            >
+              All articles
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </motion.div>
 
-          {/* Scrollable Articles */}
-          <div className="relative">
-            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-              {articles.map((article, i) => (
-                <motion.div
-                  key={article.slug}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  viewport={{ once: true }}
-                  className="flex-shrink-0 w-80 bg-slate-800 border border-white/6 rounded-2xl p-6 hover:border-white/10 transition-all group overflow-hidden"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative aspect-[16/9] -m-6 mb-6 overflow-hidden rounded-t-2xl">
+          {articles.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+              <motion.article
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="group overflow-hidden rounded-2xl border border-white/8 bg-slate-900 lg:col-span-3"
+              >
+                <Link href={`/articles/${articles[0].slug}`} className="block">
+                  <div className="relative aspect-[16/9] overflow-hidden bg-slate-800">
                     <img
-                      src={article.thumbnail}
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      src={articles[0].thumbnail}
+                      alt={articles[0].title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
-                    {/* Category Badge */}
-                    <div className="absolute top-3 left-3">
-                      <span className="px-2 py-1 bg-slate-900/80 backdrop-blur-sm border border-white/10 rounded-full text-xs font-semibold text-slate-300">
-                        {article.category}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                    <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-slate-950/80 px-3 py-1 text-xs font-semibold text-slate-200 backdrop-blur">
+                        <BookOpen className="h-3.5 w-3.5 text-indigo-300" />
+                        Featured guide
+                      </span>
+                      <span className="rounded-full border border-white/12 bg-slate-950/80 px-3 py-1 text-xs font-semibold text-slate-300 backdrop-blur">
+                        {articles[0].category}
                       </span>
                     </div>
                   </div>
+                  <div className="p-6 sm:p-7">
+                    <h3 className="text-2xl font-bold leading-tight text-slate-100 transition-colors group-hover:text-indigo-300">
+                      {articles[0].title}
+                    </h3>
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                      {articles[0].excerpt}
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {articles[0].readTime} min read
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {new Date(articles[0].date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span className="ml-auto inline-flex items-center gap-1.5 font-semibold text-indigo-300">
+                        Read guide
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.article>
 
-                  <div className="mb-4">
-                    <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2.5 py-1 tracking-wider uppercase">
-                      Article
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-100 mb-3 line-clamp-2 group-hover:text-indigo-300 transition-colors">
-                    <Link href={`/articles/${article.slug}`}>
-                      {article.title}
+              <div className="lg:col-span-2 space-y-4">
+                {articles.slice(1, 4).map((article, i) => (
+                  <motion.article
+                    key={article.slug}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.08 + i * 0.08, duration: 0.45 }}
+                    viewport={{ once: true }}
+                    className="group rounded-2xl border border-white/8 bg-slate-900 p-4 transition-colors hover:border-white/14"
+                  >
+                    <Link href={`/articles/${article.slug}`} className="grid grid-cols-[96px_1fr] gap-4">
+                      <div className="aspect-square overflow-hidden rounded-xl bg-slate-800">
+                        <img
+                          src={article.thumbnail}
+                          alt={article.title}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+                          <Tag className="h-3.5 w-3.5 text-indigo-300" />
+                          <span className="truncate">{article.category}</span>
+                        </div>
+                        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-slate-100 transition-colors group-hover:text-indigo-300">
+                          {article.title}
+                        </h3>
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                          {article.excerpt}
+                        </p>
+                      </div>
                     </Link>
-                  </h3>
-                  <p className="text-sm text-slate-400 leading-relaxed mb-4 line-clamp-3">
-                    {article.excerpt}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">{article.readTime} min read</span>
-                    <Link 
-                      href={`/articles/${article.slug}`}
-                      className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
-                    >
-                      Read more about {article.title}
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </motion.div>
+                  </motion.article>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── FAQ Section ─────────────────────────────────────────────────────── */}
+      <section className="pb-20 px-5 sm:px-8 border-t border-white/6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            viewport={{ once: true }}
+            className="grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14"
+          >
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-4 h-px bg-indigo-400" />
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
+                  Common questions
+                </span>
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
+                Clear answers before
+                <br />
+                <span className="text-slate-500">you split a bill.</span>
+              </h2>
+              <p className="mt-5 max-w-md text-slate-400 leading-7">
+                These answers explain how Money Split works for everyday shared costs,
+                so visitors and search engines can understand the product clearly.
+              </p>
+              <Link
+                href="/articles"
+                className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+              >
+                Read detailed guides
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              {faqs.map((faq, index) => (
+                <details
+                  key={faq.question}
+                  className="group rounded-2xl border border-white/8 bg-slate-900 px-5 py-4 open:border-indigo-400/30 open:bg-slate-900/90"
+                  open={index === 0}
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left">
+                    <span className="text-sm font-bold text-slate-100">{faq.question}</span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180 group-open:text-indigo-300" />
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">{faq.answer}</p>
+                </details>
               ))}
             </div>
-            
-            {/* Fade gradients for scroll indication */}
-            <div className="absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
-          </div>
-
-          {/* View All Articles CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="mt-8 text-center"
-          >
-            <Link
-              href="/articles"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 hover:border-white/20 transition-all text-sm"
-            >
-              View all articles
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </motion.div>
         </div>
       </section>

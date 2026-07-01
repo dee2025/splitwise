@@ -1,8 +1,9 @@
 "use client";
 
-import { Bell, CreditCard, User, Users } from "lucide-react";
+import { Bell, CreditCard, Shield, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
 
 const navItems = [
   { label: "Groups", href: "/groups", icon: Users },
@@ -13,15 +14,20 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { user } = useSelector((state) => state.auth);
 
   const isActive = (href) => {
     return pathname.startsWith(href);
   };
+  const visibleItems =
+    user?.role === "admin"
+      ? [{ label: "Admin", href: "/admin", icon: Shield }, ...navItems.slice(0, 3)]
+      : navItems;
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-white/6">
       <div className="flex items-center justify-around px-1 pb-safe">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
 

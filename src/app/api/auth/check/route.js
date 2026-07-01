@@ -26,6 +26,15 @@ export async function GET(req) {
       return response;
     }
 
+    if (user.isBlocked) {
+      const response = NextResponse.json({
+        isAuthenticated: false,
+        error: "Account blocked",
+      });
+      response.cookies.delete('token');
+      return response;
+    }
+
     return NextResponse.json({
       isAuthenticated: true,
       user: {
@@ -34,6 +43,7 @@ export async function GET(req) {
         username: user.username,
         email: user.email,
         contact: user.contact,
+        role: user.role || "user",
       }
     });
 

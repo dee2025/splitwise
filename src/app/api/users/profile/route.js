@@ -22,6 +22,10 @@ export async function GET(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     // Groups the user belongs to
     const groupsCount = await Group.countDocuments({
       "members.userId": user._id,
@@ -89,6 +93,10 @@ export async function PUT(request) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
     }
 
     const body = await request.json();

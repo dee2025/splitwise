@@ -39,6 +39,16 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json(
+        {
+          error: "This account has been blocked",
+          errors: { email: "Contact support if you believe this is a mistake" },
+        },
+        { status: 403 },
+      );
+    }
+
     if (!user.password || user.authProvider === "google") {
       return NextResponse.json(
         {

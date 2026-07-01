@@ -19,6 +19,10 @@ export async function PUT(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     const { currentPassword, newPassword } = await request.json();
 
     if (!currentPassword || !newPassword) {

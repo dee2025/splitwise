@@ -1,6 +1,9 @@
 import Link from 'next/link';
-import { articles } from '../../../data/articles';
-import { ArrowRight, Calendar, Clock, Tag } from 'lucide-react';
+import { articlesIndexJsonLd } from '@/lib/articleUtils';
+import { getPublishedArticles } from '@/lib/articles';
+import { ArrowRight, Calendar, Clock } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Articles | Money Split - Expert Guides on Expense Sharing',
@@ -11,31 +14,15 @@ export const metadata = {
   },
 };
 
-export default function ArticlesPage() {
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://www.moneysplit.in"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Articles",
-        "item": "https://www.moneysplit.in/articles"
-      }
-    ]
-  };
+export default async function ArticlesPage() {
+  const articles = await getPublishedArticles();
+  const articlesSchema = articlesIndexJsonLd(articles);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articlesSchema) }}
       />
       {/* Hero Section */}
       <section className="pt-20 pb-16 px-5 sm:px-8">
@@ -62,7 +49,7 @@ export default function ArticlesPage() {
       <section className="pb-28 px-5 sm:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((article, index) => (
+            {articles.map((article) => (
               <article
                 key={article.slug}
                 className="group bg-slate-800 border border-white/6 rounded-2xl overflow-hidden hover:border-white/10 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50"

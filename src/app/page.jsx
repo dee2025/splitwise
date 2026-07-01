@@ -1,4 +1,8 @@
 import LandingPageModern from "@/components/home/LandingPageModern";
+import { faqPageJsonLd, homeFaqs } from "@/data/homeFaqs";
+import { getPublishedArticles } from "@/lib/articles";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Money Split - Smart Expense Splitter for Friends, Trips & Roommates",
@@ -18,7 +22,17 @@ export const metadata = {
   },
 };
 
-export default function HomePage() {
-  return <LandingPageModern />;
+export default async function HomePage() {
+  const articles = await getPublishedArticles();
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(homeFaqs)) }}
+      />
+      <LandingPageModern articles={articles.slice(0, 4)} faqs={homeFaqs} />
+    </>
+  );
 }
 

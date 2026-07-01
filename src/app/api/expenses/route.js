@@ -26,6 +26,10 @@ export async function GET(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
+
     let query = { "splitBetween.userId": user._id };
 
     if (groupId) {
@@ -95,6 +99,12 @@ export async function POST(request) {
     // Verify token
     const decoded = await verifyToken(token);
     const user = await User.findById(decoded.userId);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    if (user.isBlocked) {
+      return NextResponse.json({ error: "Account blocked" }, { status: 403 });
+    }
     const group = await Group.findOne({
       _id: groupId,
       "members.userId": user._id,
