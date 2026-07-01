@@ -22,7 +22,7 @@ export default function ExpenseDetailsModal({ expense, onClose, onUpdate }) {
         comment,
       });
 
-      onUpdate(res.data.expense);
+      onUpdate(res.data.expense);     
       setComment("");
       toast.success("Comment added");
     } catch (error) {
