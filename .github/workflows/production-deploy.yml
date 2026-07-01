@@ -1,0 +1,50 @@
+name: Production Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    if: github.event_name == 'workflow_dispatch' || contains(join(github.event.commits.*.message, ' '), '[production]')
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/production_key
+          chmod 600 ~/.ssh/production_key
+          ssh-keyscan -H "${{ secrets.PRODUCTION_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy on Server
+        run: |
+          ssh -i ~/.ssh/production_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            set -e
+
+            cd "${{ secrets.PRODUCTION_APP_DIR }}"
+
+            echo "Pulling latest code..."
+            git pull --ff-only origin main
+
+            echo "Installing dependencies..."
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+
+            echo "Building app..."
+            npm run build
+
+            echo "Restarting PM2..."
+            pm2 restart 0
+
+            echo "PM2 status..."
+            pm2 list
+          EOF
