@@ -99,6 +99,7 @@ export async function POST(req) {
       success: true,
       message: "Account created successfully!",
       user: userResponse,
+      token,
     }, { status: 201 });
 
     // Set HTTP-only cookie

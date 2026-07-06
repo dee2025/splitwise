@@ -45,6 +45,7 @@ const blankArticle = {
   sources: [{ label: "", url: "" }],
   faqs: [{ question: "", answer: "" }],
   status: "draft",
+  views: 0,
 };
 
 function formatDate(value) {
@@ -54,6 +55,10 @@ function formatDate(value) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("en-US").format(Number(value) || 0);
 }
 
 function articleToForm(article) {
@@ -74,6 +79,7 @@ function articleToForm(article) {
     sources: article.sources?.length ? article.sources : [{ label: "", url: "" }],
     faqs: article.faqs?.length ? article.faqs : [{ question: "", answer: "" }],
     status: article.status || "draft",
+    views: article.views || 0,
   };
 }
 
@@ -402,11 +408,13 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
 
   const stats = useMemo(() => {
     const published = articles.filter((article) => article.status === "published").length;
+    const totalViews = articles.reduce((sum, article) => sum + (Number(article.views) || 0), 0);
     return {
       users: users.length,
       articles: articles.length,
       published,
       drafts: articles.length - published,
+      totalViews,
     };
   }, [articles, users]);
 
@@ -637,12 +645,13 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {[
             { label: "Users", value: stats.users, icon: Users, tone: "text-sky-300 bg-sky-500/10" },
             { label: "Articles", value: stats.articles, icon: FileText, tone: "text-indigo-300 bg-indigo-500/10" },
             { label: "Published", value: stats.published, icon: CheckCircle2, tone: "text-emerald-300 bg-emerald-500/10" },
             { label: "Drafts", value: stats.drafts, icon: PenLine, tone: "text-amber-300 bg-amber-500/10" },
+            { label: "Article views", value: formatNumber(stats.totalViews), icon: Eye, tone: "text-violet-300 bg-violet-500/10" },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -843,10 +852,16 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
                           </div>
                         </button>
                         <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                          <span className="inline-flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {formatDate(article.date)}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {formatDate(article.date)}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Eye className="w-3.5 h-3.5" />
+                              {formatNumber(article.views)} views
+                            </span>
+                          </div>
                           {article.status === "published" && (
                             <Link
                               href={`/articles/${article.slug}`}
@@ -872,6 +887,12 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
                   <p className="text-xs text-slate-500">
                     Use original, useful guidance with clear author and review context.
                   </p>
+                  {form.id && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-slate-300">
+                      <Eye className="h-3.5 w-3.5 text-violet-300" />
+                      {formatNumber(form.views)} views
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {form.id && (

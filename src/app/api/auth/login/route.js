@@ -90,6 +90,7 @@ export async function POST(req) {
       success: true,
       message: "Login successful",
       user: userResponse,
+      token,
     });
 
     // CORRECTED: Set HTTP-only cookie with proper syntax

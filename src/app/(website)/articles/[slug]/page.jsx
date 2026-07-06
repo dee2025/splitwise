@@ -1,5 +1,5 @@
 import { articleToJsonLd } from "@/lib/articleUtils";
-import { getPublishedArticleBySlug, getPublishedArticles } from "@/lib/articles";
+import { getPublishedArticleBySlug, getPublishedArticles, incrementPublishedArticleView } from "@/lib/articles";
 import { ArrowLeft, Calendar, Clock, ExternalLink, Tag } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -145,7 +145,7 @@ export async function generateMetadata({ params }) {
 
 export default async function ArticlePage({ params }) {
   const { slug } = await params;
-  const article = await getPublishedArticleBySlug(slug);
+  const article = await incrementPublishedArticleView(slug);
   if (!article) notFound();
 
   const articles = await getPublishedArticles();

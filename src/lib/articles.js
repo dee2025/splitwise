@@ -40,3 +40,20 @@ export async function getPublishedArticleBySlug(slug) {
 
   return normalizedStaticArticles.find((article) => article.slug === slug) || null;
 }
+
+export async function incrementPublishedArticleView(slug) {
+  try {
+    await connectDB();
+    const dbArticle = await Article.findOneAndUpdate(
+      { slug, status: "published" },
+      { $inc: { views: 1 } },
+      { new: true }
+    ).lean();
+
+    if (dbArticle) return normalizeArticle(dbArticle);
+  } catch (error) {
+    console.warn("Unable to increment article view:", error?.message || error);
+  }
+
+  return normalizedStaticArticles.find((article) => article.slug === slug) || null;
+}

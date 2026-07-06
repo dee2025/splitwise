@@ -59,6 +59,7 @@ export function normalizeArticle(article) {
     sources: Array.isArray(plain.sources) ? plain.sources.filter((source) => source.label || source.url) : [],
     faqs: Array.isArray(plain.faqs) ? plain.faqs.filter((faq) => faq.question && faq.answer) : [],
     status: plain.status || "published",
+    views: Number.isFinite(plain.views) ? plain.views : 0,
     updatedAt: plain.updatedAt ? plain.updatedAt.toISOString?.() || plain.updatedAt : date,
   };
 }

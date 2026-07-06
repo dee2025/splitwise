@@ -43,6 +43,16 @@ async function verifyGoogleCredential(credential) {
   return data;
 }
 
+function getAllowedClientIds() {
+  return [
+    process.env.GOOGLE_CLIENT_ID,
+    ...(process.env.GOOGLE_CLIENT_IDS || "")
+      .split(",")
+      .map((clientId) => clientId.trim())
+      .filter(Boolean),
+  ].filter(Boolean);
+}
+
 export async function POST(request) {
   try {
     const { credential } = await request.json();
@@ -54,8 +64,8 @@ export async function POST(request) {
       );
     }
 
-    const expectedClientId = process.env.GOOGLE_CLIENT_ID;
-    if (!expectedClientId) {
+    const allowedClientIds = getAllowedClientIds();
+    if (!allowedClientIds.length) {
       return NextResponse.json(
         { success: false, error: "Google login is not configured on server" },
         { status: 500 },
@@ -70,7 +80,7 @@ export async function POST(request) {
       );
     }
 
-    if (googleData.aud !== expectedClientId) {
+    if (!allowedClientIds.includes(googleData.aud)) {
       return NextResponse.json(
         { success: false, error: "Google token audience mismatch" },
         { status: 401 },
@@ -168,6 +178,7 @@ export async function POST(request) {
       success: true,
       message: "Google login successful",
       user: userResponse,
+      token,
     });
 
     setTokenCookie(response, token);

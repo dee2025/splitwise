@@ -8,7 +8,7 @@ export async function GET(req) {
 
   if (!decoded) return Response.json({ error: "Unauthenticated" }, { status: 401 });
 
-  const user = await User.findById(decoded.id).select("-password");
+  const user = await User.findById(decoded.userId || decoded.id).select("-password");
 
   return Response.json({ user });
 }

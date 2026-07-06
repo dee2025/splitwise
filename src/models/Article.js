@@ -101,6 +101,12 @@ const ArticleSchema = new mongoose.Schema(
       default: "draft",
       index: true,
     },
+    views: {
+      type: Number,
+      default: 0,
+      min: 0,
+      index: true,
+    },
     publishedAt: {
       type: Date,
       default: null,
