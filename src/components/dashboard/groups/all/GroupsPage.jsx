@@ -205,10 +205,10 @@ export default function GroupsPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               Your Groups
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+            {/* <p className="mt-2 max-w-2xl text-sm text-slate-400">
               Open a group to add expenses, edit details, invite members, and
               review the latest split summary.
-            </p>
+            </p> */}
           </div>
 
           <motion.button
@@ -222,7 +222,7 @@ export default function GroupsPage() {
           </motion.button>
         </motion.div>
 
-        <StatsGrid stats={stats} />
+        {/* <StatsGrid stats={stats} /> */}
 
         <motion.div
           initial={{ opacity: 0, y: -4 }}
