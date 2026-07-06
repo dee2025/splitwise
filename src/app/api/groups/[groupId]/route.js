@@ -6,10 +6,18 @@ import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
-function normalizeGroup(groupDoc) {
+function isGroupAdmin(group, userId) {
+  const userIdString = userId?.toString();
+  return (group.members || []).some((member) => {
+    const memberUserId = member.userId?._id || member.userId;
+    return memberUserId?.toString() === userIdString && member.role === "admin";
+  });
+}
+
+function normalizeGroup(groupDoc, options = {}) {
   const group = groupDoc?.toObject ? groupDoc.toObject() : groupDoc;
 
-  return {
+  const normalized = {
     ...group,
     members: (group.members || []).map((m) => ({
       _id: m._id,
@@ -24,6 +32,14 @@ function normalizeGroup(groupDoc) {
       joinedAt: m.joinedAt,
     })),
   };
+
+  if (!options.includeInviteToken) {
+    delete normalized.inviteToken;
+    delete normalized.inviteEnabled;
+    delete normalized.inviteUpdatedAt;
+  }
+
+  return normalized;
 }
 
 export async function GET(request, context) {
@@ -135,7 +151,9 @@ export async function GET(request, context) {
       );
     }
 
-    return NextResponse.json({ group: normalizeGroup(group) });
+    return NextResponse.json({
+      group: normalizeGroup(group, { includeInviteToken: isGroupAdmin(group, user._id) }),
+    });
   } catch (error) {
     console.error("Group fetch error:", error);
     return NextResponse.json(
@@ -300,7 +318,7 @@ export async function PUT(request, context) {
 
     return NextResponse.json({
       message: "Group updated successfully",
-      group: normalizeGroup(updatedGroup),
+      group: normalizeGroup(updatedGroup, { includeInviteToken: true }),
     });
   } catch (error) {
     console.error("Group update error:", error);

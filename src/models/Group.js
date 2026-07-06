@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { generateGroupInviteToken } from "@/lib/groupInvites";
 
 const groupSchema = new mongoose.Schema(
   {
@@ -30,6 +31,21 @@ const groupSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    inviteToken: {
+      type: String,
+      default: generateGroupInviteToken,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    inviteEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    inviteUpdatedAt: {
+      type: Date,
+      default: Date.now,
     },
     members: [
       {
@@ -80,6 +96,12 @@ const groupSchema = new mongoose.Schema(
 
 groupSchema.pre("validate", function (next) {
   this.currency = "INR";
+  if (!this.inviteToken) {
+    this.inviteToken = generateGroupInviteToken();
+  }
+  if (!this.inviteUpdatedAt) {
+    this.inviteUpdatedAt = new Date();
+  }
   next();
 });
 

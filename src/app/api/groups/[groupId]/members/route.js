@@ -5,10 +5,10 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
-function normalizeGroup(groupDoc) {
+function normalizeGroup(groupDoc, options = {}) {
   const group = groupDoc?.toObject ? groupDoc.toObject() : groupDoc;
 
-  return {
+  const normalized = {
     ...group,
     members: (group.members || []).map((m) => ({
       _id: m._id,
@@ -23,6 +23,14 @@ function normalizeGroup(groupDoc) {
       joinedAt: m.joinedAt,
     })),
   };
+
+  if (!options.includeInviteToken) {
+    delete normalized.inviteToken;
+    delete normalized.inviteEnabled;
+    delete normalized.inviteUpdatedAt;
+  }
+
+  return normalized;
 }
 
 export async function POST(request, { params }) {
@@ -130,7 +138,7 @@ export async function POST(request, { params }) {
     return NextResponse.json(
       {
         message: `Added ${membersToAdd.length} member(s)`,
-        group: normalizeGroup(populatedGroup),
+        group: normalizeGroup(populatedGroup, { includeInviteToken: true }),
       },
       { status: 200 },
     );

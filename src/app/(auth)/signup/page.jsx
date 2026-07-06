@@ -27,6 +27,15 @@ const inputCls = (hasError) =>
       : "bg-slate-700/50 border-white/8 text-slate-100 placeholder:text-slate-500 focus:ring-indigo-500"
   }`;
 
+function getRedirectFromLocation() {
+  if (typeof window === "undefined") return "/groups";
+  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || redirect.startsWith("/api/")) {
+    return "/groups";
+  }
+  return redirect;
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -44,11 +53,16 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/groups");
   const googleButtonRef = useRef(null);
 
   useEffect(() => {
-    if (isAuthenticated) router.push("/groups");
-  }, [isAuthenticated, router]);
+    setRedirectPath(getRedirectFromLocation());
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) router.push(redirectPath);
+  }, [isAuthenticated, redirectPath, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -142,7 +156,7 @@ export default function SignupPage() {
       if (res.data.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Account created successfully");
-        router.replace("/groups");
+        router.replace(redirectPath);
         return;
       }
       toast.error("Signup failed. Please try again.");
@@ -179,7 +193,7 @@ export default function SignupPage() {
       if (res.data?.success) {
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success("Signed up with Google successfully");
-        router.replace("/groups");
+        router.replace(redirectPath);
         return;
       }
       toast.error("Google sign up failed. Please try again.");
@@ -188,7 +202,7 @@ export default function SignupPage() {
     } finally {
       setGoogleLoading(false);
     }
-  }, [dispatch, router]);
+  }, [dispatch, redirectPath, router]);
 
   const initGoogleButton = useCallback(() => {
     if (!googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) {
@@ -426,7 +440,7 @@ export default function SignupPage() {
           <p className="text-center text-slate-400 text-sm">
             Sign in{" "}
             <Link
-              href="/login"
+              href={redirectPath === "/groups" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}
               className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
             >
               here

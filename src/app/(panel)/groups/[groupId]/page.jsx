@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
+  Copy,
   Clock,
   CreditCard,
   Download,
@@ -25,6 +26,7 @@ import {
   Plug,
   Plus,
   Receipt,
+  RefreshCw,
   Save,
   Share2,
   ShoppingBag,
@@ -306,7 +308,9 @@ export default function GroupPage() {
   const [loading, setLoading] = useState(true);
   const [expandMembers, setExpandMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
+  const [showInviteShare, setShowInviteShare] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [regeneratingInvite, setRegeneratingInvite] = useState(false);
   const [reportShare, setReportShare] = useState({
     open: false,
     file: null,
@@ -319,6 +323,13 @@ export default function GroupPage() {
     () => buildPayPlan(expenses, group?.members || []),
     [expenses, group?.members],
   );
+  const isCurrentUserAdmin = useMemo(() => {
+    const currentUserId = getNormalizedId(user);
+    if (!currentUserId || !group?.members?.length) return false;
+    return group.members.some(
+      (member) => getNormalizedId(member?.userId || member) === currentUserId && member.role === "admin",
+    );
+  }, [group?.members, user]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -383,6 +394,50 @@ export default function GroupPage() {
         detail: { groupId: group?._id || groupId },
       }),
     );
+  };
+
+  const getInviteUrl = () => {
+    if (typeof window === "undefined" || !group?.inviteToken) return "";
+    return `${window.location.origin}/groups/join/${group.inviteToken}`;
+  };
+
+  const copyInviteLink = async () => {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) {
+      toast.error("Invite link is not available");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      toast.success("Invite link copied");
+    } catch (error) {
+      console.error("Copy invite link failed:", error);
+      toast.error("Unable to copy invite link");
+    }
+  };
+
+  const regenerateInviteLink = async () => {
+    if (!group?._id) return;
+    if (!window.confirm("Regenerate this group invite link? Old shared links will stop working.")) {
+      return;
+    }
+
+    setRegeneratingInvite(true);
+    try {
+      const res = await axios.post(`/api/groups/${group._id}/invite/regenerate`);
+      setGroup((current) => ({
+        ...current,
+        inviteToken: res.data.inviteToken,
+        inviteUpdatedAt: res.data.inviteUpdatedAt,
+        inviteEnabled: true,
+      }));
+      toast.success("Invite link regenerated");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Unable to regenerate invite link");
+    } finally {
+      setRegeneratingInvite(false);
+    }
   };
 
   const handleDownloadActivityPdf = async () => {
@@ -676,6 +731,18 @@ export default function GroupPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {isCurrentUserAdmin && (
+                <motion.button
+                  whileHover={{ y: -1 }}
+                  whileTap={{ y: 1 }}
+                  onClick={() => setShowInviteShare(true)}
+                  className="flex items-center gap-1.5 sm:gap-2 bg-slate-800 text-slate-100 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg border border-white/10 hover:bg-slate-700 transition-all duration-150 font-medium text-xs sm:text-sm"
+                >
+                  <Share2 size={16} className="sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Share Invite</span>
+                  <span className="sm:hidden">Share</span>
+                </motion.button>
+              )}
               <motion.button
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 1 }}
@@ -830,6 +897,19 @@ export default function GroupPage() {
               groupId={groupId}
               onClose={() => setShowAddMembers(false)}
               onMembersAdded={fetchGroupData}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showInviteShare && isCurrentUserAdmin && (
+            <GroupInviteShareModal
+              inviteUrl={getInviteUrl()}
+              groupName={group.name}
+              regenerating={regeneratingInvite}
+              onCopy={copyInviteLink}
+              onRegenerate={regenerateInviteLink}
+              onClose={() => setShowInviteShare(false)}
             />
           )}
         </AnimatePresence>
@@ -2054,6 +2134,87 @@ function DeleteExpenseConfirmModal({ title, loading, onCancel, onConfirm }) {
               {loading ? "Deleting..." : "Delete"}
             </button>
           </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function GroupInviteShareModal({
+  groupName,
+  inviteUrl,
+  regenerating,
+  onCopy,
+  onRegenerate,
+  onClose,
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-800 shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-white/8 px-5 py-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-100">Share Invite</h3>
+            <p className="mt-1 text-xs text-slate-400">
+              Anyone with this link can join {groupName} after signing in.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-200"
+            aria-label="Close invite sharing"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-4 p-5">
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-slate-400">
+              Group invite link
+            </label>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={inviteUrl || "Invite link unavailable"}
+                className="min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none"
+              />
+              <button
+                type="button"
+                onClick={onCopy}
+                disabled={!inviteUrl}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Copy size={15} />
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={regenerating}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/20 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {regenerating ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {regenerating ? "Regenerating..." : "Regenerate link"}
+          </button>
         </div>
       </motion.div>
     </motion.div>

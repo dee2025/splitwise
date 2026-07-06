@@ -5,10 +5,18 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
-function normalizeGroup(groupDoc) {
+function isGroupAdmin(group, userId) {
+  const userIdString = userId?.toString();
+  return (group.members || []).some((member) => {
+    const memberUserId = member.userId?._id || member.userId;
+    return memberUserId?.toString() === userIdString && member.role === "admin";
+  });
+}
+
+function normalizeGroup(groupDoc, options = {}) {
   const group = groupDoc?.toObject ? groupDoc.toObject() : groupDoc;
 
-  return {
+  const normalized = {
     ...group,
     members: (group.members || []).map((m) => ({
       _id: m._id,
@@ -23,6 +31,14 @@ function normalizeGroup(groupDoc) {
       joinedAt: m.joinedAt,
     })),
   };
+
+  if (!options.includeInviteToken) {
+    delete normalized.inviteToken;
+    delete normalized.inviteEnabled;
+    delete normalized.inviteUpdatedAt;
+  }
+
+  return normalized;
 }
 
 export async function GET(request) {
@@ -50,7 +66,9 @@ export async function GET(request) {
       .sort({ createdAt: -1 });
 
     // 🔥 FIX: clean member structure
-    groups = groups.map((group) => normalizeGroup(group));
+    groups = groups.map((group) =>
+      normalizeGroup(group, { includeInviteToken: isGroupAdmin(group, user._id) }),
+    );
 
     return NextResponse.json({ groups });
   } catch (error) {
@@ -163,7 +181,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         message: "Group created successfully",
-        group: normalizeGroup(populatedGroup),
+        group: normalizeGroup(populatedGroup, { includeInviteToken: true }),
       },
       { status: 201 },
     );

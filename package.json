@@ -11,6 +11,8 @@
     "migrate:notifications": "node --env-file=.env.local scripts/normalize-notifications.mjs",
     "migrate:article-views:dry": "node --env-file=.env.local scripts/backfill-article-views.mjs --dry-run",
     "migrate:article-views": "node --env-file=.env.local scripts/backfill-article-views.mjs",
+    "migrate:group-invites:dry": "node --env-file=.env.local scripts/backfill-group-invites.mjs --dry-run",
+    "migrate:group-invites": "node --env-file=.env.local scripts/backfill-group-invites.mjs",
     "db:purge:keep-users:dry": "node --env-file=.env.local scripts/purge-keep-users.mjs --dry-run",
     "db:purge:keep-users": "node --env-file=.env.local scripts/purge-keep-users.mjs --apply",
     "db:purge:all:dry": "node --env-file=.env.local scripts/purge-all.mjs --dry-run",
