@@ -1,6 +1,7 @@
 import { verifyToken } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { generateGroupInviteToken } from "@/lib/groupInvites";
+import { getRequestToken } from "@/lib/requestAuth";
 import Group from "@/models/Group";
 import User from "@/models/User";
 import mongoose from "mongoose";
@@ -18,7 +19,7 @@ export async function POST(request, { params }) {
   try {
     await connectDB();
 
-    const token = request.cookies.get("token")?.value;
+    const token = getRequestToken(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

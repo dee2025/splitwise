@@ -1,6 +1,7 @@
 // app/api/groups/[groupId]/route.js
 import { verifyToken } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import { getRequestToken } from "@/lib/requestAuth";
 import Group from "@/models/Group";
 import User from "@/models/User";
 import mongoose from "mongoose";
@@ -51,7 +52,7 @@ export async function GET(request, context) {
     const groupId = pathSegments[pathSegments.length - 1];
 
     // Get token from cookies
-    const token = request.cookies.get("token")?.value;
+    const token = getRequestToken(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -172,7 +173,7 @@ export async function PUT(request, context) {
     const groupId = pathSegments[pathSegments.length - 1];
 
     // Get token from cookies
-    const token = request.cookies.get("token")?.value;
+    const token = getRequestToken(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -1,6 +1,7 @@
 import { verifyToken } from "@/lib/auth";
 import { createActivity } from "@/lib/createActivity";
 import { connectDB } from "@/lib/db";
+import { getRequestToken } from "@/lib/requestAuth";
 import Expense from "@/models/Expense";
 import Group from "@/models/Group";
 import User from "@/models/User";
@@ -63,7 +64,7 @@ function recalculateSplitAmounts(splitBetween = [], nextAmount) {
 }
 
 async function authorizeExpenseMutation(request, expenseId) {
-  const token = request.cookies.get("token")?.value;
+  const token = getRequestToken(request);
   if (!token) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }

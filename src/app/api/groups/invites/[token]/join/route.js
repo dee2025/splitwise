@@ -1,6 +1,7 @@
 import { verifyToken } from "@/lib/auth";
 import { createActivity } from "@/lib/createActivity";
 import { connectDB } from "@/lib/db";
+import { getRequestToken } from "@/lib/requestAuth";
 import Group from "@/models/Group";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
@@ -17,7 +18,7 @@ export async function POST(request, { params }) {
   try {
     await connectDB();
 
-    const token = request.cookies.get("token")?.value;
+    const token = getRequestToken(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

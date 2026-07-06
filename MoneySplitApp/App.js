@@ -12,6 +12,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,14 +23,20 @@ import {
 WebBrowser.maybeCompleteAuthSession();
 
 const TOKEN_KEY = "moneysplit_token";
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") || "http://10.0.2.2:3000";
+function normalizeApiBaseUrl(value) {
+  return (value || "http://10.0.2.2:3000")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/api$/i, "");
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
 const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
 const money = (value) =>
-  `₹${Number(value || 0).toLocaleString("en-IN", {
+  `INR ${Number(value || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 2,
   })}`;
 
@@ -44,11 +51,20 @@ async function requestApi(path, { token, method = "GET", body } = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const url = `${API_BASE_URL}/api${path}`;
+  let response;
+
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    throw new Error(
+      `Network request failed for ${API_BASE_URL}. Check EXPO_PUBLIC_API_URL, restart Expo with cache cleared, and make sure the API server is reachable from this device.`,
+    );
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -356,8 +372,40 @@ function EmptyState({ title, body }) {
   );
 }
 
-function GroupsScreen({ token, groups, onChanged, refreshing, onRefresh }) {
+function GroupsScreen({ token, user, groups, onChanged, refreshing, onRefresh }) {
   const [open, setOpen] = useState(false);
+
+  const getUserId = (value) => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return String(value.id || value._id || value.userId || "");
+  };
+
+  const isGroupAdmin = (group) => {
+    const currentUserId = getUserId(user);
+    if (!currentUserId) return false;
+    return (group.members || []).some(
+      (member) => getUserId(member.userId || member) === currentUserId && member.role === "admin",
+    );
+  };
+
+  const shareInvite = async (group) => {
+    if (!group.inviteToken) {
+      Alert.alert("Invite link unavailable", "Refresh the group list and try again.");
+      return;
+    }
+
+    const inviteUrl = `${API_BASE_URL}/groups/join/${group.inviteToken}`;
+    try {
+      await Share.share({
+        title: `Join ${group.name} on MoneySplit`,
+        message: `Join ${group.name} on MoneySplit: ${inviteUrl}`,
+        url: inviteUrl,
+      });
+    } catch (error) {
+      Alert.alert("Share failed", error.message);
+    }
+  };
 
   return (
     <View style={styles.flex}>
@@ -386,6 +434,9 @@ function GroupsScreen({ token, groups, onChanged, refreshing, onRefresh }) {
               <Text style={styles.cardMeta}>{group.members?.length || 0} members</Text>
               <Text style={styles.amount}>{money(group.totalExpenses)}</Text>
             </View>
+            {isGroupAdmin(group) && (
+              <Button title="Share invite link" variant="secondary" onPress={() => shareInvite(group)} />
+            )}
           </View>
         ))}
         {!groups.length && <EmptyState title="No groups" body="Tap New to create a group for trips, rent, food, or friends." />}
@@ -464,7 +515,7 @@ function GroupModal({ token, visible, onClose, onChanged }) {
           <Field label="Description" value={description} onChangeText={setDescription} placeholder="Optional details" multiline />
           <Text style={styles.label}>Group type</Text>
           <View style={styles.chips}>
-            {["trip", "home", "couple", "friends", "other"].map((item) => (
+            {["trip", "home", "couple", "other"].map((item) => (
               <Pressable key={item} onPress={() => setType(item)} style={[styles.chip, type === item && styles.chipActive]}>
                 <Text style={[styles.chipText, type === item && styles.chipTextActive]}>{item}</Text>
               </Pressable>
@@ -555,11 +606,8 @@ function ExpenseModal({ token, groups, visible, onClose, onChanged }) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("other");
-  const selectedGroup = groups.find((group) => group._id === groupId) || groups[0];
-
-  useEffect(() => {
-    if (!groupId && groups[0]?._id) setGroupId(groups[0]._id);
-  }, [groupId, groups]);
+  const selectedGroupId = groupId || groups[0]?._id || "";
+  const selectedGroup = groups.find((group) => group._id === selectedGroupId) || groups[0];
 
   const registeredMembers = useMemo(
     () => (selectedGroup?.members || []).filter((member) => member.userId),
@@ -568,6 +616,18 @@ function ExpenseModal({ token, groups, visible, onClose, onChanged }) {
 
   const create = async () => {
     const numericAmount = Number(amount);
+    if (!selectedGroup?._id) {
+      Alert.alert("Select a group", "Create or select a group before adding an expense.");
+      return;
+    }
+    if (!description.trim()) {
+      Alert.alert("Description required", "Enter what this expense was for.");
+      return;
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      Alert.alert("Invalid amount", "Enter an amount greater than zero.");
+      return;
+    }
     if (!registeredMembers.length) {
       Alert.alert("No registered members", "This group needs registered members before expenses can be split.");
       return;
@@ -615,8 +675,8 @@ function ExpenseModal({ token, groups, visible, onClose, onChanged }) {
           <Text style={styles.label}>Group</Text>
           <View style={styles.groupSelect}>
             {groups.map((group) => (
-              <Pressable key={group._id} onPress={() => setGroupId(group._id)} style={[styles.groupOption, groupId === group._id && styles.groupOptionActive]}>
-                <Text style={[styles.groupOptionText, groupId === group._id && styles.groupOptionTextActive]}>{group.name}</Text>
+              <Pressable key={group._id} onPress={() => setGroupId(group._id)} style={[styles.groupOption, selectedGroupId === group._id && styles.groupOptionActive]}>
+                <Text style={[styles.groupOptionText, selectedGroupId === group._id && styles.groupOptionTextActive]}>{group.name}</Text>
               </Pressable>
             ))}
           </View>
@@ -752,7 +812,7 @@ function MainApp({ token, initialUser, onLogout }) {
     tab === "dashboard" ? (
       <Dashboard user={user} profile={profile} groups={groups} expenses={expenses} notifications={notifications} onRefresh={refresh} refreshing={refreshing} />
     ) : tab === "groups" ? (
-      <GroupsScreen token={token} groups={groups} onChanged={refresh} onRefresh={refresh} refreshing={refreshing} />
+      <GroupsScreen token={token} user={user} groups={groups} onChanged={refresh} onRefresh={refresh} refreshing={refreshing} />
     ) : tab === "expenses" ? (
       <ExpensesScreen token={token} groups={groups} expenses={expenses} onChanged={refresh} onRefresh={refresh} refreshing={refreshing} />
     ) : tab === "notifications" ? (

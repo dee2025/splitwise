@@ -1,5 +1,6 @@
 import { verifyToken } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import { getRequestToken } from "@/lib/requestAuth";
 import Expense from "@/models/Expense";
 import Group from "@/models/Group";
 import Notification from "@/models/Notification";
@@ -11,7 +12,7 @@ export async function GET(request) {
     await connectDB();
 
     // Get token from cookies
-    const token = request.cookies.get("token")?.value;
+    const token = getRequestToken(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,7 +58,7 @@ export async function POST(request) {
     await connectDB();
 
     // Get token from cookies
-    const token = request.cookies.get("token")?.value;
+    const token = getRequestToken(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
