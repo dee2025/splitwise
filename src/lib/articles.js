@@ -18,7 +18,7 @@ export async function getPublishedArticles() {
     const dbArticles = await Article.find({ status: "published" })
       .sort({ publishedAt: -1, createdAt: -1 })
       .lean();
-
+     
     if (dbArticles.length > 0) {
       return dbArticles.map(normalizeArticle);
     }
