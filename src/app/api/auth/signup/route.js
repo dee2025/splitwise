@@ -69,7 +69,7 @@ export async function POST(req) {
     // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const newUser = await User.create({
+    const newUser = new User({
       fullName: normalizedFullName,
       username: generatedUsername,
       email: normalizedEmail,
@@ -77,6 +77,8 @@ export async function POST(req) {
       password: hashedPassword,
       authProvider: "local",
     });
+    newUser.googleId = undefined;
+    await newUser.save();
 
     // Generate JWT token
     const token = generateToken({
@@ -123,6 +125,7 @@ export async function POST(req) {
         username: "Username is already taken",
         email: "Email is already registered",
         contact: "Phone number is already registered",
+        googleId: "Could not create account. Please try again.",
       };
 
       return NextResponse.json(

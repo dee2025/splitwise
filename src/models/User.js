@@ -43,7 +43,8 @@ const UserSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      trim: true,
+      set: (value) => value || undefined,
     },
     avatar: {
       type: String,
