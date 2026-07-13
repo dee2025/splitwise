@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 const PANEL_PREFIXES = [
   "/dashboard",
+  "/home",
   "/groups",
   "/expenses",
   "/notifications",

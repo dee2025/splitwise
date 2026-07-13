@@ -27,10 +27,10 @@ const inputCls = (hasError) =>
   }`;
 
 function getRedirectFromLocation() {
-  if (typeof window === "undefined") return "/groups";
+  if (typeof window === "undefined") return "/home";
   const redirect = new URLSearchParams(window.location.search).get("redirect");
   if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || redirect.startsWith("/api/")) {
-    return "/groups";
+    return "/home";
   }
   return redirect;
 }
@@ -49,7 +49,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
-  const [redirectPath, setRedirectPath] = useState("/groups");
+  const [redirectPath, setRedirectPath] = useState("/home");
   const googleButtonRef = useRef(null);
 
   useEffect(() => {
@@ -397,7 +397,7 @@ export default function LoginPage() {
           <p className="text-center text-slate-400 text-sm">
             Create an account{" "}
             <Link
-              href={redirectPath === "/groups" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirectPath)}`}
+              href={redirectPath === "/home" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirectPath)}`}
               className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
             >
               here

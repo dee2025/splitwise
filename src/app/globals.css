@@ -16,6 +16,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 /* Legacy sketch utilities — kept for non-dashboard pages */
 @layer utilities {
   .shadow-sketch {
@@ -85,4 +91,125 @@ body {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+}
+
+html:not(.dark) .user-dashboard {
+    background:
+      radial-gradient(circle at top left, rgba(99, 102, 241, 0.1), transparent 32rem),
+      linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    color: #0f172a;
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-slate-950"],
+  html:not(.dark) .user-dashboard[class~="bg-slate-950"] {
+    background-color: #f8fafc;
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-slate-900"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-900/60"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-900/70"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-900/80"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-900/90"] {
+    background-color: #ffffff;
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-slate-800"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-800/60"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-800/70"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-800/75"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-800/80"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-800/90"] {
+    background-color: #f1f5f9;
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-slate-700"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-700/30"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-700/40"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-700/50"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-700/60"] {
+    background-color: #e2e8f0;
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-white/4"],
+  html:not(.dark) .user-dashboard [class~="bg-white/5"],
+  html:not(.dark) .user-dashboard [class~="bg-white/6"],
+  html:not(.dark) .user-dashboard [class~="bg-white/8"],
+  html:not(.dark) .user-dashboard [class~="bg-white/10"] {
+    background-color: rgba(15, 23, 42, 0.04);
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-slate-950/45"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-950/60"],
+  html:not(.dark) .user-dashboard [class~="bg-slate-950/70"] {
+    background-color: #f8fafc;
+  }
+
+html:not(.dark) .user-dashboard [class~="border-white/6"],
+  html:not(.dark) .user-dashboard [class~="border-white/8"],
+  html:not(.dark) .user-dashboard [class~="border-white/10"],
+  html:not(.dark) .user-dashboard [class~="border-white/12"],
+  html:not(.dark) .user-dashboard [class~="border-white/14"],
+  html:not(.dark) .user-dashboard [class~="border-white/15"],
+  html:not(.dark) .user-dashboard [class~="border-white/20"] {
+    border-color: #e2e8f0;
+  }
+
+html:not(.dark) .user-dashboard [class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="text-slate-50"],
+  html:not(.dark) .user-dashboard [class~="text-slate-100"],
+  html:not(.dark) .user-dashboard [class~="text-slate-200"] {
+    color: #0f172a;
+  }
+
+html:not(.dark) .user-dashboard [class~="text-slate-300"],
+  html:not(.dark) .user-dashboard [class~="text-slate-400"] {
+    color: #334155;
+  }
+
+html:not(.dark) .user-dashboard [class~="text-slate-500"],
+  html:not(.dark) .user-dashboard [class~="text-slate-600"] {
+    color: #64748b;
+  }
+
+html:not(.dark) .user-dashboard [class~="bg-indigo-600"][class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="bg-indigo-500"][class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="bg-emerald-600"][class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="bg-emerald-500"][class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="bg-rose-600"][class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="bg-rose-500"][class~="text-white"],
+  html:not(.dark) .user-dashboard [class~="bg-gradient-to-r"][class~="text-white"] {
+    color: #ffffff;
+  }
+
+html:not(.dark) .user-dashboard input,
+  html:not(.dark) .user-dashboard textarea,
+  html:not(.dark) .user-dashboard select {
+    color: #0f172a;
+  }
+
+html:not(.dark) .user-dashboard input::placeholder,
+  html:not(.dark) .user-dashboard textarea::placeholder {
+    color: #94a3b8;
+  }
+
+html:not(.dark) .user-dashboard [class~="shadow-black/10"],
+  html:not(.dark) .user-dashboard [class~="shadow-black/20"],
+  html:not(.dark) .user-dashboard [class~="shadow-black/50"] {
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  }
+
+html:not(.dark) .user-dashboard [class~="shadow-indigo-950/40"],
+  html:not(.dark) .user-dashboard [class~="shadow-indigo-950/50"],
+  html:not(.dark) .user-dashboard [class~="shadow-indigo-950/60"] {
+    box-shadow: 0 14px 28px rgba(79, 70, 229, 0.16);
+  }
+
+html:not(.dark) .user-dashboard [class~="hover:bg-slate-800"]:hover,
+  html:not(.dark) .user-dashboard [class~="hover:bg-slate-800/70"]:hover,
+  html:not(.dark) .user-dashboard [class~="hover:bg-slate-700"]:hover,
+  html:not(.dark) .user-dashboard [class~="hover:bg-white/4"]:hover,
+  html:not(.dark) .user-dashboard [class~="hover:bg-white/5"]:hover,
+  html:not(.dark) .user-dashboard [class~="hover:bg-white/8"]:hover,
+  html:not(.dark) .user-dashboard [class~="hover:bg-white/10"]:hover {
+    background-color: #eef2ff;
 }

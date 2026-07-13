@@ -66,6 +66,7 @@ export default function GroupsPage() {
   const router = useRouter();
 
   const [groups, setGroups] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -82,8 +83,12 @@ export default function GroupsPage() {
     const fetchGroups = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("/api/groups");
-        setGroups(res.data.groups || []);
+        const [groupsRes, expensesRes] = await Promise.all([
+          axios.get("/api/groups"),
+          axios.get("/api/expenses").catch(() => ({ data: { expenses: [] } })),
+        ]);
+        setGroups(groupsRes.data.groups || []);
+        setExpenses(expensesRes.data.expenses || []);
       } catch (error) {
         console.error("Error fetching groups:", error);
         toast.error("Failed to load groups");
@@ -134,6 +139,31 @@ export default function GroupsPage() {
       adminGroups,
     };
   }, [groups, user]);
+
+  const groupBalances = useMemo(() => {
+    const currentUserId = getNormalizedId(user);
+    const balances = {};
+
+    for (const expense of expenses) {
+      const groupId = getNormalizedId(expense.groupId);
+      if (!groupId) continue;
+
+      const payerId = getNormalizedId(expense.paidBy);
+      const mySplit = (expense.splitBetween || []).find(
+        (split) => getNormalizedId(split.userId) === currentUserId,
+      );
+      const splitAmount = Number(mySplit?.amount || 0);
+      const amount = Number(expense.amount || 0);
+
+      if (payerId === currentUserId) {
+        balances[groupId] = (balances[groupId] || 0) + Math.max(amount - splitAmount, 0);
+      } else {
+        balances[groupId] = (balances[groupId] || 0) - splitAmount;
+      }
+    }
+
+    return balances;
+  }, [expenses, user]);
 
   const handleGroupClick = (groupId) => {
     router.push(`/groups/${groupId}`);
@@ -198,10 +228,7 @@ export default function GroupsPage() {
           className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
         >
           <div className="min-w-0">
-            <p className="mb-2 inline-flex items-center gap-2 rounded-md border border-indigo-500/25 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-200">
-              <FolderOpen className="h-3.5 w-3.5" />
-              Group workspace
-            </p>
+           
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               Your Groups
             </h1>
@@ -286,7 +313,7 @@ export default function GroupsPage() {
               onCreateGroup={() => setShowCreateGroup(true)}
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+            <div className="mx-auto grid max-w-3xl grid-cols-1 gap-3">
               <AnimatePresence>
                 {filteredGroups.map((group, index) => (
                   <GroupCard
@@ -298,6 +325,7 @@ export default function GroupsPage() {
                       handleSettingsClick(group, event)
                     }
                     currentUser={user}
+                    balance={groupBalances[group._id] || 0}
                   />
                 ))}
               </AnimatePresence>

@@ -7,6 +7,15 @@ import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
+const ALLOWED_GROUP_TYPES = new Set(["trip", "home", "couple", "event", "office"]);
+
+function normalizeGroupType(type) {
+  const normalized = String(type || "").trim().toLowerCase();
+  if (ALLOWED_GROUP_TYPES.has(normalized)) return normalized;
+  if (normalized === "work") return "office";
+  return "event";
+}
+
 function isGroupAdmin(group, userId) {
   const userIdString = userId?.toString();
   return (group.members || []).some((member) => {
@@ -224,6 +233,7 @@ export async function PUT(request, context) {
       name,
       description,
       image,
+      type,
       privacy,
       members, // For adding/removing members
       removeMemberId, // For removing specific member
@@ -233,6 +243,7 @@ export async function PUT(request, context) {
     if (name !== undefined) group.name = name;
     if (description !== undefined) group.description = description;
     if (image !== undefined) group.image = image?.trim() || "";
+    if (type !== undefined) group.type = normalizeGroupType(type);
     group.currency = "INR";
     if (privacy !== undefined) group.privacy = privacy;
 

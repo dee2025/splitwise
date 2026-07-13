@@ -1,11 +1,12 @@
 "use client";
 
-import { Bell, CreditCard, Shield, User, Users } from "lucide-react";
+import { Bell, CreditCard, Home, Shield, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 
 const menuItems = [
+  { label: "Home", href: "/home", icon: Home },
   { label: "Groups", href: "/groups", icon: Users },
   { label: "Expenses", href: "/expenses", icon: CreditCard },
   { label: "Notifications", href: "/notifications", icon: Bell },

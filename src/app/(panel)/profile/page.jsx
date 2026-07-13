@@ -5,29 +5,30 @@ import { logout, updateUser } from "@/redux/slices/authSlice";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Calendar,
+  Bell,
   Check,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Edit3,
   Eye,
   EyeOff,
   FileText,
+  Headphones,
   ImageIcon,
+  IndianRupee,
   KeyRound,
   Loader2,
   LogOut,
   Mail,
+  Moon,
   Phone,
-  Receipt,
   Save,
+  Shield,
   ShieldCheck,
   Upload,
   User,
-  Users,
-  WalletCards,
   X,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -42,22 +43,6 @@ function initials(name = "") {
       .toUpperCase()
       .slice(0, 2) || "U"
   );
-}
-
-function formatMoney(value) {
-  return `INR ${Number(value || 0).toLocaleString("en-IN", {
-    maximumFractionDigits: 0,
-  })}`;
-}
-
-function formatMemberSince(dateValue) {
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "Not available";
-
-  return date.toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
 }
 
 function ProfileField({
@@ -138,98 +123,6 @@ function ProfileTextarea({
       </div>
       {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
     </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, detail, tone, delay }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="rounded-xl border border-white/8 bg-slate-900 p-4"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {label}
-          </p>
-          <p className="mt-2 truncate text-2xl font-bold text-slate-100">
-            {value}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">{detail}</p>
-        </div>
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${tone}`}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function Section({
-  title,
-  description,
-  icon: Icon,
-  children,
-  collapsible = false,
-  defaultOpen = true,
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="overflow-hidden rounded-xl border border-white/8 bg-slate-900"
-    >
-      <button
-        type="button"
-        onClick={() => collapsible && setOpen((value) => !value)}
-        className={`flex w-full items-center justify-between gap-4 border-b border-white/8 px-4 py-4 text-left ${
-          collapsible
-            ? "transition-colors hover:bg-slate-800/70"
-            : "cursor-default"
-        }`}
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10">
-            <Icon className="h-5 w-5 text-indigo-300" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-slate-100">{title}</h2>
-            {description && (
-              <p className="mt-1 truncate text-xs text-slate-500">
-                {description}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {collapsible && (
-          <span className="shrink-0 text-slate-500">
-            {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </span>
-        )}
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="section-content"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="p-4">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.section>
   );
 }
 
@@ -603,17 +496,91 @@ function ChangePasswordModal({
   );
 }
 
+function SettingsRow({
+  icon: Icon,
+  title,
+  description,
+  iconTone = "bg-emerald-500/10 text-emerald-300",
+  value,
+  danger = false,
+  onClick,
+  children,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full min-w-0 items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-slate-800/70"
+    >
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconTone}`}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span
+          className={`block text-sm font-bold ${
+            danger ? "text-rose-300" : "text-slate-100"
+          }`}
+        >
+          {title}
+        </span>
+        <span className="mt-0.5 block truncate text-xs text-slate-500">
+          {description}
+        </span>
+      </span>
+      {children || (
+        <span className="flex shrink-0 items-center gap-2">
+          {value && (
+            <span className="text-xs font-bold text-emerald-300">
+              {value}
+            </span>
+          )}
+          <ChevronRight className="h-5 w-5 text-slate-500" />
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ThemeToggle({ checked, onChange }) {
+  return (
+    <span
+      role="switch"
+      aria-checked={checked}
+      tabIndex={0}
+      onClick={(event) => {
+        event.stopPropagation();
+        onChange();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onChange();
+        }
+      }}
+      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
+        checked
+          ? "border-indigo-500/30 bg-indigo-600"
+          : "border-white/10 bg-slate-800"
+      }`}
+    >
+      <span
+        className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+          checked ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </span>
+  );
+}
+
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
   const { user: authUser } = useSelector((state) => state.auth);
 
   const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState({
-    groupsCount: 0,
-    expenseCount: 0,
-    totalExpenses: 0,
-  });
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [editMode, setEditMode] = useState(false);
@@ -641,6 +608,11 @@ export default function ProfilePage() {
   const [pwError, setPwError] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [themeMounted, setThemeMounted] = useState(false);
+
+  useEffect(() => {
+    setThemeMounted(true);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -652,7 +624,6 @@ export default function ProfilePage() {
 
         const user = res.data.user;
         setProfile(user);
-        setStats(res.data.stats);
         setEditForm({
           fullName: user.fullName || "",
           username: user.username || "",
@@ -812,30 +783,30 @@ export default function ProfilePage() {
   if (loadingProfile) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="w-full min-w-0 space-y-6">
           <div className="rounded-xl border border-white/8 bg-slate-900 p-5">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 animate-pulse rounded-xl bg-slate-800" />
-                <div className="space-y-2">
-                  <div className="h-5 w-44 animate-pulse rounded bg-slate-800" />
-                  <div className="h-3 w-32 animate-pulse rounded bg-slate-800" />
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-20 animate-pulse rounded-full bg-slate-800" />
+              <div className="space-y-2">
+                <div className="h-5 w-44 animate-pulse rounded bg-slate-800" />
+                <div className="h-3 w-32 animate-pulse rounded bg-slate-800" />
+                <div className="h-5 w-16 animate-pulse rounded bg-slate-800" />
               </div>
-              <div className="h-10 w-32 animate-pulse rounded-lg bg-slate-800" />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {[0, 1, 2].map((item) => (
+          <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-900">
+            {[0, 1, 2, 3, 4, 5].map((item) => (
               <div
                 key={item}
-                className="h-28 animate-pulse rounded-xl border border-white/8 bg-slate-900"
-              />
+                className="flex items-center gap-3 border-b border-white/8 px-4 py-4 last:border-b-0"
+              >
+                <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-800" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-slate-800" />
+                  <div className="h-3 w-48 animate-pulse rounded bg-slate-800" />
+                </div>
+              </div>
             ))}
-          </div>
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-            <div className="h-96 animate-pulse rounded-xl border border-white/8 bg-slate-900" />
-            <div className="h-96 animate-pulse rounded-xl border border-white/8 bg-slate-900" />
           </div>
         </div>
       </DashboardLayout>
@@ -843,12 +814,9 @@ export default function ProfilePage() {
   }
 
   const displayName = profile?.fullName || authUser?.fullName || "User";
-  const username = profile?.username || authUser?.username || "user";
-  const memberSince = profile?.createdAt
-    ? formatMemberSince(profile.createdAt)
-    : "Not available";
-  const accountId = profile?._id?.toString().slice(-8).toUpperCase() || "N/A";
-  const role = profile?.role || authUser?.role || "user";
+  const email = profile?.email || authUser?.email || "No email";
+  const isDarkMode = themeMounted && resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDarkMode ? "light" : "dark");
 
   const pwChecks = [
     { ok: pwForm.next.length >= 6, label: "6+ chars" },
@@ -858,223 +826,121 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="mx-auto w-full min-w-0 max-w-2xl space-y-5 pb-24 sm:pb-6">
         <motion.section
-          initial={{ opacity: 0, y: -6 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-xl border border-white/8 bg-slate-900"
+          className="rounded-2xl border border-white/8 bg-slate-900 p-5"
         >
-          <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="relative h-20 w-20 shrink-0">
-                {profile?.avatar ? (
-                  <img
-                    src={profile.avatar}
-                    alt={displayName}
-                    className="h-20 w-20 rounded-xl border border-indigo-500/25 object-cover shadow-lg shadow-indigo-950/40"
-                  />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-indigo-500/25 bg-indigo-500/15 text-2xl font-bold text-indigo-100 shadow-lg shadow-indigo-950/40">
-                    {initials(displayName)}
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-slate-900 bg-emerald-500" />
-              </div>
-
-              <div className="min-w-0">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-200">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Active account
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="relative h-20 w-20 shrink-0">
+              {profile?.avatar ? (
+                <img
+                  src={profile.avatar}
+                  alt={displayName}
+                  className="h-20 w-20 rounded-full border border-emerald-500/20 object-cover shadow-lg shadow-emerald-950/30"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/15 text-2xl font-bold text-emerald-100 shadow-lg shadow-emerald-950/30">
+                  {initials(displayName)}
                 </div>
-                <h1 className="truncate text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                  {displayName}
-                </h1>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-400">
-                  <span className="inline-flex items-center gap-1.5">
-                    <User className="h-4 w-4" />@{username}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Mail className="h-4 w-4" />
-                    {profile?.email || authUser?.email || "No email"}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" />
-                    Since {memberSince}
-                  </span>
-                </div>
-                {profile?.bio && (
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                    {profile.bio}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+              )}
               <button
                 type="button"
                 onClick={openEditModal}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-slate-900 bg-emerald-500 text-white shadow-lg transition-colors hover:bg-emerald-400"
+                title="Update profile photo"
               >
-                <Edit3 size={16} />
-                Edit Profile
+                <Edit3 className="h-3.5 w-3.5" />
               </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-500/35 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-200 transition-colors hover:bg-rose-500/20 disabled:opacity-60"
-              >
-                {loggingOut ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <LogOut size={16} />
-                )}
-                {loggingOut ? "Logging out" : "Logout"}
-              </button>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-xl font-extrabold tracking-tight text-slate-100">
+                {displayName}
+              </h1>
+              <p className="mt-1 truncate text-sm font-medium text-slate-500">
+                {email}
+              </p>
+
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-bold text-emerald-300">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Verified
+              </span>
             </div>
           </div>
         </motion.section>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <StatCard
-            icon={Users}
-            label="Groups"
-            value={stats.groupsCount}
-            detail="joined workspaces"
-            tone="border-sky-500/25 bg-sky-500/10 text-sky-300"
-            delay={0.04}
-          />
-          <StatCard
-            icon={Receipt}
-            label="Expenses"
-            value={stats.expenseCount}
-            detail="paid or split"
-            tone="border-indigo-500/25 bg-indigo-500/10 text-indigo-300"
-            delay={0.08}
-          />
-          <StatCard
-            icon={WalletCards}
-            label="Total Tracked"
-            value={formatMoney(stats.totalExpenses)}
-            detail="all profile activity"
-            tone="border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
-            delay={0.12}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-          <Section
-            title="Profile Details"
-            description="The information visible across your groups"
-            icon={User}
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {[
-                  { label: "Full Name", value: profile?.fullName || "Not set" },
-                  { label: "Username", value: `@${username}` },
-                  { label: "Email", value: profile?.email || "No email" },
-                  { label: "Phone", value: profile?.contact || "Not added" },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-lg border border-white/8 bg-slate-800/70 p-3"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      {item.label}
-                    </p>
-                    <p className="mt-1 truncate text-sm font-semibold text-slate-100">
-                      {item.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-lg border border-white/8 bg-slate-800/70 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Bio
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  {profile?.bio || "No bio added yet."}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={openEditModal}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 sm:w-auto"
-              >
-                <Edit3 size={16} />
-                Edit Profile
-              </button>
-            </div>
-          </Section>
-
-          <div className="space-y-4">
-            <Section
-              title="Account Info"
-              description="Read-only account metadata"
-              icon={ShieldCheck}
-            >
-              <div className="divide-y divide-white/8">
-                {[
-                  { label: "Account ID", value: accountId, mono: true },
-                  {
-                    label: "Role",
-                    value: role.charAt(0).toUpperCase() + role.slice(1),
-                  },
-                  { label: "Member Since", value: memberSince },
-                  { label: "Phone", value: profile?.contact || "Not added" },
-                ].map(({ label, value, mono }) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-                  >
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      {label}
-                    </span>
-                    <span
-                      className={`max-w-[60%] truncate text-right text-sm font-semibold text-slate-200 ${
-                        mono
-                          ? "rounded-md border border-white/8 bg-slate-800 px-2 py-1 font-mono text-xs"
-                          : ""
-                      }`}
-                    >
-                      {value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Section>
-
-            <Section
-              title="Security"
-              description="Manage password and account access"
-              icon={KeyRound}
-            >
-              <div className="space-y-3">
-                <div className="rounded-lg border border-white/8 bg-slate-800/70 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Password
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Keep your account protected by updating your password from a
-                    focused modal dialog.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <KeyRound size={16} />
-                  Change Password
-                </button>
-              </div>
-            </Section>
+        <section className="space-y-2">
+          <h2 className="px-1 text-sm font-extrabold text-slate-500">
+            Settings
+          </h2>
+          <div className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8 bg-slate-900 shadow-lg shadow-black/10">
+            <SettingsRow
+              icon={User}
+              title="Personal Info"
+              description="Update your personal details"
+              onClick={openEditModal}
+            />
+            <SettingsRow
+              icon={Bell}
+              title="Notifications"
+              description="Manage your notification preferences"
+              iconTone="bg-emerald-500/10 text-emerald-300"
+              onClick={() => router.push("/notifications")}
+            />
+            <SettingsRow
+              icon={IndianRupee}
+              title="Currency"
+              description="Choose your preferred currency"
+              value="INR"
+              onClick={() => toast("Currency settings are coming soon")}
+            />
           </div>
-        </div>
+        </section>
+
+        <section className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8 bg-slate-900 shadow-lg shadow-black/10">
+          <SettingsRow
+            icon={Moon}
+            title="Dark Mode"
+            description="Switch between light and dark theme"
+            onClick={toggleTheme}
+          >
+            <ThemeToggle checked={isDarkMode} onChange={toggleTheme} />
+          </SettingsRow>
+          <SettingsRow
+            icon={KeyRound}
+            title="Security"
+            description="Change your account password"
+            iconTone="bg-indigo-500/10 text-indigo-300"
+            onClick={() => setShowPasswordModal(true)}
+          />
+          <SettingsRow
+            icon={Headphones}
+            title="Help & Support"
+            description="Get help and contact support"
+            iconTone="bg-emerald-500/10 text-emerald-300"
+            onClick={() => router.push("/contact")}
+          />
+          <SettingsRow
+            icon={Shield}
+            title="Privacy"
+            description="Privacy policy and data settings"
+            iconTone="bg-emerald-500/10 text-emerald-300"
+            onClick={() => router.push("/privacy-policy")}
+          />
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900 shadow-lg shadow-black/10">
+          <SettingsRow
+            icon={loggingOut ? Loader2 : LogOut}
+            title={loggingOut ? "Logging out" : "Logout"}
+            description="Sign out from your account"
+            iconTone="bg-rose-500/10 text-rose-300"
+            danger
+            onClick={handleLogout}
+          />
+        </section>
       </div>
 
       <AnimatePresence>

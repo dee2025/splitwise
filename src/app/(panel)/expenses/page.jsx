@@ -576,9 +576,9 @@ export default function ExpensesPage() {
               <h1 className="text-2xl font-bold text-slate-100 tracking-tight mb-1">
                 All Expenses
               </h1>
-              <p className="text-slate-400 text-sm">
+              {/* <p className="text-slate-400 text-sm">
                 Track and manage all your expenses across groups
-              </p>
+              </p> */}
             </div>
             {!loading && expenses.length > 0 && (
               <button
@@ -593,54 +593,7 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        {!loading && (
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {[
-              {
-                label: "Total Expenses",
-                value: stats.totalCount,
-                icon: Receipt,
-                color: "text-indigo-400",
-                iconBg: "bg-indigo-500/10",
-              },
-              {
-                label: "You Paid",
-                value: `₹${stats.paidByUser.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
-                icon: TrendingDown,
-                color: "text-rose-400",
-                iconBg: "bg-rose-500/10",
-              },
-              {
-                label: "Your Share",
-                value: `₹${stats.userShare.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
-                icon: TrendingUp,
-                color: "text-emerald-400",
-                iconBg: "bg-emerald-500/10",
-              },
-            ].map(({ label, value, icon: Icon, color, iconBg }, i) => (
-              <motion.div
-                key={label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="bg-slate-800 rounded-xl p-2.5 sm:p-4 border border-white/6 flex items-center justify-between min-w-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-wide sm:tracking-wider mb-1 truncate">
-                    {label}
-                  </p>
-                  <p className={`text-base sm:text-2xl font-bold ${color} truncate`}>
-                    {value}
-                  </p>
-                </div>
-                <div className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl ${iconBg} shrink-0 ml-2`}>
-                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${color}`} />
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+       
 
         {!loading && expenses.length > 0 && (
           <div className="bg-slate-800 rounded-xl border border-white/6 p-3 flex items-center justify-between">

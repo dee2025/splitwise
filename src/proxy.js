@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 const protectedRoutes = [
   "/dashboard",
+  "/home",
   "/groups",
   "/expenses",
   "/notifications",
@@ -24,7 +25,7 @@ export function proxy(request) {
 
   // Keep dashboard route in code but do not surface it in the app.
   if (pathname.startsWith("/dashboard") && token) {
-    return NextResponse.redirect(new URL("/groups", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
   // For protected routes, require authentication.
@@ -36,7 +37,7 @@ export function proxy(request) {
 
   // For auth routes, redirect authenticated users away.
   if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL("/groups", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
   return NextResponse.next();
@@ -45,6 +46,7 @@ export function proxy(request) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/home/:path*",
     "/groups/:path*",
     "/expenses/:path*",
     "/notifications/:path*",

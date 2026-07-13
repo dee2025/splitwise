@@ -6,6 +6,15 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
+const ALLOWED_GROUP_TYPES = new Set(["trip", "home", "couple", "event", "office"]);
+
+function normalizeGroupType(type) {
+  const normalized = String(type || "").trim().toLowerCase();
+  if (ALLOWED_GROUP_TYPES.has(normalized)) return normalized;
+  if (normalized === "work") return "office";
+  return "event";
+}
+
 function isGroupAdmin(group, userId) {
   const userIdString = userId?.toString();
   return (group.members || []).some((member) => {
@@ -146,7 +155,7 @@ export async function POST(request) {
       image: image?.trim() || "",
       currency: "INR",
       privacy: privacy || "private",
-      type: type || "other",
+      type: normalizeGroupType(type),
       createdBy: currentUser._id,
       members: allMembers,
       totalExpenses: 0,

@@ -29,8 +29,8 @@ const groupSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["trip", "home", "couple", "other"],
-      default: "other",
+      enum: ["trip", "home", "couple", "event", "office", "other"],
+      default: "event",
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

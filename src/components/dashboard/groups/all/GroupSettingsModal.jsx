@@ -1,11 +1,15 @@
 // components/dashboard/groups/GroupSettingsModal.js
 "use client";
 
+import {
+  GROUP_TYPE_OPTIONS,
+  getGroupTypeConfig,
+  normalizeGroupType,
+} from "@/utils/groupUtils";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Edit,
-  ImageIcon,
   Loader2,
   Trash2,
   Upload,
@@ -21,13 +25,14 @@ export default function GroupSettingsModal({
   onGroupDeleted,
   currentUser,
 }) {
-  console.log("Rendering GroupSettingsModal for group:", group);
   const [editForm, setEditForm] = useState({
     name: group.name,
     description: group.description || "",
     image: group.image || "",
+    type: normalizeGroupType(group.type),
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const groupTypeConfig = getGroupTypeConfig({ type: editForm.type });
 
   const handleImageUpload = async (file) => {
     if (!file) return;
@@ -117,15 +122,11 @@ export default function GroupSettingsModal({
                 </label>
                 <div className="grid grid-cols-[72px_1fr] gap-3 rounded-lg border border-white/8 bg-slate-900/60 p-3">
                   <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-slate-700/50">
-                    {editForm.image ? (
-                      <img
-                        src={editForm.image}
-                        alt="Group preview"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="h-6 w-6 text-slate-500" />
-                    )}
+                    <img
+                      src={editForm.image || groupTypeConfig.image}
+                      alt="Group preview"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div className="min-w-0 space-y-2">
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-indigo-500/35 bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500">
@@ -156,9 +157,49 @@ export default function GroupSettingsModal({
                       </button>
                     )}
                     <p className="truncate text-xs text-slate-500">
-                      {editForm.image || "JPG, PNG, WebP, or GIF up to 5MB"}
+                      {editForm.image
+                        ? editForm.image
+                        : `${groupTypeConfig.label} fallback image is active`}
                     </p>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Group Category
+                </label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {GROUP_TYPE_OPTIONS.map((type) => {
+                    const Icon = type.icon;
+                    const selected = editForm.type === type.id;
+                    return (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() =>
+                          setEditForm((prev) => ({ ...prev, type: type.id }))
+                        }
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${
+                          selected
+                            ? "border-indigo-500/50 bg-indigo-600/20"
+                            : "border-white/8 bg-slate-900/60 hover:bg-slate-700/40"
+                        }`}
+                      >
+                        <img
+                          src={type.image}
+                          alt=""
+                          className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-slate-100">
+                            {type.label}
+                          </span>
+                        </span>
+                        <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

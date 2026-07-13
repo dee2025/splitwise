@@ -14,14 +14,16 @@ export default function DashboardLayout({ children }) {
   const contentWidth = pathname?.startsWith("/admin") ? "max-w-7xl" : "max-w-5xl";
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="user-dashboard min-h-screen w-full overflow-x-hidden bg-slate-950">
       {/* <Navbar /> */}
 
-      <div className="flex">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-10 min-h-[calc(100vh-64px)]">
-          <div className={`${contentWidth} mx-auto`}>{children}</div>
+        <main className="min-w-0 flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-10">
+          <div className={`${contentWidth} mx-auto w-full min-w-0`}>
+            {children}
+          </div>
         </main>
       </div>
 
