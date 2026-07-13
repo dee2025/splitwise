@@ -12,6 +12,11 @@ const groupSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    image: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     currency: {
       type: String,
       default: "INR",

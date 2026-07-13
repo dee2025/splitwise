@@ -1,35 +1,18 @@
 // components/dashboard/groups/GroupSettingsModal.js
 "use client";
 
-import { getGroupTypeConfig } from "@/utils/groupUtils";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  CloudCog,
-  Crown,
   Edit,
+  ImageIcon,
   Loader2,
-  Plus,
-  Search,
   Trash2,
-  UserMinus,
-  UserPlus,
+  Upload,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
-
-function getDisplayName(entity) {
-  return (
-    entity?.fullName ||
-    entity?.userId?.fullName ||
-    entity?.name ||
-    entity?.userId?.name ||
-    entity?.username ||
-    entity?.userId?.username ||
-    "Unknown User"
-  );
-}
 
 export default function GroupSettingsModal({
   group,
@@ -42,44 +25,28 @@ export default function GroupSettingsModal({
   const [editForm, setEditForm] = useState({
     name: group.name,
     description: group.description || "",
+    image: group.image || "",
   });
-  const [newMemberName, setNewMemberName] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const config = getGroupTypeConfig(group);
-  const memberCount = group.members?.length || 0;
+  const handleImageUpload = async (file) => {
+    if (!file) return;
 
-  // Search users for adding members
-  const searchUsers = async (query) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "groups");
 
-    setIsSearching(true);
+    setIsUploadingImage(true);
     try {
-      const res = await axios.get(
-        `/api/users/search?q=${encodeURIComponent(query)}`
-      );
-      setSearchResults(res.data.users || []);
+      const res = await axios.post("/api/uploads/image", formData);
+      setEditForm((prev) => ({ ...prev, image: res.data.path }));
+      toast.success("Group image uploaded");
     } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
+      toast.error(error.response?.data?.error || "Failed to upload image");
     } finally {
-      setIsSearching(false);
+      setIsUploadingImage(false);
     }
   };
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      searchUsers(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const handleUpdateGroup = async (e) => {
     e.preventDefault();
@@ -89,65 +56,6 @@ export default function GroupSettingsModal({
       toast.success("Group updated successfully");
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to update group");
-    }
-  };
-
-  const handleAddMember = async (user) => {
-    try {
-      const res = await axios.put(`/api/groups/${group._id}`, {
-        members: [
-          {
-            userId: user.id,
-            name: user.fullName || user.name,
-            email: user.email,
-            contact: user.contact,
-          },
-        ],
-      });
-      onGroupUpdated(res.data.group);
-      setSearchQuery("");
-      setSearchResults([]);
-      toast.success(`Added ${getDisplayName(user)} to group`);
-    } catch (error) {
-      toast.error(error.response?.data?.error || "Failed to add member");
-    }
-  };
-
-  const handleAddCustomMember = async (e) => {
-    e.preventDefault();
-    if (!newMemberName.trim()) {
-      toast.error("Please enter a name for the member");
-      return;
-    }
-
-    try {
-      const res = await axios.put(`/api/groups/${group._id}`, {
-        members: [
-          {
-            name: newMemberName,
-            email: null,
-            contact: null,
-            type: "custom",
-          },
-        ],
-      });
-      onGroupUpdated(res.data.group);
-      setNewMemberName("");
-      toast.success(`Added ${newMemberName} to group`);
-    } catch (error) {
-      toast.error(error.response?.data?.error || "Failed to add member");
-    }
-  };
-
-  const handleRemoveMember = async (memberId) => {
-    try {
-      const res = await axios.put(`/api/groups/${group._id}`, {
-        removeMemberId: memberId,
-      });
-      onGroupUpdated(res.data.group);
-      toast.success("Member removed successfully");
-    } catch (error) {
-      toast.error(error.response?.data?.error || "Failed to remove member");
     }
   };
 
@@ -205,6 +113,57 @@ export default function GroupSettingsModal({
             <form onSubmit={handleUpdateGroup} className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Group Image
+                </label>
+                <div className="grid grid-cols-[72px_1fr] gap-3 rounded-lg border border-white/8 bg-slate-900/60 p-3">
+                  <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-slate-700/50">
+                    {editForm.image ? (
+                      <img
+                        src={editForm.image}
+                        alt="Group preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-slate-500" />
+                    )}
+                  </div>
+                  <div className="min-w-0 space-y-2">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-indigo-500/35 bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500">
+                      {isUploadingImage ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                      {isUploadingImage ? "Uploading" : "Upload image"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        disabled={isUploadingImage}
+                        onChange={(event) => {
+                          handleImageUpload(event.target.files?.[0]);
+                          event.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {editForm.image && (
+                      <button
+                        type="button"
+                        onClick={() => setEditForm((prev) => ({ ...prev, image: "" }))}
+                        className="ml-2 text-xs font-semibold text-slate-400 hover:text-rose-300"
+                      >
+                        Remove
+                      </button>
+                    )}
+                    <p className="truncate text-xs text-slate-500">
+                      {editForm.image || "JPG, PNG, WebP, or GIF up to 5MB"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   Group Name
                 </label>
                 <input
@@ -245,121 +204,6 @@ export default function GroupSettingsModal({
                 Update Group
               </button>
             </form>
-
-            {/* Add Member Section */}
-            <div className="space-y-3 mb-6 p-3 bg-slate-700/30 rounded-lg border border-white/8">
-              <h4 className="font-medium text-slate-100 flex items-center gap-2">
-                <UserPlus size={16} />
-                Add Member
-              </h4>
-
-              {/* Search for registered users */}
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Search registered users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                />
-                {isSearching && (
-                  <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 animate-spin" />
-                )}
-              </div>
-
-              {/* Search Results */}
-              <AnimatePresence>
-                {searchResults.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="border border-white/10 rounded-lg bg-slate-800 overflow-hidden"
-                  >
-                    {searchResults.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center justify-between p-2 hover:bg-slate-700/40 cursor-pointer border-b border-white/8 last:border-b-0"
-                        onClick={() => handleAddMember(user)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-medium">
-                            {getDisplayName(user)
-                              ?.charAt(0)
-                              .toUpperCase()}
-                          </div>
-                          <span className="text-sm text-slate-200">
-                            {getDisplayName(user)}
-                          </span>
-                        </div>
-                        <Plus size={14} className="text-slate-400" />
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Add custom member */}
-              <form
-                onSubmit={handleAddCustomMember}
-                className="flex gap-2 mt-2"
-              >
-                <input
-                  type="text"
-                  placeholder="Add custom member name"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-700/50 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                />
-                <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg border border-indigo-500 hover:bg-indigo-500 transition-all duration-150 font-medium text-sm"
-                >
-                  Add
-                </button>
-              </form>
-            </div>
-
-            {/* Members List */}
-            <div className="space-y-2 mb-6">
-              <h4 className="font-medium text-slate-100 mb-3">
-                Members ({memberCount})
-              </h4>
-              {group.members?.map((member) => (
-                <div
-                  key={member._id}
-                  className="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg border border-white/8"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-xs text-white font-medium">
-                      {getDisplayName(member)
-                        ?.charAt(0)
-                        .toUpperCase()}
-                    </div>
-                    <span className="text-sm text-slate-200">
-                      {getDisplayName(member)}
-                    </span>
-                    {member.role === "admin" && (
-                      <Crown size={12} className="text-amber-400" />
-                    )}
-                    {member.type === "custom" && (
-                      <span className="text-xs bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">
-                        External
-                      </span>
-                    )}
-                  </div>
-                  {member.role !== "admin" && (
-                    <button
-                      onClick={() => handleRemoveMember(member._id)}
-                      className="p-1 text-rose-300 hover:bg-rose-500/20 rounded transition-colors"
-                    >
-                      <UserMinus size={14} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
 
             {/* Danger Zone */}
             <div className="border-t border-white/8 pt-4">

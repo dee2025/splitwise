@@ -82,6 +82,7 @@ export async function POST(req) {
       email: user.email,
       role: user.role,
       contact: user.contact,
+      avatar: user.avatar,
       createdAt: user.createdAt,
     };
 

@@ -93,6 +93,7 @@ export async function POST(req) {
       username: newUser.username,
       email: newUser.email,
       contact: newUser.contact,
+      avatar: newUser.avatar,
       createdAt: newUser.createdAt,
     };
 

@@ -223,6 +223,7 @@ export async function PUT(request, context) {
     const {
       name,
       description,
+      image,
       privacy,
       members, // For adding/removing members
       removeMemberId, // For removing specific member
@@ -231,6 +232,7 @@ export async function PUT(request, context) {
     // Update basic group info
     if (name !== undefined) group.name = name;
     if (description !== undefined) group.description = description;
+    if (image !== undefined) group.image = image?.trim() || "";
     group.currency = "INR";
     if (privacy !== undefined) group.privacy = privacy;
 

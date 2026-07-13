@@ -2,25 +2,32 @@
 
 import { slugify } from "@/lib/articleUtils";
 import {
+  Activity,
   Ban,
   BarChart3,
   Calendar,
   CheckCircle2,
+  CircleDollarSign,
   FileText,
   Eye,
   ImageIcon,
+  Layers3,
   LogOut,
   Loader2,
   PenLine,
+  PieChart,
   Plus,
   Save,
   Search,
   Shield,
   Trash2,
+  TrendingUp,
   Undo2,
+  UserPlus,
   Upload,
   UserX,
   Users,
+  WalletCards,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -61,6 +68,24 @@ function formatNumber(value) {
   return new Intl.NumberFormat("en-US").format(Number(value) || 0);
 }
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function articleToForm(article) {
   return {
     id: article.id || "",
@@ -93,6 +118,250 @@ function InfoItem({ label, value }) {
     <div className="rounded-xl border border-white/8 bg-slate-950 px-3 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 break-words text-sm font-medium text-slate-200">{value || "Not provided"}</p>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, detail, icon: Icon, tone }) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+      <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="text-2xl font-bold text-slate-100">{value}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-400">{label}</p>
+      {detail && <p className="mt-2 text-xs text-slate-500">{detail}</p>}
+    </div>
+  );
+}
+
+function DailyBars({ title, subtitle, data = [], valueKey = "count", valueFormatter = formatNumber, tone = "bg-indigo-500" }) {
+  const maxValue = Math.max(...data.map((item) => Number(item[valueKey]) || 0), 1);
+
+  return (
+    <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+      <div className="mb-4">
+        <h2 className="text-sm font-bold text-slate-100">{title}</h2>
+        <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+      </div>
+      <div className="flex h-48 items-end gap-1.5">
+        {data.map((item) => {
+          const value = Number(item[valueKey]) || 0;
+          const height = Math.max((value / maxValue) * 100, value > 0 ? 8 : 2);
+          return (
+            <div key={item.date} className="group flex min-w-0 flex-1 flex-col items-center gap-2">
+              <div className="relative flex h-36 w-full items-end">
+                <div
+                  className={`w-full rounded-t-md ${tone} opacity-80 transition-opacity group-hover:opacity-100`}
+                  style={{ height: `${height}%` }}
+                  title={`${item.label}: ${valueFormatter(value)}`}
+                />
+              </div>
+              <span className="hidden text-[10px] font-semibold text-slate-600 sm:block">
+                {item.label.split(" ")[1] || item.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BreakdownBars({ title, subtitle, data = [], valueKey = "count", valueFormatter = formatNumber }) {
+  const maxValue = Math.max(...data.map((item) => Number(item[valueKey]) || 0), 1);
+  const items = data.length ? data : [{ label: "No data", count: 0, amount: 0 }];
+
+  return (
+    <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-slate-100">{title}</h2>
+          <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+        </div>
+        <PieChart className="h-4 w-4 text-slate-500" />
+      </div>
+      <div className="space-y-3">
+        {items.map((item) => {
+          const value = Number(item[valueKey]) || 0;
+          return (
+            <div key={item.label}>
+              <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                <span className="capitalize text-slate-300">{item.label}</span>
+                <span className="font-semibold text-slate-500">{valueFormatter(value)}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-950">
+                <div
+                  className="h-full rounded-full bg-cyan-400"
+                  style={{ width: `${Math.max((value / maxValue) * 100, value > 0 ? 4 : 0)}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DashboardView({ dashboard }) {
+  const summary = dashboard?.summary || {};
+  const charts = dashboard?.charts || {};
+  const recentActivity = dashboard?.recentActivity || [];
+
+  const metrics = [
+    {
+      label: "Total expense value",
+      value: formatCurrency(summary.totalExpenseAmount),
+      detail: `${formatNumber(summary.totalExpenses)} expenses added`,
+      icon: CircleDollarSign,
+      tone: "bg-emerald-500/10 text-emerald-300",
+    },
+    {
+      label: "Groups created",
+      value: formatNumber(summary.totalGroups),
+      detail: `${formatNumber(summary.newGroups30d)} new in 30 days`,
+      icon: Layers3,
+      tone: "bg-sky-500/10 text-sky-300",
+    },
+    {
+      label: "Registered users",
+      value: formatNumber(summary.totalUsers),
+      detail: `${formatNumber(summary.activeUsers)} active, ${formatNumber(summary.blockedUsers)} blocked`,
+      icon: Users,
+      tone: "bg-indigo-500/10 text-indigo-300",
+    },
+    {
+      label: "New users",
+      value: formatNumber(summary.newUsers30d),
+      detail: "Last 30 days",
+      icon: UserPlus,
+      tone: "bg-violet-500/10 text-violet-300",
+    },
+    {
+      label: "Published content",
+      value: formatNumber(summary.publishedArticles),
+      detail: `${formatNumber(summary.articleViews)} total article views`,
+      icon: FileText,
+      tone: "bg-amber-500/10 text-amber-300",
+    },
+    {
+      label: "Average expense",
+      value: formatCurrency(summary.averageExpenseAmount),
+      detail: `${formatNumber(summary.newExpenses30d)} expenses in 30 days`,
+      icon: WalletCards,
+      tone: "bg-rose-500/10 text-rose-300",
+    },
+  ];
+
+  const activityIcon = {
+    user: UserPlus,
+    group: Layers3,
+    expense: CircleDollarSign,
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {metrics.map((item) => (
+          <MetricCard key={item.label} {...item} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <DailyBars
+            title="Expenses added per day"
+            subtitle="Last 14 days by created date"
+            data={charts.expensesByDay || []}
+            valueKey="value"
+            valueFormatter={formatCurrency}
+            tone="bg-emerald-400"
+          />
+        </div>
+        <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-slate-100">Platform mix</h2>
+              <p className="mt-1 text-xs text-slate-500">Account and publishing health</p>
+            </div>
+            <TrendingUp className="h-4 w-4 text-slate-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <InfoItem label="Google users" value={formatNumber(summary.googleUsers)} />
+            <InfoItem label="Local users" value={formatNumber(summary.localUsers)} />
+            <InfoItem label="Active groups" value={formatNumber(summary.activeGroups)} />
+            <InfoItem label="Draft articles" value={formatNumber(summary.draftArticles)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <DailyBars
+          title="Groups created per day"
+          subtitle="Last 14 days"
+          data={charts.groupsByDay || []}
+          tone="bg-sky-400"
+        />
+        <DailyBars
+          title="Users joined per day"
+          subtitle="Last 14 days"
+          data={charts.usersByDay || []}
+          tone="bg-indigo-400"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <BreakdownBars
+          title="Expense categories"
+          subtitle="Total amount by category"
+          data={charts.expensesByCategory || []}
+          valueKey="amount"
+          valueFormatter={formatCurrency}
+        />
+        <BreakdownBars
+          title="Group types"
+          subtitle="Number of groups by type"
+          data={charts.groupsByType || []}
+        />
+        <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-slate-100">Recent activity</h2>
+              <p className="mt-1 text-xs text-slate-500">Latest users, groups, and expenses</p>
+            </div>
+            <Activity className="h-4 w-4 text-slate-500" />
+          </div>
+          <div className="space-y-3">
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-slate-500">No activity yet.</p>
+            ) : (
+              recentActivity.map((item) => {
+                const Icon = activityIcon[item.type] || Activity;
+                return (
+                  <div key={`${item.type}-${item.id}`} className="flex items-start gap-3 rounded-xl bg-slate-950 px-3 py-3">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/6 text-slate-300">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="truncate text-sm font-semibold text-slate-200">{item.title}</p>
+                        {item.amount > 0 && (
+                          <span className="shrink-0 text-xs font-semibold text-emerald-300">
+                            {formatCurrency(item.amount)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-slate-500">{item.subtitle}</p>
+                      <p className="mt-1 text-[11px] text-slate-600">{formatDateTime(item.createdAt)}</p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -208,6 +477,7 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
 
 function AdminFrame({ activeTab, admin, onLogout, children }) {
   const navItems = [
+    { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
     { key: "articles", label: "Articles", href: "/admin/articles", icon: FileText },
     { key: "users", label: "Users", href: "/admin/users", icon: Users },
   ];
@@ -216,7 +486,7 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-white/8 bg-slate-950">
         <div className="px-5 py-5 border-b border-white/8">
-          <Link href="/admin/articles" className="flex items-center gap-3">
+          <Link href="/admin/dashboard" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
               <Shield className="w-4 h-4 text-white" />
             </div>
@@ -276,7 +546,7 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
               Logout
             </button>
           </div>
-          <div className="grid grid-cols-2 border-t border-white/8">
+          <div className="grid grid-cols-3 border-t border-white/8">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.key;
@@ -310,6 +580,7 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
   const [admin, setAdmin] = useState(null);
   const [users, setUsers] = useState([]);
   const [articles, setArticles] = useState([]);
+  const [dashboard, setDashboard] = useState(null);
   const [form, setForm] = useState(blankArticle);
   const [errors, setErrors] = useState({});
   const [query, setQuery] = useState("");
@@ -340,22 +611,29 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
 
         setAdmin(sessionData.admin);
 
-        const [usersRes, articlesRes] = await Promise.all([
+        const [dashboardRes, usersRes, articlesRes] = await Promise.all([
+          fetch("/api/admin/dashboard"),
           fetch("/api/admin/users"),
           fetch("/api/admin/articles"),
         ]);
 
-        if ([401, 403].includes(usersRes.status) || [401, 403].includes(articlesRes.status)) {
+        if (
+          [401, 403].includes(dashboardRes.status) ||
+          [401, 403].includes(usersRes.status) ||
+          [401, 403].includes(articlesRes.status)
+        ) {
           router.replace("/admin/login");
           return;
         }
 
-        if (!usersRes.ok || !articlesRes.ok) {
+        if (!dashboardRes.ok || !usersRes.ok || !articlesRes.ok) {
           throw new Error("Unable to load admin data");
         }
 
+        const dashboardData = await dashboardRes.json();
         const usersData = await usersRes.json();
         const articlesData = await articlesRes.json();
+        setDashboard(dashboardData);
         setUsers(usersData.users || []);
         setArticles(articlesData.articles || []);
       } catch (error) {
@@ -618,6 +896,24 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
     );
   }
 
+  const pageCopy = {
+    dashboard: {
+      title: "Dashboard",
+      description: "Track spending volume, user growth, groups, and platform activity.",
+    },
+    articles: {
+      title: "Users and publishing",
+      description: "Manage members and publish substantial Money Split articles.",
+    },
+    users: {
+      title: "Users",
+      description: "Review accounts, auth providers, status, and moderation actions.",
+    },
+  }[activeTab] || {
+    title: "Admin workspace",
+    description: "Manage Money Split operations.",
+  };
+
   return (
     <AdminFrame activeTab={activeTab} admin={admin} onLogout={handleLogout}>
       <div className="space-y-5 pb-8">
@@ -628,10 +924,10 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
               Admin workspace
             </div>
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-100">
-              Users and publishing
+              {pageCopy.title}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Manage members and publish substantial Money Split articles.
+              {pageCopy.description}
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
@@ -645,30 +941,33 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {[
-            { label: "Users", value: stats.users, icon: Users, tone: "text-sky-300 bg-sky-500/10" },
-            { label: "Articles", value: stats.articles, icon: FileText, tone: "text-indigo-300 bg-indigo-500/10" },
-            { label: "Published", value: stats.published, icon: CheckCircle2, tone: "text-emerald-300 bg-emerald-500/10" },
-            { label: "Drafts", value: stats.drafts, icon: PenLine, tone: "text-amber-300 bg-amber-500/10" },
-            { label: "Article views", value: formatNumber(stats.totalViews), icon: Eye, tone: "text-violet-300 bg-violet-500/10" },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.label} className="rounded-2xl border border-white/8 bg-slate-900 p-4">
-                <div className={`w-8 h-8 rounded-lg ${item.tone} flex items-center justify-center mb-3`}>
-                  <Icon className="w-4 h-4" />
+        {activeTab !== "dashboard" && (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              { label: "Users", value: stats.users, icon: Users, tone: "text-sky-300 bg-sky-500/10" },
+              { label: "Articles", value: stats.articles, icon: FileText, tone: "text-indigo-300 bg-indigo-500/10" },
+              { label: "Published", value: stats.published, icon: CheckCircle2, tone: "text-emerald-300 bg-emerald-500/10" },
+              { label: "Drafts", value: stats.drafts, icon: PenLine, tone: "text-amber-300 bg-amber-500/10" },
+              { label: "Article views", value: formatNumber(stats.totalViews), icon: Eye, tone: "text-violet-300 bg-violet-500/10" },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label} className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+                  <div className={`w-8 h-8 rounded-lg ${item.tone} flex items-center justify-center mb-3`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-100">{item.value}</p>
+                  <p className="text-xs text-slate-500">{item.label}</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-100">{item.value}</p>
-                <p className="text-xs text-slate-500">{item.label}</p>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex w-full lg:w-auto rounded-xl border border-white/8 bg-slate-900 p-1">
             {[
+              { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
               { key: "articles", label: "Articles", href: "/admin/articles", icon: FileText },
               { key: "users", label: "Users", href: "/admin/users", icon: Users },
             ].map((tab) => {
@@ -702,19 +1001,23 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
                 <option value="admin">Admins</option>
               </select>
             )}
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search admin data"
-                className="w-full rounded-xl border border-white/8 bg-slate-900 py-2.5 pl-9 pr-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
-              />
-            </div>
+            {activeTab !== "dashboard" && (
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search admin data"
+                  className="w-full rounded-xl border border-white/8 bg-slate-900 py-2.5 pl-9 pr-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
+                />
+              </div>
+            )}
           </div>
         </div>
 
-        {activeTab === "users" ? (
+        {activeTab === "dashboard" ? (
+          <DashboardView dashboard={dashboard} />
+        ) : activeTab === "users" ? (
           <div className="rounded-2xl border border-white/8 bg-slate-900 overflow-hidden">
             <div className="grid grid-cols-12 gap-3 border-b border-white/8 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <span className="col-span-5">User</span>

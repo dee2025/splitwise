@@ -3,15 +3,7 @@
 
 import { getGroupTypeConfig } from "@/utils/groupUtils";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Calendar,
-  Crown,
-  Settings,
-  UserRound,
-  Users,
-  WalletCards,
-} from "lucide-react";
+import { ArrowRight, Crown, Settings, Users } from "lucide-react";
 
 function getDisplayName(member) {
   return (
@@ -98,26 +90,39 @@ export default function GroupCard({
       className="group cursor-pointer overflow-hidden rounded-xl border border-white/8 bg-slate-900 transition-colors hover:border-indigo-500/35 hover:bg-slate-800/70"
     >
       <div className="flex h-full flex-col p-4">
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10">
-              <IconComponent className="h-6 w-6 text-indigo-300" />
-            </div>
+            {group.image ? (
+              <img
+                src={group.image}
+                alt={group.name}
+                className="h-12 w-12 shrink-0 rounded-lg border border-white/10 object-cover"
+              />
+            ) : (
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10">
+                <IconComponent className="h-6 w-6 text-indigo-300" />
+              </div>
+            )}
 
             <div className="min-w-0">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <h3 className="truncate text-base font-bold text-slate-50">
+                <h3 className="max-w-full truncate text-base font-bold text-slate-50">
                   {group.name}
                 </h3>
-                {isAdmin && (
-                  <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
-                    <Crown className="h-3 w-3" />
-                    Admin
-                  </span>
-                )}
+                {/* {isAdmin && (
+                  <div className="flex">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                      <Crown className="h-3 w-3" />
+                      Admin
+                    </span>
+                    <span className="font-semibold text-emerald-300">
+                      {formatMoney(totalExpenses)}
+                    </span>
+                  </div>
+                )} */}
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              {/* <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                 <span className="rounded-md border border-white/8 bg-slate-800 px-2 py-0.5 font-semibold text-indigo-200">
                   {config.label}
                 </span>
@@ -125,7 +130,10 @@ export default function GroupCard({
                   <Calendar className="h-3.5 w-3.5" />
                   {createdDate}
                 </span>
-              </div>
+                <span className="font-semibold text-emerald-300">
+                  {formatMoney(totalExpenses)}
+                </span>
+              </div> */}
             </div>
           </div>
 
@@ -141,32 +149,7 @@ export default function GroupCard({
           )}
         </div>
 
-        <p className="mb-4 min-h-10 text-sm leading-5 text-slate-400 line-clamp-2">
-          {group.description || "No description added yet."}
-        </p>
-
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          <StatCell
-            icon={Users}
-            label="Members"
-            value={memberCount}
-            tone="text-sky-300"
-          />
-          <StatCell
-            icon={WalletCards}
-            label="Spend"
-            value={formatMoney(totalExpenses)}
-            tone="text-emerald-300"
-          />
-          <StatCell
-            icon={UserRound}
-            label="Role"
-            value={isAdmin ? "Admin" : "Member"}
-            tone={isAdmin ? "text-amber-300" : "text-slate-300"}
-          />
-        </div>
-
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-white/8 pt-4">
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/8 pt-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex -space-x-2">
               {group.members?.slice(0, 4).map((member, idx) => (
@@ -181,12 +164,15 @@ export default function GroupCard({
             </div>
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-slate-300">
+                <Users className="mr-1 inline h-3.5 w-3.5 text-sky-300" />
                 {memberCount > 0
                   ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
                   : "No members"}
               </p>
               {memberCount > 4 && (
-                <p className="text-xs text-slate-500">+{memberCount - 4} more</p>
+                <p className="text-xs text-slate-500">
+                  +{memberCount - 4} more
+                </p>
               )}
             </div>
           </div>
@@ -198,17 +184,5 @@ export default function GroupCard({
         </div>
       </div>
     </motion.article>
-  );
-}
-
-function StatCell({ icon: Icon, label, value, tone }) {
-  return (
-    <div className="min-w-0 rounded-lg border border-white/8 bg-slate-800/75 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-        <Icon className={`h-3.5 w-3.5 ${tone}`} />
-        <span>{label}</span>
-      </div>
-      <p className={`truncate text-sm font-bold ${tone}`}>{value}</p>
-    </div>
   );
 }

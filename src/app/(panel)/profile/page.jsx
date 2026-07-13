@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff,
   FileText,
+  ImageIcon,
   KeyRound,
   Loader2,
   LogOut,
@@ -21,6 +22,7 @@ import {
   Receipt,
   Save,
   ShieldCheck,
+  Upload,
   User,
   Users,
   WalletCards,
@@ -330,7 +332,9 @@ function EditProfileModal({
   editForm,
   profile,
   savingInfo,
+  uploadingAvatar,
   setEditForm,
+  onUploadAvatar,
   onCancel,
   onSave,
 }) {
@@ -368,6 +372,57 @@ function EditProfileModal({
       }
     >
       <div className="space-y-4">
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Profile Image
+          </label>
+          <div className="grid grid-cols-[80px_1fr] gap-3 rounded-xl border border-white/8 bg-slate-950 p-3">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-800">
+              {editForm.avatar ? (
+                <img
+                  src={editForm.avatar}
+                  alt="Profile preview"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ImageIcon className="h-6 w-6 text-slate-500" />
+              )}
+            </div>
+            <div className="min-w-0 space-y-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-indigo-500/35 bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500">
+                {uploadingAvatar ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Upload className="h-3.5 w-3.5" />
+                )}
+                {uploadingAvatar ? "Uploading" : "Upload image"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                  onChange={(event) => {
+                    onUploadAvatar(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {editForm.avatar && (
+                <button
+                  type="button"
+                  onClick={() => setEditForm((previous) => ({ ...previous, avatar: "" }))}
+                  className="ml-2 text-xs font-semibold text-slate-400 hover:text-rose-300"
+                >
+                  Remove
+                </button>
+              )}
+              <p className="truncate text-xs text-slate-500">
+                {editForm.avatar || "JPG, PNG, WebP, or GIF up to 5MB"}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ProfileField
             icon={User}
@@ -567,8 +622,10 @@ export default function ProfilePage() {
     username: "",
     contact: "",
     bio: "",
+    avatar: "",
   });
   const [savingInfo, setSavingInfo] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [pwForm, setPwForm] = useState({
     current: "",
@@ -601,6 +658,7 @@ export default function ProfilePage() {
           username: user.username || "",
           contact: user.contact || "",
           bio: user.bio || "",
+          avatar: user.avatar || "",
         });
       } catch {
         toast.error("Failed to load profile");
@@ -637,6 +695,7 @@ export default function ProfilePage() {
         username: editForm.username.trim(),
         contact: editForm.contact.trim(),
         bio: editForm.bio.trim(),
+        avatar: editForm.avatar || null,
       });
       const updated = res.data.user;
       setProfile((previous) => ({ ...previous, ...updated }));
@@ -645,6 +704,7 @@ export default function ProfilePage() {
           fullName: updated.fullName,
           username: updated.username,
           contact: updated.contact,
+          avatar: updated.avatar,
         }),
       );
       toast.success("Profile updated");
@@ -662,8 +722,28 @@ export default function ProfilePage() {
       username: profile?.username || "",
       contact: profile?.contact || "",
       bio: profile?.bio || "",
+      avatar: profile?.avatar || "",
     });
     setEditMode(false);
+  };
+
+  const handleAvatarUpload = async (file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "profile");
+
+    setUploadingAvatar(true);
+    try {
+      const res = await axios.post("/api/uploads/image", formData);
+      setEditForm((previous) => ({ ...previous, avatar: res.data.path }));
+      toast.success("Profile image uploaded");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to upload image");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleChangePw = async (event) => {
@@ -701,6 +781,7 @@ export default function ProfilePage() {
       username: profile?.username || "",
       contact: profile?.contact || "",
       bio: profile?.bio || "",
+      avatar: profile?.avatar || "",
     });
     setEditMode(true);
   };
@@ -786,9 +867,17 @@ export default function ProfilePage() {
           <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
               <div className="relative h-20 w-20 shrink-0">
-                <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-indigo-500/25 bg-indigo-500/15 text-2xl font-bold text-indigo-100 shadow-lg shadow-indigo-950/40">
-                  {initials(displayName)}
-                </div>
+                {profile?.avatar ? (
+                  <img
+                    src={profile.avatar}
+                    alt={displayName}
+                    className="h-20 w-20 rounded-xl border border-indigo-500/25 object-cover shadow-lg shadow-indigo-950/40"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-indigo-500/25 bg-indigo-500/15 text-2xl font-bold text-indigo-100 shadow-lg shadow-indigo-950/40">
+                    {initials(displayName)}
+                  </div>
+                )}
                 <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-slate-900 bg-emerald-500" />
               </div>
 
@@ -994,7 +1083,9 @@ export default function ProfilePage() {
             editForm={editForm}
             profile={profile}
             savingInfo={savingInfo}
+            uploadingAvatar={uploadingAvatar}
             setEditForm={setEditForm}
+            onUploadAvatar={handleAvatarUpload}
             onCancel={handleCancelEdit}
             onSave={handleSaveInfo}
           />
