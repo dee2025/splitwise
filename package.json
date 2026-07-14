@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:bill-calculator": "node --test src/app/calculators/bill-split-calculator/utils/billSplitCalculations.test.js",
     "migrate:notifications:dry": "node --env-file=.env.local scripts/normalize-notifications.mjs --dry-run",
     "migrate:notifications": "node --env-file=.env.local scripts/normalize-notifications.mjs",
     "migrate:article-views:dry": "node --env-file=.env.local scripts/backfill-article-views.mjs --dry-run",

@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import { clearBillSplitDraft } from "@/app/calculators/bill-split-calculator/utils/billSplitStorage";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -89,6 +90,7 @@ export default function GlobalAddExpenseModal() {
   const [splitType, setSplitType] = useState("equal");
   const [paidTo, setPaidTo] = useState([]);
   const [customSplitAmounts, setCustomSplitAmounts] = useState({});
+  const [pendingCalculatorDraft, setPendingCalculatorDraft] = useState(null);
 
   const shouldHideLauncher = pathname === "/login" || pathname === "/signup";
   const routeGroupId = useMemo(() => {
@@ -146,6 +148,7 @@ export default function GlobalAddExpenseModal() {
     setSplitType("equal");
     setPaidTo([]);
     setCustomSplitAmounts({});
+    setPendingCalculatorDraft(null);
   };
 
   const closeModal = () => {
@@ -174,11 +177,22 @@ export default function GlobalAddExpenseModal() {
   useEffect(() => {
     const handler = (event) => {
       const preselectedGroupId = event?.detail?.groupId;
+      const draft = event?.detail?.draft;
       const nextGroupId = preselectedGroupId || routeGroupId || "";
       setIsOpen(true);
       setStep(nextGroupId ? 2 : 1);
       setSelectedGroupId(nextGroupId);
       setLockGroupSelection(Boolean(nextGroupId));
+      if (draft?.source === "bill-split-calculator") {
+        setPendingCalculatorDraft(draft);
+        setFormData((prev) => ({
+          ...prev,
+          description: draft.expenseTitle || "Shared bill",
+          amount: draft.finalAmount ? String(draft.finalAmount) : "",
+          category: "food",
+        }));
+        setSplitType(draft.splitMethod === "custom" ? "custom" : "equal");
+      }
     };
 
     window.addEventListener("splitzy:open-add-expense", handler);
@@ -210,6 +224,47 @@ export default function GlobalAddExpenseModal() {
       };
     });
   }, [members, currentUserId]);
+
+  useEffect(() => {
+    if (!pendingCalculatorDraft || members.length === 0) return;
+
+    const draftParticipants = pendingCalculatorDraft.participants || [];
+    const normalizeName = (value) => String(value || "").trim().toLowerCase();
+    const amountByName = new Map(
+      draftParticipants.map((participant) => [
+        normalizeName(participant.name),
+        Number(participant.calculatedAmount || 0),
+      ]),
+    );
+
+    const matched = members
+      .map((member) => {
+        const memberName = normalizeName(member.name);
+        const isCurrentUser = String(member.userId) === String(currentUserId);
+        const amount = isCurrentUser
+          ? amountByName.get("you") || amountByName.get(memberName)
+          : amountByName.get(memberName);
+        return amount ? { userId: member.userId, amount } : null;
+      })
+      .filter(Boolean);
+
+    if (
+      pendingCalculatorDraft.splitMethod !== "equal" &&
+      matched.length === draftParticipants.length &&
+      matched.length > 0
+    ) {
+      const nextAmounts = {};
+      matched.forEach((item) => {
+        nextAmounts[item.userId] = item.amount;
+      });
+      setPaidTo(matched.map((item) => item.userId));
+      setCustomSplitAmounts(nextAmounts);
+      setSplitType("custom");
+      return;
+    }
+
+    setSplitType("equal");
+  }, [currentUserId, members, pendingCalculatorDraft]);
 
   useEffect(() => {
     if (splitType !== "custom" || paidTo.length === 0) return;
@@ -349,6 +404,10 @@ export default function GlobalAddExpenseModal() {
       });
 
       toast.success("Expense added successfully");
+      if (pendingCalculatorDraft) {
+        clearBillSplitDraft();
+        setPendingCalculatorDraft(null);
+      }
       closeModal();
       router.refresh();
     } catch (error) {

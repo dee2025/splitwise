@@ -5,13 +5,16 @@ import GroupCard from "@/components/dashboard/groups/all/GroupCard";
 import GroupSettingsModal from "@/components/dashboard/groups/all/GroupSettingsModal";
 import CreateGroupForm from "@/components/dashboard/groups/CreateGroupForm";
 import DashboardLayout from "@/components/DashboardLayout";
+import { loadBillSplitDraft } from "@/app/calculators/bill-split-calculator/utils/billSplitStorage";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowRight,
   Crown,
   FolderOpen,
   Loader2,
   Plus,
+  Receipt,
   Search,
   SlidersHorizontal,
   Users,
@@ -73,6 +76,7 @@ export default function GroupsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [calculatorDraft, setCalculatorDraft] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -99,6 +103,17 @@ export default function GroupsPage() {
 
     fetchGroups();
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("calculatorDraft") !== "1") return;
+    const draft = loadBillSplitDraft();
+    if (draft?.source === "bill-split-calculator") {
+      setCalculatorDraft(draft);
+      toast.success("Bill split draft is ready to save");
+    }
+  }, [isAuthenticated]);
 
   const filteredGroups = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -166,7 +181,7 @@ export default function GroupsPage() {
   }, [expenses, user]);
 
   const handleGroupClick = (groupId) => {
-    router.push(`/groups/${groupId}`);
+    router.push(`/groups/${groupId}${calculatorDraft ? "?calculatorDraft=1" : ""}`);
   };
 
   const handleSettingsClick = (group, event) => {
@@ -222,6 +237,43 @@ export default function GroupsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {calculatorDraft && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 p-4"
+          >
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 bg-indigo-500/15">
+                  <Receipt className="h-5 w-5 text-indigo-200" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-100">
+                    Calculator draft ready
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                    {calculatorDraft.expenseTitle || "Shared bill"} · INR{" "}
+                    {Number(calculatorDraft.finalAmount || 0).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                    . Create a group or open an existing group to save this expense.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateGroup(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Create group for this bill
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -339,6 +391,13 @@ export default function GroupsPage() {
           <CreateGroupForm
             onClose={() => setShowCreateGroup(false)}
             onGroupCreated={handleGroupCreated}
+            initialName={
+              calculatorDraft?.expenseTitle
+                ? `${calculatorDraft.expenseTitle} group`
+                : ""
+            }
+            initialType="event"
+            continueWithCalculatorDraft={Boolean(calculatorDraft)}
           />
         )}
       </AnimatePresence>

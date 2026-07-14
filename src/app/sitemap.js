@@ -8,6 +8,7 @@ const SITE_URL = "https://www.moneysplit.in";
 const staticRoutes = [
   { path: "", priority: 1, changeFrequency: "weekly" },
   { path: "/features", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/calculators/bill-split-calculator", priority: 0.9, changeFrequency: "monthly" },
   { path: "/articles", priority: 0.85, changeFrequency: "daily" },
   { path: "/about", priority: 0.7, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.7, changeFrequency: "monthly" },

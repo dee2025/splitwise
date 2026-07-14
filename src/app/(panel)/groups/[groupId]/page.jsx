@@ -2,6 +2,7 @@
 
 import AddMembersModal from "@/components/dashboard/groups/AddMembersModal";
 import DashboardLayout from "@/components/DashboardLayout";
+import { loadBillSplitDraft } from "@/app/calculators/bill-split-calculator/utils/billSplitStorage";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -317,6 +318,7 @@ export default function GroupPage() {
     fileName: "",
   });
   const [activeTab, setActiveTab] = useState("activity");
+  const [calculatorDraft, setCalculatorDraft] = useState(null);
 
   const groupId = params.groupId;
   const payPlan = useMemo(
@@ -338,6 +340,17 @@ export default function GroupPage() {
     }
     fetchGroupData();
   }, [groupId, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("calculatorDraft") !== "1") return;
+    const draft = loadBillSplitDraft();
+    if (draft?.source === "bill-split-calculator") {
+      setCalculatorDraft(draft);
+      toast.success("Calculator draft loaded");
+    }
+  }, [isAuthenticated]);
 
   const fetchGroupData = async () => {
     try {
@@ -387,11 +400,11 @@ export default function GroupPage() {
     }
   };
 
-  const openGlobalAddExpense = () => {
+  const openGlobalAddExpense = (draft = null) => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(
       new CustomEvent("splitzy:open-add-expense", {
-        detail: { groupId: group?._id || groupId },
+        detail: { groupId: group?._id || groupId, draft },
       }),
     );
   };
@@ -683,6 +696,34 @@ export default function GroupPage() {
   return (
     <DashboardLayout>
       <div className="w-full overflow-x-hidden">
+        {calculatorDraft && (
+          <div className="mb-5 rounded-xl border border-indigo-400/25 bg-indigo-500/10 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-100">
+                  Save calculator draft in this group
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  {calculatorDraft.expenseTitle || "Shared bill"} · INR{" "}
+                  {Number(calculatorDraft.finalAmount || 0).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                  . Add members first if they are not already in this group.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openGlobalAddExpense(calculatorDraft)}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                <Plus className="h-4 w-4" />
+                Add expense from draft
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

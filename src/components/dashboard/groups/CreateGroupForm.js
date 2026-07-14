@@ -9,11 +9,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-export default function CreateGroupForm({ onClose, onGroupCreated }) {
+export default function CreateGroupForm({
+  onClose,
+  onGroupCreated,
+  initialName = "",
+  initialType = null,
+  continueWithCalculatorDraft = false,
+}) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [selectedType, setSelectedType] = useState(null);
-  const [groupName, setGroupName] = useState("");
+  const [step, setStep] = useState(initialType ? 2 : 1);
+  const [selectedType, setSelectedType] = useState(initialType);
+  const [groupName, setGroupName] = useState(initialName);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedConfig = selectedType
@@ -41,7 +47,11 @@ export default function CreateGroupForm({ onClose, onGroupCreated }) {
       toast.success("Group created! Add members to get started.");
       onGroupCreated?.(res.data.group);
       onClose?.();
-      router.push(`/groups/${res.data.group._id}`);
+      router.push(
+        `/groups/${res.data.group._id}${
+          continueWithCalculatorDraft ? "?calculatorDraft=1" : ""
+        }`,
+      );
     } catch (error) {
       console.error("Group creation error:", error);
       toast.error(error.response?.data?.error || "Failed to create group");
