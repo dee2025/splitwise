@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
+import Script from "next/script";
 import {
   ArrowRight,
   BarChart3,
@@ -385,8 +386,10 @@ export default function LandingPage({ articles = [], faqs = [] }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* JSON-LD Structured Data */}
-      <script
+      <Script
+        id="home-software-schema"
         type="application/ld+json"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",

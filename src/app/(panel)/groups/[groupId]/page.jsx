@@ -2,6 +2,7 @@
 
 import AddMembersModal from "@/components/dashboard/groups/AddMembersModal";
 import DashboardLayout from "@/components/DashboardLayout";
+import { getGroupDisplayImage } from "@/utils/groupUtils";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -14,7 +15,6 @@ import {
   Clock,
   CreditCard,
   Download,
-  FileText,
   Flag,
   IndianRupee,
   Loader,
@@ -36,6 +36,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -107,6 +108,25 @@ function formatMoney(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+function formatCompactMoney(value) {
+  const numericValue = Number(value || 0);
+  const hasPaise = Math.abs(Math.round(numericValue * 100) % 100) > 0;
+
+  return `₹${numericValue.toLocaleString("en-IN", {
+    minimumFractionDigits: hasPaise ? 2 : 0,
+    maximumFractionDigits: hasPaise ? 2 : 0,
+  })}`;
+}
+
+function formatShortDate(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function formatDateHeading(dateValue) {
@@ -306,7 +326,6 @@ export default function GroupPage() {
   const [group, setGroup] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandMembers, setExpandMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [showInviteShare, setShowInviteShare] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -323,13 +342,17 @@ export default function GroupPage() {
     () => buildPayPlan(expenses, group?.members || []),
     [expenses, group?.members],
   );
+  const currentUserId = getNormalizedId(user);
+  const currentUserBalance = useMemo(() => {
+    const row = payPlan.balances.find((member) => member.id === currentUserId);
+    return round2(row?.balance || 0);
+  }, [currentUserId, payPlan.balances]);
   const isCurrentUserAdmin = useMemo(() => {
-    const currentUserId = getNormalizedId(user);
     if (!currentUserId || !group?.members?.length) return false;
     return group.members.some(
       (member) => getNormalizedId(member?.userId || member) === currentUserId && member.role === "admin",
     );
-  }, [group?.members, user]);
+  }, [currentUserId, group?.members]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -682,92 +705,71 @@ export default function GroupPage() {
 
   return (
     <DashboardLayout>
-      <div className="w-full overflow-x-hidden">
+      <div className="mx-auto w-full max-w-md overflow-x-hidden pb-24 lg:max-w-3xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className=""
+          className="mb-4"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ y: 1 }}
-                onClick={() => router.push("/groups")}
-                className="shrink-0 p-2 border border-white/8 bg-slate-800 rounded-lg hover:bg-slate-700 transition-all duration-150"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-300" />
-              </motion.button>
+          <div className="flex items-center gap-3">
+            <motion.button
+              whileHover={{ y: -1 }}
+              whileTap={{ y: 1 }}
+              onClick={() => router.push("/groups")}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-slate-800 text-slate-300 transition-all duration-150 hover:bg-slate-700"
+              aria-label="Back to groups"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </motion.button>
 
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-1">
-                  {group.name}
-                </h1>
-                {/* {group.description && (
-                  <p className="text-slate-400 text-sm truncate">
-                    {group.description}
-                  </p>
-                )} */}
-              </div>
+            <Image
+              src={getGroupDisplayImage(group)}
+              alt=""
+              width={44}
+              height={44}
+              className="h-11 w-11 shrink-0 rounded-xl border border-white/8 bg-slate-800 object-cover"
+            />
 
-              <div className="shrink-0">
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-xl font-extrabold text-slate-100 sm:text-2xl">
+                {group.name}
+              </h1>
+              <p className="mt-0.5 text-xs font-semibold text-emerald-300">
+                {group.members?.length || 0} member
+                {(group.members?.length || 0) === 1 ? "" : "s"}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
               <motion.button
                 whileHover={{ y: -1 }}
                 whileTap={{ y: 1 }}
                 onClick={handleDownloadActivityPdf}
                 disabled={downloadingPdf || expenses.length === 0}
-                className="flex items-center gap-2 bg-slate-800 text-slate-100 px-3 py-2.5 rounded-lg border border-white/10 hover:bg-slate-700 transition-all duration-150 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800 text-slate-100 transition-all duration-150 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                 title="Download activity PDF report"
+                aria-label="Download activity PDF report"
               >
                 {downloadingPdf ? (
                   <Loader size={16} className="animate-spin" />
                 ) : (
                   <Download size={16} />
                 )}
-                {/* <span>Download PDF</span> */}
               </motion.button>
-            </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {isCurrentUserAdmin && (
                 <motion.button
                   whileHover={{ y: -1 }}
                   whileTap={{ y: 1 }}
                   onClick={() => setShowInviteShare(true)}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-slate-800 text-slate-100 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg border border-white/10 hover:bg-slate-700 transition-all duration-150 font-medium text-xs sm:text-sm"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800 text-slate-100 transition-all duration-150 hover:bg-slate-700"
+                  aria-label="Share invite"
                 >
-                  <Share2 size={16} className="sm:w-5 sm:h-5" />
-                  <span className="hidden sm:inline">Share Invite</span>
-                  <span className="sm:hidden">Share</span>
+                  <Share2 size={16} />
                 </motion.button>
               )}
-              <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ y: 1 }}
-                onClick={() => setShowAddMembers(true)}
-                className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 text-white px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg border border-indigo-600 hover:bg-indigo-500 transition-all duration-150 font-medium text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <UserPlus size={16} className="sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Add Members</span>
-                <span className="sm:hidden">Add</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ y: 1 }}
-                onClick={openGlobalAddExpense}
-                className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-indigo-600 hover:bg-indigo-500 transition-all duration-150 font-medium text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Plus size={16} className="sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Add Expense</span>
-                <span className="sm:hidden">Add</span>
-              </motion.button>
             </div>
           </div>
-
-          {/* Group Stats */}
-          {/* REMOVED - Keeping page clean and focused */}
         </motion.div>
 
         {/* Main Content */}
@@ -775,36 +777,68 @@ export default function GroupPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="w-full space-y-5"
+          className="w-full space-y-4"
         >
-          <PayPlanPanel
-            payPlan={payPlan}
-            expenseCount={expenses.length}
-            memberCount={group?.members?.length || 0}
-          />
+          <section className="grid grid-cols-2 overflow-hidden rounded-xl border border-white/8 bg-slate-800 shadow-lg shadow-black/10">
+            <div className="px-4 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                Total Expenses
+              </p>
+              <p className="mt-1 text-xl font-extrabold text-slate-100">
+                {formatCompactMoney(payPlan.totalExpenses)}
+              </p>
+            </div>
+            <div className="border-l border-white/8 px-4 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                Your Balance
+              </p>
+              <p
+                className={`mt-0.5 text-xs font-semibold ${
+                  currentUserBalance >= -0.01
+                    ? "text-emerald-300"
+                    : "text-rose-300"
+                }`}
+              >
+                {Math.abs(currentUserBalance) <= 0.01
+                  ? "You are settled"
+                  : currentUserBalance > 0
+                    ? "You are owed"
+                    : "You owe"}
+              </p>
+              <p
+                className={`mt-0.5 text-xl font-extrabold ${
+                  currentUserBalance >= -0.01
+                    ? "text-emerald-300"
+                    : "text-rose-300"
+                }`}
+              >
+                {formatCompactMoney(Math.abs(currentUserBalance))}
+              </p>
+            </div>
+          </section>
 
           {/* Tabs Section */}
-          <div className="bg-slate-800 rounded-xl border border-white/8 overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800 shadow-lg shadow-black/10">
             {/* Tab Headers */}
-            <div className="grid grid-cols-2 border-b border-white/8">
+            <div className="grid grid-cols-3 border-b border-white/8">
              <button
                 onClick={() => setActiveTab("activity")}
-                className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
+                className={`min-w-0 py-3 px-2 font-semibold text-xs sm:text-sm transition-all ${
                   activeTab === "activity"
                     ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
                     : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
                 }`}
               >
                 <div className="flex items-center justify-center gap-1 sm:gap-2 min-w-0">
-                  <Activity size={18} />
-                  <span className="truncate">Activity</span>
+                  <Receipt size={17} />
+                  <span className="truncate">Expenses</span>
                 </div>
               </button>
 
               
               <button
                 onClick={() => setActiveTab("members")}
-                className={`min-w-0 py-2.5 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm transition-all ${
+                className={`min-w-0 py-3 px-2 font-semibold text-xs sm:text-sm transition-all ${
                   activeTab === "members"
                     ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
                     : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
@@ -816,6 +850,20 @@ export default function GroupPage() {
                 </div>
               </button>
 
+              <button
+                onClick={() => setActiveTab("summary")}
+                className={`min-w-0 py-3 px-2 font-semibold text-xs sm:text-sm transition-all ${
+                  activeTab === "summary"
+                    ? "text-indigo-300 border-b-2 border-indigo-500 bg-slate-700/30"
+                    : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/20"
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1 sm:gap-2 min-w-0">
+                  <CreditCard size={18} />
+                  <span className="truncate">Summary</span>
+                </div>
+              </button>
+
             </div>
 
             {/* Tab Content */}
@@ -823,15 +871,16 @@ export default function GroupPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="min-h-[300px] max-h-[500px] overflow-y-auto overflow-x-hidden"
+              className="min-h-[300px] overflow-x-hidden"
             >
               {/* Members Tab */}
               {activeTab === "activity" && (
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <ActivityTab
                     group={group}
                     expenses={expenses}
                     currentUser={user}
+                    onAddExpense={openGlobalAddExpense}
                     onExpenseChanged={async () => {
                       await fetchGroupData();
                     }}
@@ -842,6 +891,19 @@ export default function GroupPage() {
 
               {activeTab === "members" && (
                 <div>
+                  <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
+                    <h2 className="text-sm font-bold text-slate-100">
+                      Members
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddMembers(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-600 bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                    >
+                      <UserPlus size={14} />
+                      Add
+                    </button>
+                  </div>
                   {!group?.members || group.members.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                       <Users size={32} className="text-slate-500 mb-3" />
@@ -883,6 +945,12 @@ export default function GroupPage() {
                 </div>
               )}
 
+              {activeTab === "summary" && (
+                <div className="p-3 sm:p-4">
+                  <PayPlanPanel payPlan={payPlan} />
+                </div>
+              )}
+
             
 
               
@@ -895,6 +963,7 @@ export default function GroupPage() {
           {showAddMembers && (
             <AddMembersModal
               groupId={groupId}
+              inviteUrl={getInviteUrl()}
               onClose={() => setShowAddMembers(false)}
               onMembersAdded={fetchGroupData}
             />
@@ -933,14 +1002,14 @@ export default function GroupPage() {
 
 // ─── Collapsible Expenses Section ─────────────────────────────────────────
 
-function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
+function PayPlanPanel({ payPlan }) {
   const hasPayments = payPlan.payments.length > 0;
 
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
-      <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800">
-        <div className="border-b border-white/8 bg-slate-700/35 px-4 py-3 sm:px-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800 shadow-lg shadow-black/10">
+        <div className="border-b border-white/8 bg-slate-900/45 px-4 py-3 sm:px-5">
+          <div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-300">
                 Who pays whom
@@ -952,39 +1021,12 @@ function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
                 Calculated from recorded expenses and split amounts.
               </p>
             </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center sm:min-w-[330px]">
-              <div className="rounded-lg border border-white/8 bg-slate-900/45 px-2 py-2">
-                <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                  Total
-                </p>
-                <p className="mt-1 text-xs font-bold text-slate-100 sm:text-sm">
-                  {formatMoney(payPlan.totalExpenses)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-white/8 bg-slate-900/45 px-2 py-2">
-                <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                  Expenses
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-100">
-                  {expenseCount}
-                </p>
-              </div>
-              <div className="rounded-lg border border-white/8 bg-slate-900/45 px-2 py-2">
-                <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                  Members
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-100">
-                  {memberCount}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
         <div className="p-4 sm:p-5">
           {!hasPayments ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-10 text-center">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-500/20 bg-slate-900/45 px-4 py-10 text-center">
               <CheckCircle2 className="h-8 w-8 text-emerald-400" />
               <h3 className="mt-3 text-sm font-bold text-slate-100">
                 No payments needed
@@ -1006,17 +1048,17 @@ function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <MemberPill name={payment.fromName} tone="rose" />
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800 text-slate-400">
                         <ArrowRight className="h-4 w-4 text-slate-400" />
                       </div>
                       <MemberPill name={payment.toName} tone="emerald" />
                     </div>
 
-                    <div className="rounded-lg border border-indigo-500/25 bg-indigo-500/10 px-3 py-2 text-right">
-                      <p className="text-[10px] uppercase tracking-wide text-indigo-300">
+                    <div className="rounded-lg border border-white/8 bg-slate-800 px-3 py-2 text-right sm:min-w-36">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                         Amount
                       </p>
-                      <p className="text-sm font-bold text-indigo-100">
+                      <p className="text-sm font-extrabold text-indigo-300">
                         {formatMoney(payment.amount)}
                       </p>
                     </div>
@@ -1028,8 +1070,8 @@ function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800">
-        <div className="border-b border-white/8 bg-slate-700/35 px-4 py-3">
+      <div className="overflow-hidden rounded-xl border border-white/8 bg-slate-800 shadow-lg shadow-black/10">
+        <div className="border-b border-white/8 bg-slate-900/45 px-4 py-3">
           <h3 className="text-sm font-bold text-slate-100">Member Balances</h3>
           <p className="mt-1 text-xs text-slate-400">
             Positive means receives, negative means pays.
@@ -1045,7 +1087,7 @@ function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
                 className="flex items-center justify-between gap-3 px-4 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-slate-700 text-xs font-bold text-slate-200">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-slate-900/45 text-xs font-bold text-slate-200">
                     {member.name?.charAt(0)?.toUpperCase() || "?"}
                   </div>
                   <div className="min-w-0">
@@ -1061,10 +1103,10 @@ function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
                 <div
                   className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-right ${
                     isNeutral
-                      ? "border-white/8 bg-slate-700/60 text-slate-300"
+                      ? "border-white/8 bg-slate-900/45 text-slate-300"
                       : isPositive
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                        : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                        ? "border-emerald-500/30 bg-slate-900/45 text-emerald-300"
+                        : "border-rose-500/30 bg-slate-900/45 text-rose-300"
                   }`}
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-wide">
@@ -1084,14 +1126,14 @@ function PayPlanPanel({ payPlan, expenseCount, memberCount }) {
 }
 
 function MemberPill({ name, tone }) {
-  const toneClass =
+  const avatarClass =
     tone === "emerald"
-      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-100"
-      : "border-rose-500/25 bg-rose-500/10 text-rose-100";
+      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+      : "border-rose-500/30 bg-rose-500/10 text-rose-300";
 
   return (
-    <div className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-3 py-2 ${toneClass}`}>
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-950/35 text-xs font-bold">
+    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-white/8 bg-slate-800 px-3 py-2 text-slate-100">
+      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs font-bold ${avatarClass}`}>
         {name?.charAt(0)?.toUpperCase() || "?"}
       </div>
       <p className="truncate text-sm font-semibold">{name || "Unknown"}</p>
@@ -1408,17 +1450,17 @@ function MembersTab({ members, group, onRefresh }) {
 
 // ─── Activity Tab ─────────────────────────────────────────────────────────────
 
-function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
+function ActivityTab({
+  group,
+  expenses = [],
+  currentUser,
+  onExpenseChanged,
+  onAddExpense,
+}) {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [openInEditMode, setOpenInEditMode] = useState(false);
-  const [deletingExpenseId, setDeletingExpenseId] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState({
-    open: false,
-    expenseId: "",
-    title: "",
-  });
 
   const currentUserId = getNormalizedId(currentUser);
 
@@ -1462,49 +1504,21 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
     }
   };
 
-  const getExpenseCategoryLabel = (category) =>
-    String(category || "other").replace(/^\w/, (char) => char.toUpperCase());
-
-  const canManageItem = (item) => {
-    if (item?.type !== "expense") return false;
-    if (!item?.details?.expenseId) return false;
-    const payerId = getNormalizedId(item?.details?.paidById);
-    return Boolean(currentUserId && payerId === currentUserId);
-  };
-
-  const requestDeleteFromList = (item, event) => {
-    event.stopPropagation();
-    const expenseId = item?.details?.expenseId;
-    if (!expenseId) return;
-
-    setDeleteConfirm({
-      open: true,
-      expenseId,
-      title: item?.title || "this expense",
-    });
-  };
-
-  const closeDeleteConfirm = () => {
-    setDeleteConfirm({ open: false, expenseId: "", title: "" });
-  };
-
-  const handleDeleteFromList = async () => {
-    if (!deleteConfirm.expenseId) return;
-
-    const deletingId = deleteConfirm.expenseId;
-
-    try {
-      setDeletingExpenseId(deletingId);
-      await axios.delete(`/api/expenses/${deletingId}`);
-      toast.success("Expense deleted");
-      await onExpenseChanged?.();
-      await buildTimeline();
-      closeDeleteConfirm();
-    } catch (error) {
-      console.error("Expense delete failed:", error);
-      toast.error(error.response?.data?.error || "Failed to delete expense");
-    } finally {
-      setDeletingExpenseId("");
+  const getActivityCategoryIcon = (category) => {
+    const cls = "h-5 w-5";
+    switch (category) {
+      case "food":
+        return <UtensilsCrossed className={`${cls} text-emerald-300`} />;
+      case "travel":
+        return <Plane className={`${cls} text-sky-300`} />;
+      case "entertainment":
+        return <Music className={`${cls} text-violet-300`} />;
+      case "shopping":
+        return <ShoppingBag className={`${cls} text-rose-300`} />;
+      case "utilities":
+        return <Plug className={`${cls} text-amber-300`} />;
+      default:
+        return <Receipt className={`${cls} text-indigo-300`} />;
     }
   };
 
@@ -1518,21 +1532,37 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
 
   if (timeline.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-12 border border-white/8 rounded-lg bg-slate-800"
-      >
-        <div className="w-14 h-14 border border-white/8 rounded-lg flex items-center justify-center mx-auto mb-4 bg-slate-700">
-          <Activity className="w-6 h-6 text-indigo-400" />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-100">Expenses</h2>
+          <p className="text-xs font-medium text-slate-500">
+            Sort by: <span className="text-emerald-300">Date</span>
+          </p>
         </div>
-        <h3 className="text-base font-bold text-slate-100 mb-2 border-b-2 border-indigo-500 pb-1 inline-block">
-          No activity yet
-        </h3>
-        <p className="text-slate-400 text-xs">
-          Expenses for this group will appear here.
-        </p>
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-xl border border-white/8 bg-slate-800 px-4 py-12 text-center"
+        >
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-white/8 bg-slate-700">
+            <Activity className="h-6 w-6 text-indigo-400" />
+          </div>
+          <h3 className="mb-2 text-base font-bold text-slate-100">
+            No expenses yet
+          </h3>
+          <p className="mx-auto mb-5 max-w-xs text-xs text-slate-400">
+            Add the first expense and it will appear here.
+          </p>
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold text-emerald-300 transition-colors hover:bg-emerald-500/15"
+          >
+            <Plus size={15} />
+            Add Expense
+          </button>
+        </motion.div>
+      </div>
     );
   }
 
@@ -1540,10 +1570,17 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-100">Expenses</h2>
+          <p className="text-xs font-medium text-slate-500">
+            Sort by: <span className="text-emerald-300">Date</span>
+          </p>
+        </div>
+
         {groupedTimeline.map((section, sectionIndex) => (
           <section key={section.key} className="space-y-2.5">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-slate-900/95 px-3 py-2 backdrop-blur">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-slate-900/80 px-3 py-2">
               <div className="flex min-w-0 items-center gap-2">
                 <Calendar className="h-4 w-4 shrink-0 text-indigo-300" />
                 <h3 className="truncate text-sm font-bold text-slate-100">
@@ -1552,14 +1589,12 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
               </div>
               <div className="shrink-0 rounded-md border border-white/8 bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">
                 {section.items.length} expense
-                {section.items.length === 1 ? "" : "s"} - {formatMoney(section.total)}
+                {section.items.length === 1 ? "" : "s"} - {formatCompactMoney(section.total)}
               </div>
             </div>
 
             <div className="space-y-2.5">
               {section.items.map((item, itemIndex) => {
-                const canManage = canManageItem(item);
-                const isDeleting = deletingExpenseId === item?.details?.expenseId;
                 const payerId = getNormalizedId(item?.details?.paidById);
                 const expensePaidByCurrentUser = payerId === currentUserId;
                 const splitCount = getSplitMemberCount({
@@ -1572,6 +1607,9 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
                   splitCount === 1
                     ? "Split with 1 member"
                     : `Split with ${splitCount} members`;
+                const paidDate = formatShortDate(
+                  item?.details?.date || item.createdAt,
+                );
 
                 return (
                   <motion.div
@@ -1581,9 +1619,9 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
                     transition={{ delay: (sectionIndex + itemIndex) * 0.02 }}
                     className="group overflow-hidden rounded-xl border border-white/8 bg-slate-800 transition-colors hover:border-indigo-500/35 hover:bg-slate-700/35"
                   >
-                    <div className="flex items-start gap-3 p-3.5">
-                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10">
-                        <Receipt className="h-5 w-5 text-indigo-300" />
+                    <div className="flex items-start gap-3 p-3.5 sm:p-4">
+                      <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10">
+                        {getActivityCategoryIcon(item?.details?.category)}
                       </div>
 
                       <button
@@ -1601,11 +1639,12 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
                             </p>
                             <p className="mt-0.5 truncate text-xs text-slate-400">
                               {item.subtitle}
+                              {paidDate ? ` · ${paidDate}` : ""}
                             </p>
                           </div>
                           <div className="shrink-0 text-right">
                             <p className={`text-sm font-bold ${amountClass}`}>
-                              {formatMoney(item.amount)}
+                              {formatCompactMoney(item.amount)}
                             </p>
                             <p className="mt-0.5 text-[11px] text-slate-500">
                               {expensePaidByCurrentUser
@@ -1616,15 +1655,11 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
                         </div>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-700/70 px-2 py-1 text-[11px] font-semibold text-slate-300">
-                            <FileText className="h-3 w-3 text-slate-400" />
-                            {getExpenseCategoryLabel(item?.details?.category)}
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-700/70 px-2 py-1 text-[11px] font-semibold text-slate-300">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-900/45 px-2 py-1 text-[11px] font-semibold text-slate-300">
                             <Users className="h-3 w-3 text-slate-400" />
                             {splitLabel}
                           </span>
-                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-700/70 px-2 py-1 text-[11px] font-semibold text-slate-300">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-white/8 bg-slate-900/45 px-2 py-1 text-[11px] font-semibold text-slate-300">
                             <Clock className="h-3 w-3 text-slate-400" />
                             {new Date(item.createdAt).toLocaleTimeString("en-IN", {
                               hour: "2-digit",
@@ -1633,18 +1668,6 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
                           </span>
                         </div>
                       </button>
-
-                      {canManage && (
-                        <button
-                          type="button"
-                          onClick={(event) => requestDeleteFromList(item, event)}
-                          disabled={isDeleting}
-                          className="shrink-0 rounded-md border border-rose-500/40 bg-rose-500/15 p-2 text-rose-200 transition-colors hover:bg-rose-500/25 disabled:opacity-60"
-                          title="Delete expense"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
                     </div>
                   </motion.div>
                 );
@@ -1652,6 +1675,15 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
             </div>
           </section>
         ))}
+
+        <button
+          type="button"
+          onClick={onAddExpense}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300 transition-colors hover:bg-emerald-500/15"
+        >
+          <Plus size={16} />
+          Add Expense
+        </button>
       </div>
 
       <AnimatePresence>
@@ -1670,16 +1702,6 @@ function ActivityTab({ group, expenses = [], currentUser, onExpenseChanged }) {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {deleteConfirm.open && (
-          <DeleteExpenseConfirmModal
-            title={deleteConfirm.title}
-            loading={deletingExpenseId === deleteConfirm.expenseId}
-            onCancel={closeDeleteConfirm}
-            onConfirm={handleDeleteFromList}
-          />
-        )}
-      </AnimatePresence>
     </>
   );
 }
@@ -1696,6 +1718,8 @@ function ActivityDetailsModal({
   const details = activity.details || {};
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [splitMode, setSplitMode] = useState("equal");
   const [selectedSplitUsers, setSelectedSplitUsers] = useState([]);
   const [customSplitAmounts, setCustomSplitAmounts] = useState({});
@@ -1837,41 +1861,61 @@ function ActivityDetailsModal({
     }
   };
 
+  const handleDeleteExpense = async () => {
+    if (!details.expenseId) return;
+
+    try {
+      setDeleting(true);
+      await axios.delete(`/api/expenses/${details.expenseId}`);
+      toast.success("Expense deleted");
+      setShowDeleteConfirm(false);
+      await onExpenseChanged?.();
+      onClose();
+    } catch (error) {
+      console.error("Expense delete failed:", error);
+      toast.error(error.response?.data?.error || "Failed to delete expense");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const statusLabel = "Expense";
   const statusClass = "border-white/20 bg-white/10 text-slate-300";
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-24 pt-4 sm:pb-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
+    <>
       <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="bg-slate-800 rounded-t-xl sm:rounded-xl border border-white/8 w-full max-w-md max-h-[calc(100vh-7rem)] sm:max-h-[85vh] overflow-y-auto shadow-xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-24 pt-4 sm:pb-4"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-slate-700/40">
-          <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">
-              Expense Details
-            </p>
-            <h3 className="font-bold text-slate-100 mt-0.5 truncate">
-              {activity.title}
-            </h3>
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          className="bg-slate-800 rounded-t-xl sm:rounded-xl border border-white/8 w-full max-w-md max-h-[calc(100vh-7rem)] sm:max-h-[85vh] overflow-y-auto shadow-xl"
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-slate-700/40">
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">
+                Expense Details
+              </p>
+              <h3 className="font-bold text-slate-100 mt-0.5 truncate">
+                {activity.title}
+              </h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg border border-white/8 hover:bg-slate-700 transition-colors"
+              aria-label="Close expense details"
+            >
+              <X size={16} className="text-slate-400" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg border border-white/8 hover:bg-slate-700 transition-colors"
-          >
-            <X size={16} className="text-slate-400" />
-          </button>
-        </div>
 
-        <div className="px-5 py-4 space-y-3">
+          <div className="px-5 py-4 space-y-3">
           {isExpense ? (
             <>
               <div className="space-y-1">
@@ -2054,42 +2098,66 @@ function ActivityDetailsModal({
             </div>
           ) : null}
 
-        </div>
-
-        <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
-            >
-              Close
-            </button>
-            {canManageExpense && !isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
-              >
-                Edit
-              </button>
-            )}
-            {canManageExpense && isEditing && (
-              <button
-                type="button"
-                onClick={handleSaveExpense}
-                disabled={saving}
-                className="px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-60"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Save size={14} />
-                  {saving ? "Saving" : "Save"}
-                </span>
-              </button>
-            )}
           </div>
-        </div>
+
+          <div className="px-5 py-3 border-t border-white/8 bg-slate-700/30">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+              >
+                Close
+              </button>
+              {canManageExpense && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deleting || saving}
+                  className="px-3 py-2.5 rounded-lg border border-rose-500/40 bg-rose-500/15 text-rose-200 text-sm font-semibold hover:bg-rose-500/25 transition-colors disabled:opacity-60"
+                  aria-label="Delete expense"
+                  title="Delete expense"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+              {canManageExpense && !isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-semibold hover:bg-slate-500 transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+              {canManageExpense && isEditing && (
+                <button
+                  type="button"
+                  onClick={handleSaveExpense}
+                  disabled={saving || deleting}
+                  className="px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-60"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Save size={14} />
+                    {saving ? "Saving" : "Save"}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <DeleteExpenseConfirmModal
+            title={activity.title || "this expense"}
+            loading={deleting}
+            onCancel={() => setShowDeleteConfirm(false)}
+            onConfirm={handleDeleteExpense}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

@@ -1,9 +1,19 @@
 import { connectDB } from "@/lib/db";
+import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
+    const limit = rateLimit(req, {
+      keyPrefix: "check-username",
+      limit: 30,
+      windowMs: 60 * 1000,
+    });
+    if (limit.limited) {
+      return rateLimitResponse("Too many username checks. Please wait and try again.", limit);
+    }
+
     await connectDB();
     const { username } = await req.json();
 

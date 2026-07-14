@@ -1,6 +1,5 @@
-import { verifyToken } from "@/lib/auth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { connectDB } from "@/lib/db";
-import { getRequestToken } from "@/lib/requestAuth";
 import Expense from "@/models/Expense";
 import Group from "@/models/Group";
 import Notification from "@/models/Notification";
@@ -11,17 +10,13 @@ export async function GET(request) {
   try {
     await connectDB();
 
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
     const groupId = searchParams.get("groupId");
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -57,11 +52,8 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
     const body = await request.json();
     const {
@@ -97,8 +89,7 @@ export async function POST(request) {
       );
     }
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -138,7 +129,16 @@ export async function POST(request) {
       );
     }
 
-    const groupMemberIds = new Set((group.members || []).map((m) => String(m.userId)));
+    const registeredMemberIds = new Set(
+      (group.members || [])
+        .map((m) => m.userId && String(m.userId))
+        .filter(Boolean),
+    );
+    const groupMemberIds = new Set(
+      (group.members || [])
+        .map((m) => String(m.userId || m._id))
+        .filter(Boolean),
+    );
 
     const normalizedSplit = splitBetween.map((sb) => ({
       userId: String(sb.userId),
@@ -203,7 +203,9 @@ export async function POST(request) {
 
     // Send notifications to involved users (except payer)
     const involvedUsers = normalizedSplit
-      .filter((sb) => sb.userId !== paidById)
+      .filter(
+        (sb) => sb.userId !== paidById && registeredMemberIds.has(sb.userId),
+      )
       .map((sb) => sb.userId);
 
     for (const userId of involvedUsers) {

@@ -2,7 +2,7 @@ import LandingPageModern from "@/components/home/LandingPageModern";
 import { faqPageJsonLd, homeFaqs } from "@/data/homeFaqs";
 import { getPublishedArticles } from "@/lib/articles";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export const metadata = {
   title: "Money Split - Free Bill Splitter & Group Expense Tracker",

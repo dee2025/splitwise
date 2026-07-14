@@ -1,7 +1,6 @@
 // app/api/groups/[groupId]/route.js
-import { verifyToken } from "@/lib/auth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { connectDB } from "@/lib/db";
-import { getRequestToken } from "@/lib/requestAuth";
 import Group from "@/models/Group";
 import User from "@/models/User";
 import mongoose from "mongoose";
@@ -60,14 +59,10 @@ export async function GET(request, context) {
     const pathSegments = url.pathname.split("/");
     const groupId = pathSegments[pathSegments.length - 1];
 
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -79,12 +74,8 @@ export async function GET(request, context) {
 
     // Check if the groupId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
-      console.log("❌ Invalid Group ID format");
       return NextResponse.json(
-        {
-          error: "Invalid group ID format",
-          providedId: groupId,
-        },
+        { error: "Invalid group ID format" },
         { status: 400 },
       );
     }
@@ -95,30 +86,8 @@ export async function GET(request, context) {
     // First, check if any group exists with this ID
     const groupExists = await Group.findById(groupObjectId);
     if (!groupExists) {
-      // Let's see what groups actually exist for this user
-      const userGroups = await Group.find({ "members.userId": user._id })
-        .select("_id name")
-        .limit(5);
-
-      console.log(
-        "  - Your accessible groups:",
-        userGroups.map((g) => ({
-          id: g._id.toString(),
-          name: g.name,
-        })),
-      );
-
       return NextResponse.json(
-        {
-          error: "Group not found",
-          debug: {
-            requestedId: groupId,
-            yourGroups: userGroups.map((g) => ({
-              id: g._id.toString(),
-              name: g.name,
-            })),
-          },
-        },
+        { error: "Group not found" },
         { status: 404 },
       );
     }
@@ -146,17 +115,7 @@ export async function GET(request, context) {
 
     if (!isMember) {
       return NextResponse.json(
-        {
-          error: "You are not a member of this group",
-          debug: {
-            yourUserId: userIdString,
-            groupMembers: group.members.map((m) => ({
-              userId: m.userId?._id?.toString() || m.userId?.toString(),
-              name: m.name,
-              role: m.role,
-            })),
-          },
-        },
+        { error: "You are not a member of this group" },
         { status: 403 },
       );
     }
@@ -181,14 +140,10 @@ export async function PUT(request, context) {
     const pathSegments = url.pathname.split("/");
     const groupId = pathSegments[pathSegments.length - 1];
 
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

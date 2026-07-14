@@ -1,4 +1,4 @@
-import { ADMIN_EMAIL, requireAdmin } from "@/lib/adminAuth";
+import { requireAdmin, serializeAdmin } from "@/lib/adminAuth";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
@@ -10,8 +10,6 @@ export async function GET(req) {
 
   return NextResponse.json({
     authenticated: true,
-    admin: {
-      email: ADMIN_EMAIL,
-    },
+    admin: serializeAdmin(auth.admin),
   });
 }

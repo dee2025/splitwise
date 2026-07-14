@@ -1,21 +1,18 @@
-import { verifyToken } from "@/lib/auth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { connectDB } from "@/lib/db";
 import Expense from "@/models/Expense";
 import Group from "@/models/Group";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
-import { getRequestToken } from "@/lib/requestAuth";
 
 export async function GET(request) {
   try {
     await connectDB();
 
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     // select everything except password; User has no "groups" array so no populate needed
     const user = await User.findById(decoded.userId).select("-password");
 
@@ -84,12 +81,10 @@ export async function PUT(request) {
   try {
     await connectDB();
 
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
 
     if (!user) {

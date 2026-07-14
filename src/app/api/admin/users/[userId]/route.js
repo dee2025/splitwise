@@ -1,4 +1,4 @@
-import { ADMIN_EMAIL, requireAdmin } from "@/lib/adminAuth";
+import { requireAdmin } from "@/lib/adminAuth";
 import { connectDB } from "@/lib/db";
 import Activity from "@/models/Activity";
 import Group from "@/models/Group";
@@ -56,10 +56,6 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (user.email === ADMIN_EMAIL) {
-      return NextResponse.json({ error: "The static admin account cannot be blocked" }, { status: 400 });
-    }
-
     user.isBlocked = isBlocked;
     user.blockedAt = isBlocked ? new Date() : null;
     user.blockedReason = isBlocked ? blockedReason : "";
@@ -89,10 +85,6 @@ export async function DELETE(req) {
     const user = await User.findById(userId).select("email fullName username");
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    if (user.email === ADMIN_EMAIL) {
-      return NextResponse.json({ error: "The static admin account cannot be deleted" }, { status: 400 });
     }
 
     const objectId = new mongoose.Types.ObjectId(userId);

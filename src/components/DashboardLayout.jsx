@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }) {
   const contentWidth = pathname?.startsWith("/admin") ? "max-w-7xl" : "max-w-5xl";
 
   return (
-    <div className="user-dashboard min-h-screen w-full overflow-x-hidden bg-slate-950">
+    <div className="user-dashboard min-h-screen w-full overflow-x-hidden bg-slate-950 text-slate-100">
       {/* <Navbar /> */}
 
       <div className="flex min-w-0">

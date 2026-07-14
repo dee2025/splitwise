@@ -29,7 +29,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 function normalizeMember(member) {
-  const userId = member?.userId?._id || member?.userId || "";
+  const userId = member?.userId?._id || member?.userId || member?._id || "";
 
   const name =
     member?.fullName ||
@@ -41,6 +41,7 @@ function normalizeMember(member) {
   return {
     userId: String(userId),
     name,
+    type: member?.type || "registered",
   };
 }
 

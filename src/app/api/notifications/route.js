@@ -1,8 +1,7 @@
 import { connectDB } from "@/lib/db";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
-import { verifyToken } from "@/lib/auth";
-import { getRequestToken } from "@/lib/requestAuth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { NextResponse } from "next/server";
 
 const HIDDEN_LEGACY_TYPES = new Set([
@@ -19,14 +18,10 @@ export async function GET(request) {
   try {
     await connectDB();
     
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -71,14 +66,10 @@ export async function PUT(request) {
   try {
     await connectDB();
     
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -121,14 +112,10 @@ export async function DELETE(request) {
   try {
     await connectDB();
     
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

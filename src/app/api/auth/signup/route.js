@@ -5,9 +5,19 @@ import { NextResponse } from "next/server";
 import { generateToken, setTokenCookie } from "@/lib/auth";
 import { sendWelcomeEmail } from "@/lib/mailer";
 import { generateUniqueUsername } from "@/lib/username";
+import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(req) {
   try {
+    const limit = rateLimit(req, {
+      keyPrefix: "signup",
+      limit: 8,
+      windowMs: 60 * 1000,
+    });
+    if (limit.limited) {
+      return rateLimitResponse("Too many signup attempts. Please wait and try again.", limit);
+    }
+
     await connectDB();
     const body = await req.json();
 
@@ -102,7 +112,6 @@ export async function POST(req) {
       success: true,
       message: "Account created successfully!",
       user: userResponse,
-      token,
     }, { status: 201 });
 
     // Set HTTP-only cookie

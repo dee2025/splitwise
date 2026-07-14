@@ -1,16 +1,25 @@
 // app/api/auth/login/route.js
+import { generateToken } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { generateToken } from "@/lib/auth";
 
 export async function POST(req) {
   try {
+    const limit = rateLimit(req, {
+      keyPrefix: "user-login",
+      limit: 10,
+      windowMs: 60 * 1000,
+    });
+    if (limit.limited) {
+      return rateLimitResponse("Too many login attempts. Please wait and try again.", limit);
+    }
+
     await connectDB();
     const { email, password } = await req.json();
 
-    // Validation
     const errors = {};
 
     if (!email?.trim()) {
@@ -24,19 +33,24 @@ export async function POST(req) {
     }
 
     if (Object.keys(errors).length > 0) {
-      return NextResponse.json({ 
-        error: "Validation failed",
-        errors 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          errors,
+        },
+        { status: 400 }
+      );
     }
 
-    // Find user by email
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return NextResponse.json({ 
-        error: "No account found with this email address",
-        errors: { email: "Email not registered" }
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "No account found with this email address",
+          errors: { email: "Email not registered" },
+        },
+        { status: 400 }
+      );
     }
 
     if (user.isBlocked) {
@@ -45,7 +59,7 @@ export async function POST(req) {
           error: "This account has been blocked",
           errors: { email: "Contact support if you believe this is a mistake" },
         },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -55,26 +69,26 @@ export async function POST(req) {
           error: "This account uses Google sign in",
           errors: { email: "Use Continue with Google for this account" },
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return NextResponse.json({ 
-        error: "Invalid password",
-        errors: { password: "Incorrect password" }
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Invalid password",
+          errors: { password: "Incorrect password" },
+        },
+        { status: 400 }
+      );
     }
 
-    // Generate JWT token
     const token = generateToken({
       userId: user._id,
-      email: user.email
+      email: user.email,
     });
 
-    // User response without password
     const userResponse = {
       id: user._id,
       fullName: user.fullName,
@@ -86,33 +100,29 @@ export async function POST(req) {
       createdAt: user.createdAt,
     };
 
-    // Create response
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
       user: userResponse,
-      token,
     });
 
-    // CORRECTED: Set HTTP-only cookie with proper syntax
-    response.cookies.set('token', token, {
+    response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
     });
 
-    console.log('🍪 Login API: Cookie set successfully');
-    console.log('🔐 Token generated for user:', user.email);
-    
     return response;
-
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json({ 
-      error: "Internal server error",
-      message: "Something went wrong. Please try again later."
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        message: "Something went wrong. Please try again later.",
+      },
+      { status: 500 }
+    );
   }
 }

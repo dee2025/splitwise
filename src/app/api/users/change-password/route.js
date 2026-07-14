@@ -1,4 +1,4 @@
-import { verifyToken } from "@/lib/auth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
@@ -8,12 +8,10 @@ export async function PUT(request) {
   try {
     await connectDB();
 
-    const token = request.cookies.get("token")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

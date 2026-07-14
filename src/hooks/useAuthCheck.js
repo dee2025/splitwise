@@ -3,12 +3,32 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { loginSuccess, logout, setLoading } from '@/redux/slices/authSlice';
+import { usePathname } from 'next/navigation';
 import axios from 'axios';
+
+const AUTH_CHECK_PREFIXES = [
+  "/dashboard",
+  "/home",
+  "/groups",
+  "/expenses",
+  "/notifications",
+  "/profile",
+  "/login",
+  "/signup",
+];
 
 export function useAuthCheck() {
   const dispatch = useDispatch();
+  const pathname = usePathname();
 
   useEffect(() => {
+    const shouldCheckAuth = AUTH_CHECK_PREFIXES.some((prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`));
+
+    if (!shouldCheckAuth) {
+      dispatch(setLoading(false));
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         dispatch(setLoading(true));
@@ -28,5 +48,5 @@ export function useAuthCheck() {
     };
 
     checkAuth();
-  }, [dispatch]);
+  }, [dispatch, pathname]);
 }

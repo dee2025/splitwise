@@ -3,7 +3,7 @@ import { articlesIndexJsonLd } from '@/lib/articleUtils';
 import { getPublishedArticles } from '@/lib/articles';
 import { ArrowRight, Calendar, Clock } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export const metadata = {
   title: 'Articles | Money Split - Expert Guides on Expense Sharing',

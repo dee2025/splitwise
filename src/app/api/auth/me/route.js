@@ -1,14 +1,14 @@
 import User from "@/models/User";
 import { connectDB } from "@/lib/db";
-import { protect } from "@/lib/protect";
+import { verifyRequestToken } from "@/lib/apiAuth";
 
 export async function GET(req) {
   await connectDB();
-  const decoded = await protect(req);
+  const auth = await verifyRequestToken(req);
 
-  if (!decoded) return Response.json({ error: "Unauthenticated" }, { status: 401 });
+  if (auth.error) return auth.error;
 
-  const user = await User.findById(decoded.userId || decoded.id).select("-password");
+  const user = await User.findById(auth.decoded.userId || auth.decoded.id).select("-password");
 
   return Response.json({ user });
 }

@@ -3,6 +3,7 @@ import { generateToken, setTokenCookie } from "@/lib/auth";
 import { generateUniqueUsername } from "@/lib/username";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
+import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 function getEmailLocalPart(email) {
   return (email || "").split("@")[0] || "user";
@@ -55,6 +56,15 @@ function getAllowedClientIds() {
 
 export async function POST(request) {
   try {
+    const limit = rateLimit(request, {
+      keyPrefix: "google-login",
+      limit: 20,
+      windowMs: 60 * 1000,
+    });
+    if (limit.limited) {
+      return rateLimitResponse("Too many login attempts. Please wait and try again.", limit);
+    }
+
     const { credential } = await request.json();
 
     if (!credential || typeof credential !== "string") {
@@ -178,7 +188,6 @@ export async function POST(request) {
       success: true,
       message: "Google login successful",
       user: userResponse,
-      token,
     });
 
     setTokenCookie(response, token);

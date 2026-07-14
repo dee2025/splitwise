@@ -55,6 +55,14 @@ const blankArticle = {
   views: 0,
 };
 
+const blankAdmin = {
+  id: "",
+  name: "",
+  email: "",
+  role: "admin",
+  password: "",
+};
+
 function formatDate(value) {
   if (!value) return "Not published";
   return new Date(value).toLocaleDateString("en-US", {
@@ -105,6 +113,16 @@ function articleToForm(article) {
     faqs: article.faqs?.length ? article.faqs : [{ question: "", answer: "" }],
     status: article.status || "draft",
     views: article.views || 0,
+  };
+}
+
+function adminToForm(admin) {
+  return {
+    id: admin.id || "",
+    name: admin.name || "",
+    email: admin.email || "",
+    role: admin.role || "admin",
+    password: "",
   };
 }
 
@@ -480,6 +498,7 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
     { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
     { key: "articles", label: "Articles", href: "/admin/articles", icon: FileText },
     { key: "users", label: "Users", href: "/admin/users", icon: Users },
+    { key: "admins", label: "Admins", href: "/admin/admins", icon: Shield },
   ];
 
   return (
@@ -546,7 +565,7 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
               Logout
             </button>
           </div>
-          <div className="grid grid-cols-3 border-t border-white/8">
+          <div className="grid grid-cols-4 border-t border-white/8">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.key;
@@ -578,19 +597,25 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [admin, setAdmin] = useState(null);
+  const [admins, setAdmins] = useState([]);
+  const [canManageAdmins, setCanManageAdmins] = useState(false);
   const [users, setUsers] = useState([]);
   const [articles, setArticles] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [form, setForm] = useState(blankArticle);
+  const [adminForm, setAdminForm] = useState(blankAdmin);
   const [errors, setErrors] = useState({});
+  const [adminErrors, setAdminErrors] = useState({});
   const [query, setQuery] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAdmin, setIsSavingAdmin] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [operatingUserId, setOperatingUserId] = useState("");
+  const [operatingAdminId, setOperatingAdminId] = useState("");
   const [accessError, setAccessError] = useState("");
 
   useEffect(() => {
@@ -611,31 +636,36 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
 
         setAdmin(sessionData.admin);
 
-        const [dashboardRes, usersRes, articlesRes] = await Promise.all([
+        const [dashboardRes, usersRes, articlesRes, adminsRes] = await Promise.all([
           fetch("/api/admin/dashboard"),
           fetch("/api/admin/users"),
           fetch("/api/admin/articles"),
+          fetch("/api/admin/admins"),
         ]);
 
         if (
           [401, 403].includes(dashboardRes.status) ||
           [401, 403].includes(usersRes.status) ||
-          [401, 403].includes(articlesRes.status)
+          [401, 403].includes(articlesRes.status) ||
+          [401, 403].includes(adminsRes.status)
         ) {
           router.replace("/admin/login");
           return;
         }
 
-        if (!dashboardRes.ok || !usersRes.ok || !articlesRes.ok) {
+        if (!dashboardRes.ok || !usersRes.ok || !articlesRes.ok || !adminsRes.ok) {
           throw new Error("Unable to load admin data");
         }
 
         const dashboardData = await dashboardRes.json();
         const usersData = await usersRes.json();
         const articlesData = await articlesRes.json();
+        const adminsData = await adminsRes.json();
         setDashboard(dashboardData);
         setUsers(usersData.users || []);
         setArticles(articlesData.articles || []);
+        setAdmins(adminsData.admins || []);
+        setCanManageAdmins(Boolean(adminsData.canManageAdmins));
       } catch (error) {
         toast.error(error.message || "Unable to load admin panel");
       } finally {
@@ -684,6 +714,17 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
     );
   }, [articles, query]);
 
+  const filteredAdmins = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return admins;
+    return admins.filter((item) =>
+      [item.name, item.email, item.role, item.isBlocked ? "blocked" : "active", item.blockedReason]
+        .join(" ")
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [admins, query]);
+
   const stats = useMemo(() => {
     const published = articles.filter((article) => article.status === "published").length;
     const totalViews = articles.reduce((sum, article) => sum + (Number(article.views) || 0), 0);
@@ -728,6 +769,11 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
   const resetForm = () => {
     setForm(blankArticle);
     setErrors({});
+  };
+
+  const resetAdminForm = () => {
+    setAdminForm(blankAdmin);
+    setAdminErrors({});
   };
 
   const uploadThumbnail = async (file) => {
@@ -871,6 +917,82 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
     }
   };
 
+  const saveAdmin = async () => {
+    setIsSavingAdmin(true);
+    setAdminErrors({});
+
+    try {
+      const payload = {
+        name: adminForm.name,
+        email: adminForm.email,
+        role: adminForm.role,
+        ...(adminForm.password ? { password: adminForm.password } : {}),
+      };
+      const endpoint = adminForm.id ? `/api/admin/admins/${adminForm.id}` : "/api/admin/admins";
+      const method = adminForm.id ? "PATCH" : "POST";
+      const res = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setAdminErrors(data.errors || {});
+        throw new Error(data.error || "Unable to save admin");
+      }
+
+      setAdmins((current) => {
+        const exists = current.some((item) => item.id === data.admin.id);
+        if (exists) {
+          return current.map((item) => (item.id === data.admin.id ? data.admin : item));
+        }
+        return [data.admin, ...current];
+      });
+      setAdminForm(adminToForm(data.admin));
+      toast.success(adminForm.id ? "Admin updated" : "Admin created");
+    } catch (error) {
+      toast.error(error.message || "Unable to save admin");
+    } finally {
+      setIsSavingAdmin(false);
+    }
+  };
+
+  const toggleAdminBlock = async (targetAdmin) => {
+    const nextBlocked = !targetAdmin.isBlocked;
+    const reason = nextBlocked
+      ? window.prompt("Reason for blocking this admin?", "Access revoked") || ""
+      : "";
+
+    if (
+      nextBlocked &&
+      !window.confirm(`Block ${targetAdmin.email}? They will lose admin access immediately.`)
+    ) {
+      return;
+    }
+
+    setOperatingAdminId(targetAdmin.id);
+    try {
+      const res = await fetch(`/api/admin/admins/${targetAdmin.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isBlocked: nextBlocked, blockedReason: reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Unable to update admin");
+
+      setAdmins((current) =>
+        current.map((item) => (item.id === data.admin.id ? data.admin : item))
+      );
+      setAdminForm((current) => (current.id === data.admin.id ? adminToForm(data.admin) : current));
+      toast.success(nextBlocked ? "Admin blocked" : "Admin unblocked");
+    } catch (error) {
+      toast.error(error.message || "Unable to update admin");
+    } finally {
+      setOperatingAdminId("");
+    }
+  };
+
   const handleLogout = async () => {
     await fetch("/api/admin/auth/logout", { method: "POST" }).catch(() => {});
     router.replace("/admin/login");
@@ -908,6 +1030,10 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
     users: {
       title: "Users",
       description: "Review accounts, auth providers, status, and moderation actions.",
+    },
+    admins: {
+      title: "Admins",
+      description: "Create admin accounts, update access, and block panel users.",
     },
   }[activeTab] || {
     title: "Admin workspace",
@@ -970,6 +1096,7 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
               { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
               { key: "articles", label: "Articles", href: "/admin/articles", icon: FileText },
               { key: "users", label: "Users", href: "/admin/users", icon: Users },
+              { key: "admins", label: "Admins", href: "/admin/admins", icon: Shield },
             ].map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.key;
@@ -1098,6 +1225,174 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : activeTab === "admins" ? (
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+            <div className="xl:col-span-3 rounded-2xl border border-white/8 bg-slate-900 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-4">
+                <div>
+                  <h2 className="font-bold text-slate-100">Admin accounts</h2>
+                  <p className="text-xs text-slate-500">Panel users with operational access</p>
+                </div>
+                <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-300">
+                  {admins.length} total
+                </span>
+              </div>
+              <div className="divide-y divide-white/6">
+                {filteredAdmins.length === 0 ? (
+                  <div className="p-6 text-sm text-slate-500">No admins match your search.</div>
+                ) : (
+                  filteredAdmins.map((item) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-3 px-4 py-4 text-sm">
+                      <div className="col-span-8 min-w-0 md:col-span-6">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-xs font-bold text-indigo-200">
+                            {item.email?.[0]?.toUpperCase() || "A"}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-slate-100">
+                              {item.name || item.email}
+                            </p>
+                            <p className="truncate text-xs text-slate-500">{item.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-2 hidden items-center md:flex">
+                        <span className="rounded-full bg-white/6 px-2 py-1 text-xs font-semibold text-slate-300">
+                          {item.role}
+                        </span>
+                      </div>
+                      <div className="col-span-2 hidden items-center lg:flex">
+                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                          item.isBlocked ? "bg-rose-500/10 text-rose-300" : "bg-emerald-500/10 text-emerald-300"
+                        }`}>
+                          {item.isBlocked ? "blocked" : "active"}
+                        </span>
+                      </div>
+                      <div className="col-span-4 flex items-center justify-end gap-2 md:col-span-4 lg:col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdminForm(adminToForm(item));
+                            setAdminErrors({});
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/6 px-2.5 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/10"
+                        >
+                          <PenLine className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleAdminBlock(item)}
+                          disabled={!canManageAdmins || operatingAdminId === item.id || item.id === admin?.id}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                            item.isBlocked
+                              ? "border border-emerald-400/20 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15"
+                              : "border border-amber-400/20 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15"
+                          }`}
+                        >
+                          {operatingAdminId === item.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : item.isBlocked ? (
+                            <Undo2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <Ban className="h-3.5 w-3.5" />
+                          )}
+                          <span className="hidden sm:inline">{item.isBlocked ? "Unblock" : "Block"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="xl:col-span-2 rounded-2xl border border-white/8 bg-slate-900 p-5">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-bold text-slate-100">
+                    {adminForm.id ? "Update admin" : "Create admin"}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {canManageAdmins ? "Owners can manage panel access." : "Only owner admins can save changes."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetAdminForm}
+                  className="rounded-lg bg-white/8 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/12"
+                >
+                  New
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="text-xs font-semibold text-slate-400">Name</span>
+                  <input
+                    value={adminForm.name}
+                    onChange={(event) => setAdminForm((current) => ({ ...current, name: event.target.value }))}
+                    disabled={!canManageAdmins}
+                    className="mt-1 w-full rounded-xl border border-white/8 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-indigo-400/50 disabled:opacity-60"
+                    placeholder="Admin name"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-semibold text-slate-400">Email</span>
+                  <input
+                    type="email"
+                    value={adminForm.email}
+                    onChange={(event) => setAdminForm((current) => ({ ...current, email: event.target.value }))}
+                    disabled={!canManageAdmins}
+                    className="mt-1 w-full rounded-xl border border-white/8 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-indigo-400/50 disabled:opacity-60"
+                    placeholder="admin@moneysplit.in"
+                  />
+                  <FieldError errors={adminErrors} name="email" />
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-semibold text-slate-400">Role</span>
+                  <select
+                    value={adminForm.role}
+                    onChange={(event) => setAdminForm((current) => ({ ...current, role: event.target.value }))}
+                    disabled={!canManageAdmins}
+                    className="mt-1 w-full rounded-xl border border-white/8 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-indigo-400/50 disabled:opacity-60"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                  <FieldError errors={adminErrors} name="role" />
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-semibold text-slate-400">
+                    {adminForm.id ? "New password" : "Password"}
+                  </span>
+                  <input
+                    type="password"
+                    value={adminForm.password}
+                    onChange={(event) => setAdminForm((current) => ({ ...current, password: event.target.value }))}
+                    disabled={!canManageAdmins}
+                    className="mt-1 w-full rounded-xl border border-white/8 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-indigo-400/50 disabled:opacity-60"
+                    placeholder={adminForm.id ? "Leave blank to keep current password" : "Minimum 10 characters"}
+                  />
+                  <FieldError errors={adminErrors} name="password" />
+                </label>
+
+                <FieldError errors={adminErrors} name="isBlocked" />
+
+                <button
+                  type="button"
+                  onClick={saveAdmin}
+                  disabled={!canManageAdmins || isSavingAdmin}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSavingAdmin ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {adminForm.id ? "Save admin" : "Create admin"}
+                </button>
+              </div>
             </div>
           </div>
         ) : (

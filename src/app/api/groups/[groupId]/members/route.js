@@ -1,6 +1,5 @@
-import { verifyToken } from "@/lib/auth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { connectDB } from "@/lib/db";
-import { getRequestToken } from "@/lib/requestAuth";
 import Group from "@/models/Group";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
@@ -38,12 +37,10 @@ export async function POST(request, { params }) {
   try {
     await connectDB();
 
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const currentUser = await User.findById(decoded.userId);
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -65,7 +62,7 @@ export async function POST(request, { params }) {
 
     const isAdmin = group.members.some(
       (m) =>
-        m.userId.toString() === currentUser._id.toString() &&
+        m.userId?.toString() === currentUser._id.toString() &&
         m.role === "admin",
     );
 
@@ -83,23 +80,64 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Add members to group
-    const newMembers = members.map((member) => ({
-      userId: member.userId,
-      name: member.name,
-      email: member.email,
-      contact: member.contact,
-      type: member.type,
-      role: "member",
-      joinedAt: new Date(),
-    }));
+    const newMembers = members
+      .map((member) => {
+        const type = member.type === "custom" ? "custom" : "registered";
+        const name = String(member.name || "").trim();
+        const email = String(member.email || "").trim().toLowerCase();
+        const contact = String(member.contact || "").trim();
 
-    // Filter out existing members
+        if (type === "registered" && !member.userId) return null;
+        if (type === "custom" && !name) return null;
+
+        return {
+          userId: type === "registered" ? member.userId : null,
+          name,
+          email: email || null,
+          contact: contact || null,
+          type,
+          role: "member",
+          joinedAt: new Date(),
+        };
+      })
+      .filter(Boolean);
+
+    if (newMembers.length === 0) {
+      return NextResponse.json(
+        { error: "Enter a valid member" },
+        { status: 400 },
+      );
+    }
+
     const existingMemberIds = new Set(
-      group.members.map((m) => m.userId?.toString()),
+      group.members
+        .map((m) => m.userId?.toString())
+        .filter(Boolean),
+    );
+    const existingCustomKeys = new Set(
+      group.members
+        .filter((m) => m.type === "custom")
+        .map((m) =>
+          [
+            String(m.name || "").trim().toLowerCase(),
+            String(m.email || "").trim().toLowerCase(),
+            String(m.contact || "").trim().toLowerCase(),
+          ].join("|"),
+        ),
     );
     const membersToAdd = newMembers.filter(
-      (m) => !existingMemberIds.has(m.userId?.toString()),
+      (m) => {
+        if (m.type === "registered") {
+          return !existingMemberIds.has(m.userId?.toString());
+        }
+
+        const customKey = [
+          String(m.name || "").trim().toLowerCase(),
+          String(m.email || "").trim().toLowerCase(),
+          String(m.contact || "").trim().toLowerCase(),
+        ].join("|");
+        return !existingCustomKeys.has(customKey);
+      },
     );
 
     if (membersToAdd.length === 0) {

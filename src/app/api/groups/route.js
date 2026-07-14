@@ -1,6 +1,5 @@
-import { verifyToken } from "@/lib/auth";
+import { verifyRequestToken } from "@/lib/apiAuth";
 import { connectDB } from "@/lib/db";
-import { getRequestToken } from "@/lib/requestAuth";
 import Group from "@/models/Group";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
@@ -55,11 +54,10 @@ export async function GET(request) {
   try {
     await connectDB();
 
-    const token = getRequestToken(request);
-    if (!token)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const user = await User.findById(decoded.userId);
     if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -94,14 +92,10 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    // Get token from cookies
-    const token = getRequestToken(request);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyRequestToken(request);
+    if (auth.error) return auth.error;
 
-    // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = auth.decoded;
     const currentUser = await User.findById(decoded.userId);
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
