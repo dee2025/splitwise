@@ -1,4 +1,4 @@
-const SITE_URL = "https://moneysplit.in";
+const SITE_URL = "https://www.moneysplit.in";
 
 export default function manifest() {
   return {

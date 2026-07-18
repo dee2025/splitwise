@@ -57,7 +57,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="moneysplit.in"
+                    android:host="www.moneysplit.in"
                     android:pathPrefix="/"
                     android:scheme="https" />
             </intent-filter>

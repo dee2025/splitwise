@@ -2,7 +2,7 @@ export const metadata = {
   title: "Contact Money Split",
   description:
     "Contact Money Split support for account, billing, partnership, and product related help.",
-  alternates: { canonical: "https://moneysplit.in/contact" },
+  alternates: { canonical: "https://www.moneysplit.in/contact" },
 };
 
 export default function ContactPage() {

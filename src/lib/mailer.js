@@ -105,7 +105,7 @@ export async function sendWelcomeEmail({ to, fullName, username }) {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://moneysplit.in"}/dashboard"
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://www.moneysplit.in"}/dashboard"
                        style="display:inline-block; background:#4f46e5; color:#ffffff; font-size:15px; font-weight:600; padding:14px 36px; border-radius:12px; text-decoration:none; letter-spacing:0.01em; box-shadow: 0 4px 20px rgba(79,70,229,0.4);">
                       Go to Dashboard →
                     </a>
@@ -146,7 +146,7 @@ export async function sendWelcomeEmail({ to, fullName, username }) {
     to,
     subject: `Welcome to Money Split, ${firstName}! 🎉`,
     html,
-    text: `Welcome to Money Split, ${firstName}!\n\nYour account has been created successfully.\nUsername: @${username}\n\nGet started: ${process.env.NEXT_PUBLIC_APP_URL || "https://moneysplit.in"}/dashboard\n\n© ${new Date().getFullYear()} Money Split`,
+    text: `Welcome to Money Split, ${firstName}!\n\nYour account has been created successfully.\nUsername: @${username}\n\nGet started: ${process.env.NEXT_PUBLIC_APP_URL || "https://www.moneysplit.in"}/dashboard\n\n© ${new Date().getFullYear()} Money Split`,
   });
 }
 

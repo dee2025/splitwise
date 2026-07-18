@@ -9,7 +9,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
 
-const SITE_URL = "https://moneysplit.in";
+const SITE_URL = "https://www.moneysplit.in";
 const APP_NAME = "MoneySplit";
 const SHORT_NAME = "Money Split";
 const APP_DESCRIPTION =

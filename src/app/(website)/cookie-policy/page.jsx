@@ -2,7 +2,7 @@ export const metadata = {
   title: "Cookie Policy | Money Split",
   description:
     "Understand how Money Split uses cookies and similar technologies to improve user experience and platform security.",
-  alternates: { canonical: "https://moneysplit.in/cookie-policy" },
+  alternates: { canonical: "https://www.moneysplit.in/cookie-policy" },
 };
 
 export default function CookiePolicyPage() {

@@ -19,31 +19,30 @@ npm run build
 
 Then deploy using your normal hosting flow.
 
-## 2. Fix The Production Host Redirect
+## 2. Keep The Production Host Redirect Consistent
 
 The app is configured for:
 
 ```text
-https://moneysplit.in
+https://www.moneysplit.in
 ```
 
-Your live site currently redirects:
+Your live infrastructure currently redirects the apex domain to `www`:
 
 ```text
 https://moneysplit.in -> https://www.moneysplit.in
 ```
 
-That breaks Bubblewrap and TWA verification for the current config. In your
-hosting/CDN/DNS dashboard, change redirects so this is the final host:
+The repository has been aligned to that final host:
 
 ```text
-https://moneysplit.in
+https://www.moneysplit.in
 ```
 
-Recommended redirect:
+Keep this redirect direction in your hosting/CDN/DNS dashboard:
 
 ```text
-https://www.moneysplit.in/* -> https://moneysplit.in/*
+https://moneysplit.in/* -> https://www.moneysplit.in/*
 ```
 
 ## 3. Verify Public PWA Files
@@ -51,11 +50,11 @@ https://www.moneysplit.in/* -> https://moneysplit.in/*
 Run these outside VS Code after deployment:
 
 ```powershell
-curl.exe -I -L https://moneysplit.in/manifest.webmanifest
-curl.exe -L https://moneysplit.in/manifest.webmanifest
-curl.exe -I -L https://moneysplit.in/sw.js
-curl.exe -I -L https://moneysplit.in/offline
-curl.exe -I -L https://moneysplit.in/.well-known/assetlinks.json
+curl.exe -I -L https://www.moneysplit.in/manifest.webmanifest
+curl.exe -L https://www.moneysplit.in/manifest.webmanifest
+curl.exe -I -L https://www.moneysplit.in/sw.js
+curl.exe -I -L https://www.moneysplit.in/offline
+curl.exe -I -L https://www.moneysplit.in/.well-known/assetlinks.json
 ```
 
 Expected:
@@ -188,7 +187,7 @@ with the Play App Signing SHA-256 fingerprint, then redeploy the website.
 Verify:
 
 ```powershell
-curl.exe -L https://moneysplit.in/.well-known/assetlinks.json
+curl.exe -L https://www.moneysplit.in/.well-known/assetlinks.json
 ```
 
 ## 10. Test App Links On Device
@@ -197,7 +196,7 @@ Install the APK/AAB build on a real Android device, then run:
 
 ```powershell
 adb shell pm get-app-links in.moneysplit.app
-adb shell am start -a android.intent.action.VIEW -d https://moneysplit.in
+adb shell am start -a android.intent.action.VIEW -d https://www.moneysplit.in
 ```
 
 The app should open full-screen without a browser address bar after Digital
@@ -213,7 +212,7 @@ Prepare these outside VS Code:
 - 512x512 app icon
 - 1024x500 feature graphic
 - Phone screenshots
-- Privacy policy URL: `https://moneysplit.in/privacy-policy`
+- Privacy policy URL: `https://www.moneysplit.in/privacy-policy`
 - Data Safety form
 - Content rating
 - Target audience

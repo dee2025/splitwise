@@ -26,7 +26,7 @@ export function wordCount(content = "") {
   return content.trim().split(/\s+/).filter(Boolean).length;
 }
 
-function absoluteUrl(path = "", siteUrl = "https://moneysplit.in") {
+function absoluteUrl(path = "", siteUrl = "https://www.moneysplit.in") {
   if (!path) return siteUrl;
   return path.startsWith("http") ? path : `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
@@ -64,7 +64,7 @@ export function normalizeArticle(article) {
   };
 }
 
-export function articleToJsonLd(article, siteUrl = "https://moneysplit.in") {
+export function articleToJsonLd(article, siteUrl = "https://www.moneysplit.in") {
   const url = `${siteUrl}/articles/${article.slug}`;
   const image = absoluteUrl(article.thumbnail || "/images/articles/friends-expenses.png", siteUrl);
   const articleId = `${url}#article`;
@@ -194,7 +194,7 @@ export function articleToJsonLd(article, siteUrl = "https://moneysplit.in") {
   };
 }
 
-export function articlesIndexJsonLd(articles = [], siteUrl = "https://moneysplit.in") {
+export function articlesIndexJsonLd(articles = [], siteUrl = "https://www.moneysplit.in") {
   const articlesUrl = `${siteUrl}/articles`;
 
   return {

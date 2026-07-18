@@ -4,7 +4,7 @@
 
 MoneySplit uses a Progressive Web App plus Trusted Web Activity architecture.
 The Android app in `android-twa/` is a thin wrapper around the production
-Next.js site at `https://moneysplit.in`.
+Next.js site at `https://www.moneysplit.in`.
 
 The website remains the source of truth for UI, API calls, authentication,
 database behavior, routing, and releases. After the app is published, normal
@@ -23,14 +23,14 @@ implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.7.2"
 The Android launcher opens:
 
 ```text
-https://moneysplit.in
+https://www.moneysplit.in
 ```
 
 Chrome or another compatible Android browser verifies ownership through Digital
 Asset Links at:
 
 ```text
-https://moneysplit.in/.well-known/assetlinks.json
+https://www.moneysplit.in/.well-known/assetlinks.json
 ```
 
 After verification, the site opens full-screen without the browser address bar.
@@ -87,9 +87,8 @@ Do not run `bubblewrap init` inside the existing `android-twa/` folder unless
 you intentionally want to regenerate and replace that project.
 
 Bubblewrap reads the live deployed manifest URL. If the website has not been
-deployed with `src/app/manifest.js`, or if `https://moneysplit.in` redirects to
-`https://www.moneysplit.in` where the manifest is missing, Bubblewrap will fail
-with:
+deployed with `src/app/manifest.js`, or if the final production host does not
+serve `/manifest.webmanifest`, Bubblewrap will fail with:
 
 ```text
 Unexpected token '<', "<!DOCTYPE "... is not valid JSON
@@ -101,8 +100,8 @@ instead of JSON.
 Before running Bubblewrap, deploy the website changes and verify:
 
 ```powershell
-curl.exe -I -L https://moneysplit.in/manifest.webmanifest
-curl.exe -L https://moneysplit.in/manifest.webmanifest
+curl.exe -I -L https://www.moneysplit.in/manifest.webmanifest
+curl.exe -L https://www.moneysplit.in/manifest.webmanifest
 ```
 
 The final response must be `200`, the content type should be JSON or web
@@ -116,7 +115,7 @@ bubblewrap --version
 bubblewrap doctor
 mkdir ..\moneysplit-bubblewrap-generated
 cd ..\moneysplit-bubblewrap-generated
-bubblewrap init --manifest=https://moneysplit.in/manifest.webmanifest
+bubblewrap init --manifest=https://www.moneysplit.in/manifest.webmanifest
 bubblewrap build
 ```
 
@@ -138,7 +137,7 @@ Use these values when prompted:
 - Package ID: `in.moneysplit.app`
 - App name: `MoneySplit`
 - Short name: `Money Split`
-- Start URL: `https://moneysplit.in`
+- Start URL: `https://www.moneysplit.in`
 - Theme color: `#000000`
 - Display mode: `standalone`
 
@@ -247,7 +246,7 @@ The structure must stay:
 Deploy the website and confirm this URL works:
 
 ```text
-https://moneysplit.in/.well-known/assetlinks.json
+https://www.moneysplit.in/.well-known/assetlinks.json
 ```
 
 ## 11. Test Digital Asset Links
@@ -255,7 +254,7 @@ https://moneysplit.in/.well-known/assetlinks.json
 After deployment, verify the statement with:
 
 ```powershell
-$url = "https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://moneysplit.in&relation=delegate_permission/common.handle_all_urls"
+$url = "https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.moneysplit.in&relation=delegate_permission/common.handle_all_urls"
 Invoke-RestMethod $url
 ```
 
@@ -263,15 +262,14 @@ On a device:
 
 ```powershell
 adb shell pm get-app-links in.moneysplit.app
-adb shell am start -a android.intent.action.VIEW -d https://moneysplit.in
+adb shell am start -a android.intent.action.VIEW -d https://www.moneysplit.in
 ```
 
 If verification is correct, the app should open full-screen after installation.
 
-If `https://moneysplit.in` still redirects to `https://www.moneysplit.in`, fix
-the host redirect before testing the TWA. This project is configured for the
-apex host `https://moneysplit.in`; Digital Asset Links and TWA verification are
-origin-specific.
+If `https://moneysplit.in` redirects to `https://www.moneysplit.in`, keep the
+TWA configured for `https://www.moneysplit.in`. Digital Asset Links and TWA
+verification are origin-specific.
 
 ## 12. Build An APK
 
@@ -366,7 +364,7 @@ Prepare:
 - 512x512 application icon
 - 1024x500 feature graphic
 - Phone screenshots
-- Privacy-policy URL, for example `https://moneysplit.in/privacy-policy`
+- Privacy-policy URL, for example `https://www.moneysplit.in/privacy-policy`
 - Data Safety form
 - Content rating questionnaire
 - Target audience declaration
@@ -382,7 +380,7 @@ Prepare:
 
 Address bar still appears:
 
-- Confirm `assetlinks.json` is deployed on `https://moneysplit.in`.
+- Confirm `assetlinks.json` is deployed on `https://www.moneysplit.in`.
 - Confirm the package name is `in.moneysplit.app`.
 - Confirm the SHA-256 is the Play App Signing SHA-256, not only the upload key.
 - Confirm the app was installed from a build signed with the matching certificate
@@ -391,7 +389,7 @@ Address bar still appears:
 
 Blank or offline screen:
 
-- Confirm `https://moneysplit.in` is reachable from the device.
+- Confirm `https://www.moneysplit.in` is reachable from the device.
 - Confirm `/manifest.webmanifest`, `/sw.js`, and `/offline` build correctly.
 - Check Android Studio Logcat and Chrome remote debugging.
 

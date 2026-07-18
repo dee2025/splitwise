@@ -2,7 +2,7 @@ export const metadata = {
   title: "Terms of Service | Money Split",
   description:
     "Read terms and conditions for using Money Split, including acceptable use, service scope, and liability terms.",
-  alternates: { canonical: "https://moneysplit.in/terms-of-service" },
+  alternates: { canonical: "https://www.moneysplit.in/terms-of-service" },
 };
 
 export default function TermsOfServicePage() {
