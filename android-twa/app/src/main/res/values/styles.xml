@@ -1,0 +1,13 @@
+<resources>
+    <style name="Theme.MoneySplit" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/theme_color</item>
+        <item name="android:navigationBarColor">@color/navigation_bar_color</item>
+    </style>
+
+    <style name="Theme.MoneySplit.Launcher" parent="Theme.MoneySplit">
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+</resources>

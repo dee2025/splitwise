@@ -5,7 +5,7 @@ export const metadata = {
   description: "Discover all the powerful features in Money Split. Smart groups, auto-split, expense history, activity reports, and more.",
   keywords: "expense splitter features, bill splitting app, group expense tracker, money management features",
   alternates: {
-    canonical: "https://www.moneysplit.in/features",
+    canonical: "https://moneysplit.in/features",
   },
 };
 

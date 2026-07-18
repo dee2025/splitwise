@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">MoneySplit</string>
+    <string name="short_name">Money Split</string>
+    <string name="launch_url">https://moneysplit.in</string>
+    <string name="web_manifest_url">https://moneysplit.in/manifest.webmanifest</string>
+    <string name="file_provider_authority">in.moneysplit.app.fileprovider</string>
+    <string name="asset_statements">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://moneysplit.in\"}}]</string>
+</resources>

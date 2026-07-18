@@ -3,7 +3,7 @@ import { seoPageList } from "@/data/seoPages";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = "https://www.moneysplit.in";
+const SITE_URL = "https://moneysplit.in";
 
 const staticRoutes = [
   { path: "", priority: 1, changeFrequency: "weekly" },

@@ -2,7 +2,7 @@ export const metadata = {
   title: "Privacy Policy | Money Split",
   description:
     "Read the Money Split privacy policy to understand what data we collect, how we use it, and how we protect user information.",
-  alternates: { canonical: "https://www.moneysplit.in/privacy-policy" },
+  alternates: { canonical: "https://moneysplit.in/privacy-policy" },
 };
 
 export default function PrivacyPolicyPage() {

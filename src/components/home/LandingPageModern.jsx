@@ -396,7 +396,7 @@ export default function LandingPage({ articles = [], faqs = [] }) {
             "@type": "SoftwareApplication",
             "name": "Money Split",
             "description": "Easy expense splitter and bill tracker app for groups, trips, and roommates",
-            "url": "https://www.moneysplit.in",
+            "url": "https://moneysplit.in",
             "applicationCategory": "FinanceApplication",
             "offers": {
               "@type": "Offer",

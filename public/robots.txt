@@ -8,4 +8,4 @@ Disallow: /expenses/
 Disallow: /notifications/
 Disallow: /profile/
 
-Sitemap: https://www.moneysplit.in/sitemap.xml
+Sitemap: https://moneysplit.in/sitemap.xml

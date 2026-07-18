@@ -41,3 +41,14 @@ yarn-error.log*
 next-env.d.ts
 
 server.txt
+
+# Android TWA signing and generated build output
+android-twa/.gradle/
+android-twa/.idea/
+android-twa/**/build/
+android-twa/gradle/gradle-daemon-jvm.properties
+android-twa/*.jks
+android-twa/*.keystore
+android-twa/keystore.properties
+android-twa/local.properties
+android-twa/captures/

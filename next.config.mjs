@@ -36,10 +36,10 @@ const nextConfig = {
         has: [
           {
             type: "host",
-            value: "moneysplit.in",
+            value: "www.moneysplit.in",
           },
         ],
-        destination: "https://www.moneysplit.in/:path*",
+        destination: "https://moneysplit.in/:path*",
         permanent: true,
       },
       {

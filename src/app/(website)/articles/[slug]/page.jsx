@@ -107,20 +107,20 @@ export async function generateMetadata({ params }) {
   const description = article.seoDescription || article.excerpt;
   const image = article.thumbnail?.startsWith("http")
     ? article.thumbnail
-    : `https://www.moneysplit.in${article.thumbnail}`;
+    : `https://moneysplit.in${article.thumbnail}`;
 
   return {
     title,
     description,
     keywords: article.keywords,
     alternates: {
-      canonical: `https://www.moneysplit.in/articles/${slug}`,
+      canonical: `https://moneysplit.in/articles/${slug}`,
     },
     openGraph: {
       title: article.title,
       description,
       type: "article",
-      url: `https://www.moneysplit.in/articles/${slug}`,
+      url: `https://moneysplit.in/articles/${slug}`,
       images: [
         {
           url: image,

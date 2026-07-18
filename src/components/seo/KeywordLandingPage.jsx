@@ -2,7 +2,7 @@ import { ArrowRight, CheckCircle, Receipt, Users } from "lucide-react";
 import Link from "next/link";
 
 function pageJsonLd(page) {
-  const url = `https://www.moneysplit.in/${page.slug}`;
+  const url = `https://moneysplit.in/${page.slug}`;
 
   return {
     "@context": "https://schema.org",
@@ -14,7 +14,7 @@ function pageJsonLd(page) {
         name: page.title,
         description: page.description,
         isPartOf: {
-          "@id": "https://www.moneysplit.in/#website",
+          "@id": "https://moneysplit.in/#website",
         },
         inLanguage: "en-IN",
         breadcrumb: {
@@ -27,7 +27,7 @@ function pageJsonLd(page) {
         name: "Money Split",
         applicationCategory: "FinanceApplication",
         operatingSystem: "Web",
-        url: "https://www.moneysplit.in",
+        url: "https://moneysplit.in",
         description: page.description,
         isAccessibleForFree: true,
         offers: {
@@ -57,7 +57,7 @@ function pageJsonLd(page) {
             "@type": "ListItem",
             position: 1,
             name: "Home",
-            item: "https://www.moneysplit.in",
+            item: "https://moneysplit.in",
           },
           {
             "@type": "ListItem",
@@ -72,7 +72,7 @@ function pageJsonLd(page) {
 }
 
 export function keywordPageMetadata(page) {
-  const url = `https://www.moneysplit.in/${page.slug}`;
+  const url = `https://moneysplit.in/${page.slug}`;
 
   return {
     title: `${page.title} | Money Split`,
@@ -88,7 +88,7 @@ export function keywordPageMetadata(page) {
       type: "website",
       images: [
         {
-          url: "https://www.moneysplit.in/dashboard.png",
+          url: "https://moneysplit.in/dashboard.png",
           width: 1894,
           height: 925,
           alt: "Money Split group expense dashboard",
@@ -99,7 +99,7 @@ export function keywordPageMetadata(page) {
       card: "summary_large_image",
       title: page.title,
       description: page.description,
-      images: ["https://www.moneysplit.in/dashboard.png"],
+      images: ["https://moneysplit.in/dashboard.png"],
     },
   };
 }

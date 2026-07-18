@@ -1,0 +1,3 @@
+<resources>
+    <integer name="splash_screen_fade_out_duration">300</integer>
+</resources>

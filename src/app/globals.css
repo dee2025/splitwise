@@ -22,6 +22,22 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Legacy sketch utilities — kept for non-dashboard pages */
 @layer utilities {
   .shadow-sketch {
@@ -41,6 +57,13 @@ body {
   }
   .pb-safe {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .px-safe {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
   }
 }
 

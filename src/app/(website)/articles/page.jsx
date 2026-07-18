@@ -10,7 +10,7 @@ export const metadata = {
   description: 'Learn how to manage expenses with friends, plan trips, and split bills effectively. Professional guides and tips for better financial management.',
   keywords: 'expense sharing, split bills, trip planning, friends expenses, financial management, money split guides',
   alternates: {
-    canonical: 'https://www.moneysplit.in/articles',
+    canonical: "https://moneysplit.in/articles",
   },
 };
 

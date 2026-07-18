@@ -2,7 +2,7 @@ export const metadata = {
   title: "About Money Split | Group Expense Splitter",
   description:
     "Learn about Money Split, a simple and reliable platform to split bills and manage shared expenses with friends, roommates, and travel groups.",
-  alternates: { canonical: "https://www.moneysplit.in/about" },
+  alternates: { canonical: "https://moneysplit.in/about" },
 };
 
 export default function AboutPage() {

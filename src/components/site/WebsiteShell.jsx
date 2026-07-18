@@ -12,6 +12,7 @@ const PANEL_PREFIXES = [
   "/notifications",
   "/profile",
   "/admin",
+  "/offline",
 ];
 
 export default function WebsiteShell({ children }) {

@@ -21,7 +21,7 @@ export const metadata = {
     "money split app",
   ],
   alternates: {
-    canonical: "https://www.moneysplit.in",
+    canonical: "https://moneysplit.in",
   },
 };
 
