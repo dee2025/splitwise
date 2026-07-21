@@ -6,7 +6,7 @@ export default function manifest() {
     short_name: "Money Split",
     description:
       "Split bills with friends, roommates, and travel groups without drama.",
-    start_url: "/",
+    start_url: "/app",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

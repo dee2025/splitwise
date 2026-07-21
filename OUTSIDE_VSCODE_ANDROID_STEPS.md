@@ -176,13 +176,15 @@ Edit:
 public/.well-known/assetlinks.json
 ```
 
-Replace:
+For local debug APK testing, `assetlinks.json` can include the debug certificate
+SHA-256. The current debug APK uses:
 
 ```text
-REPLACE_WITH_PLAY_APP_SIGNING_SHA256
+AD:86:6C:D4:E1:29:DB:6C:0C:6D:F0:38:06:D3:3B:46:EA:7C:B0:3B:36:AB:CC:68:B1:B8:21:46:EF:61:9F:75
 ```
 
-with the Play App Signing SHA-256 fingerprint, then redeploy the website.
+For Play Store production, add the Play App Signing SHA-256 fingerprint to the
+same `sha256_cert_fingerprints` array, then redeploy the website.
 
 Verify:
 
@@ -201,6 +203,14 @@ adb shell am start -a android.intent.action.VIEW -d https://www.moneysplit.in
 
 The app should open full-screen without a browser address bar after Digital
 Asset Links verification succeeds.
+
+If the browser-style top bar still appears after deploying `assetlinks.json`,
+force a fresh verification:
+
+```powershell
+adb shell pm verify-app-links --re-verify in.moneysplit.app
+adb shell pm get-app-links in.moneysplit.app
+```
 
 ## 11. Play Store Items To Prepare
 

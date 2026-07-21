@@ -18,6 +18,10 @@ export function proxy(request) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("token")?.value;
 
+  if (pathname === "/app") {
+    return NextResponse.redirect(new URL(token ? "/home" : "/login", request.url));
+  }
+
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route),
   );
@@ -45,6 +49,7 @@ export function proxy(request) {
 
 export const config = {
   matcher: [
+    "/app",
     "/dashboard/:path*",
     "/home/:path*",
     "/groups/:path*",

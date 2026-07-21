@@ -137,7 +137,7 @@ Use these values when prompted:
 - Package ID: `in.moneysplit.app`
 - App name: `MoneySplit`
 - Short name: `Money Split`
-- Start URL: `https://www.moneysplit.in`
+- Start URL: `https://www.moneysplit.in/app`
 - Theme color: `#000000`
 - Display mode: `standalone`
 
@@ -202,10 +202,16 @@ Important: the Play App Signing fingerprint can differ from your local upload
 key fingerprint. Use the Play App Signing SHA-256 for production
 `assetlinks.json`.
 
-For local debug testing, get the debug or upload-key fingerprint with:
+For local debug testing, get the debug fingerprint with:
 
 ```powershell
-keytool -list -v -keystore release-upload-key.jks -alias moneysplit-upload
+keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+```
+
+The checked-in debug APK currently uses this debug SHA-256 fingerprint:
+
+```text
+AD:86:6C:D4:E1:29:DB:6C:0C:6D:F0:38:06:D3:3B:46:EA:7C:B0:3B:36:AB:CC:68:B1:B8:21:46:EF:61:9F:75
 ```
 
 ## 10. Update assetlinks.json
@@ -216,13 +222,9 @@ Edit:
 public/.well-known/assetlinks.json
 ```
 
-Replace:
-
-```text
-REPLACE_WITH_PLAY_APP_SIGNING_SHA256
-```
-
-with the Play App Signing SHA-256 fingerprint.
+For local debug testing, the file may include the debug SHA-256 fingerprint.
+For Play Store production, add the Play App Signing SHA-256 fingerprint to the
+same `sha256_cert_fingerprints` array before release.
 
 The structure must stay:
 
@@ -382,7 +384,9 @@ Address bar still appears:
 
 - Confirm `assetlinks.json` is deployed on `https://www.moneysplit.in`.
 - Confirm the package name is `in.moneysplit.app`.
-- Confirm the SHA-256 is the Play App Signing SHA-256, not only the upload key.
+- For debug APK testing, confirm the SHA-256 is the debug certificate SHA-256.
+- For Play Store testing, confirm the SHA-256 is the Play App Signing SHA-256,
+  not only the upload key.
 - Confirm the app was installed from a build signed with the matching certificate
   for the asset link being tested.
 - Confirm the website does not redirect to an unverified host.
