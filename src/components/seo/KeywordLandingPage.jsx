@@ -88,10 +88,10 @@ export function keywordPageMetadata(page) {
       type: "website",
       images: [
         {
-          url: "https://www.moneysplit.in/dashboard.png",
-          width: 1894,
-          height: 925,
-          alt: "Money Split group expense dashboard",
+          url: "https://www.moneysplit.in/logo.png",
+          width: 1024,
+          height: 1024,
+          alt: "MoneySplit logo",
         },
       ],
     },
@@ -99,7 +99,7 @@ export function keywordPageMetadata(page) {
       card: "summary_large_image",
       title: page.title,
       description: page.description,
-      images: ["https://www.moneysplit.in/dashboard.png"],
+      images: ["https://www.moneysplit.in/logo.png"],
     },
   };
 }

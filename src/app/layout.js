@@ -76,10 +76,10 @@ export const metadata = {
     description: "Split expenses with friends instantly. Track shared bills, groups, and members.",
     images: [
       {
-        url: `${SITE_URL}/dashboard.png`,
-        width: 1894,
-        height: 925,
-        alt: "Money Split - Expense Splitting App",
+        url: `${SITE_URL}/logo.png`,
+        width: 1024,
+        height: 1024,
+        alt: "MoneySplit logo",
       },
     ],
   },
@@ -87,7 +87,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Money Split - Easy Bill Splitting App",
     description: "Split expenses with friends instantly. No math, no drama.",
-    images: [`${SITE_URL}/dashboard.png`],
+    images: [`${SITE_URL}/logo.png`],
   },
   robots: {
     index: true,
@@ -188,4 +188,3 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-
