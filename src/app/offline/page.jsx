@@ -13,14 +13,14 @@ export default function OfflinePage() {
   return (
     <main className="min-h-dvh bg-slate-950 px-6 py-10 text-slate-100 dark:bg-slate-950">
       <section className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-md flex-col items-center justify-center text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-lg bg-indigo-600 shadow-xl shadow-indigo-950/40">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl shadow-xl shadow-indigo-950/40">
           <Image
-            src="/logo.svg"
+            src="/logo.png"
             alt="MoneySplit"
             width={64}
             height={64}
             priority
-            className="h-16 w-16"
+            className="h-20 w-20 rounded-2xl"
           />
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-white">

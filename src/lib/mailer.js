@@ -14,6 +14,7 @@ const transporter = nodemailer.createTransport({
 // ── Welcome Email ─────────────────────────────────────────────────────────────
 export async function sendWelcomeEmail({ to, fullName, username }) {
   const firstName = fullName?.split(" ")[0] || "there";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.moneysplit.in";
 
   const html = `
 <!DOCTYPE html>
@@ -34,8 +35,8 @@ export async function sendWelcomeEmail({ to, fullName, username }) {
             <td align="center" style="padding-bottom: 32px;">
               <table cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:#4f46e5; border-radius:10px; width:36px; height:36px; text-align:center; vertical-align:middle;">
-                    <span style="color:#fff; font-weight:700; font-size:16px; line-height:36px; display:block;">M</span>
+                  <td style="width:42px; height:42px; text-align:center; vertical-align:middle;">
+                    <img src="${appUrl}/logo.png" width="42" height="42" alt="MoneySplit" style="display:block; width:42px; height:42px; border-radius:10px;" />
                   </td>
                   <td style="padding-left:10px;">
                     <span style="color:#f1f5f9; font-size:20px; font-weight:700; letter-spacing:-0.5px;">Money<span style="color:#818cf8;">Split</span></span>
@@ -105,7 +106,7 @@ export async function sendWelcomeEmail({ to, fullName, username }) {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://www.moneysplit.in"}/dashboard"
+                    <a href="${appUrl}/dashboard"
                        style="display:inline-block; background:#4f46e5; color:#ffffff; font-size:15px; font-weight:600; padding:14px 36px; border-radius:12px; text-decoration:none; letter-spacing:0.01em; box-shadow: 0 4px 20px rgba(79,70,229,0.4);">
                       Go to Dashboard →
                     </a>
@@ -146,7 +147,7 @@ export async function sendWelcomeEmail({ to, fullName, username }) {
     to,
     subject: `Welcome to Money Split, ${firstName}! 🎉`,
     html,
-    text: `Welcome to Money Split, ${firstName}!\n\nYour account has been created successfully.\nUsername: @${username}\n\nGet started: ${process.env.NEXT_PUBLIC_APP_URL || "https://www.moneysplit.in"}/dashboard\n\n© ${new Date().getFullYear()} Money Split`,
+    text: `Welcome to Money Split, ${firstName}!\n\nYour account has been created successfully.\nUsername: @${username}\n\nGet started: ${appUrl}/dashboard\n\n© ${new Date().getFullYear()} Money Split`,
   });
 }
 

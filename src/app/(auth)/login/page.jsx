@@ -13,6 +13,7 @@ import {
   Mail,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -239,9 +240,14 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="MoneySplit"
+                width={36}
+                height={36}
+                className="h-9 w-9 shrink-0 rounded-lg"
+                priority
+              />
               <span className="text-lg font-bold text-slate-100 tracking-tight">
                 Money<span className="text-indigo-400">Split</span>
               </span>

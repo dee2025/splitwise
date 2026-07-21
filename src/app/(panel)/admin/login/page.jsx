@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, LockKeyhole, Shield } from "lucide-react";
+import { Loader2, LockKeyhole } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -65,9 +66,14 @@ export default function AdminLoginPage() {
     <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-5">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="MoneySplit"
+            width={56}
+            height={56}
+            className="mx-auto mb-4 h-14 w-14 rounded-2xl"
+            priority
+          />
           <h1 className="text-2xl font-bold tracking-tight">Admin Login</h1>
           <p className="mt-2 text-sm text-slate-500">
             Sign in to manage users and publish articles.

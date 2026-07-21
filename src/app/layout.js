@@ -126,7 +126,7 @@ export default function RootLayout({ children }) {
         url: SITE_URL,
         logo: {
           "@type": "ImageObject",
-          url: `${SITE_URL}/logo.svg`,
+          url: `${SITE_URL}/logo.png`,
         },
         description: "Split bills with friends, roommates, and travel groups without drama",
         contactPoint: {

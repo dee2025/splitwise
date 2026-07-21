@@ -5,6 +5,7 @@ const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [
   OFFLINE_URL,
   "/logo.svg",
+  "/logo.png",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
   "/icons/icon-maskable-512x512.png",
@@ -34,6 +35,7 @@ const SAFE_STATIC_PREFIXES = [
 
 const SAFE_STATIC_FILES = new Set([
   "/logo.svg",
+  "/logo.png",
   "/favicon.ico",
   "/dashboard.png",
   "/robots.txt",

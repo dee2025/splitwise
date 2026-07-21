@@ -3,6 +3,7 @@
 import { logout } from "@/redux/slices/authSlice";
 import axios from "axios";
 import { Bell, ChevronDown, LogOut, Settings } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -39,11 +40,16 @@ export default function Navbar() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Logo */}
         <Link href="/groups" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">S</span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="MoneySplit"
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0 rounded-lg"
+            priority
+          />
           <span className="text-base font-bold tracking-tight text-slate-100">
-            Split<span className="text-indigo-400">Wise</span>
+            Money<span className="text-indigo-400">Split</span>
           </span>
         </Link>
 

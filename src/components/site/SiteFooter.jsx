@@ -1,4 +1,5 @@
 import { CheckCircle, Mail, Phone } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function SiteFooter() {
@@ -8,9 +9,13 @@ export default function SiteFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           <div>
             <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-indigo-950/60">
-                <span className="text-white font-bold text-xs">M</span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="MoneySplit"
+                width={36}
+                height={36}
+                className="h-9 w-9 shrink-0 rounded-lg shadow-lg shadow-indigo-950/60"
+              />
               <span className="text-base font-bold text-slate-100 tracking-tight">
                 Money<span className="text-indigo-400">Split</span>
               </span>

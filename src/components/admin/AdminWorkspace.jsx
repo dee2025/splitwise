@@ -1,6 +1,7 @@
 "use client";
 
 import { slugify } from "@/lib/articleUtils";
+import Image from "next/image";
 import {
   Activity,
   Ban,
@@ -506,9 +507,14 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-white/8 bg-slate-950">
         <div className="px-5 py-5 border-b border-white/8">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="MoneySplit"
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 rounded-xl"
+              priority
+            />
             <div>
               <p className="text-sm font-bold">Money Split</p>
               <p className="text-xs text-slate-500">Admin panel</p>

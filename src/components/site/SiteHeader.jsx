@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Menu, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -20,9 +21,14 @@ export default function SiteHeader() {
     <header className="sticky top-0 inset-x-0 z-50 px-5 sm:px-8 py-4 bg-slate-950/85 backdrop-blur-md border-b border-white/6">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">M</span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="MoneySplit"
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0 rounded-lg"
+            priority
+          />
           <span className="text-base font-bold text-slate-100 tracking-tight">
             Money<span className="text-indigo-400">Split</span>
           </span>
