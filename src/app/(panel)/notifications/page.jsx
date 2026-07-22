@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 const TYPE_CONFIG = {
   expense_added: {
@@ -65,6 +66,7 @@ function formatTime(dateString) {
 }
 
 export default function NotificationsPage() {
+  const { checked, isAuthenticated, loading: authLoading } = useSelector((state) => state.auth);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(new Set());
@@ -72,8 +74,10 @@ export default function NotificationsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
 
   useEffect(() => {
+    if (!checked || authLoading || !isAuthenticated) return;
+
     fetchNotifications();
-  }, []);
+  }, [authLoading, checked, isAuthenticated]);
 
   const fetchNotifications = async () => {
     try {

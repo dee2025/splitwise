@@ -13,17 +13,17 @@ import StatsCards from "@/components/dashboard/StatsCards";
 import CreateGroupForm from "@/components/dashboard/groups/CreateGroupForm";
 
 export default function Dashboard() {
-  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, user, loading } = useSelector((state) => state.auth);
   const router = useRouter();
 
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsKey, setGroupsKey] = useState(0);
 
   useEffect(() => {
-    if (!isAuthenticated && !loading) router.push("/login");
-  }, [isAuthenticated, loading, router]);
+    if (checked && !isAuthenticated && !loading) router.replace("/login");
+  }, [checked, isAuthenticated, loading, router]);
 
-  if (!isAuthenticated) {
+  if (!checked || loading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />

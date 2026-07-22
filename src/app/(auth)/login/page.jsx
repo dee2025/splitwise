@@ -40,7 +40,7 @@ function getRedirectFromLocation() {
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, loading: authLoading } = useSelector((state) => state.auth);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -61,8 +61,8 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) router.push(redirectPath);
-  }, [isAuthenticated, redirectPath, router]);
+    if (checked && !authLoading && isAuthenticated) router.replace(redirectPath);
+  }, [authLoading, checked, isAuthenticated, redirectPath, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -224,7 +224,7 @@ export default function LoginPage() {
     }
   }, [googleClientId, initGoogleButton]);
 
-  if (isAuthenticated) {
+  if (!checked || authLoading || isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="w-5 h-5 animate-spin text-indigo-700" />

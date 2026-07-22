@@ -1,15 +1,31 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import BottomNav from "./dashboard/BottomNav";
 import Sidebar from "./dashboard/Sidebar";
 
 export default function DashboardLayout({ children }) {
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, loading } = useSelector((state) => state.auth);
   const pathname = usePathname();
+  const router = useRouter();
 
-  if (!isAuthenticated) return null;
+  useEffect(() => {
+    if (!checked || loading || isAuthenticated) return;
+
+    const loginPath = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
+    router.replace(loginPath);
+  }, [checked, isAuthenticated, loading, pathname, router]);
+
+  if (!checked || loading || !isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
+      </div>
+    );
+  }
 
   const contentWidth = pathname?.startsWith("/admin") ? "max-w-7xl" : "max-w-5xl";
 

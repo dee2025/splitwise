@@ -62,7 +62,7 @@ function isGroupAdmin(group, user) {
 }
 
 export default function GroupsPage() {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, loading: authLoading, user } = useSelector((state) => state.auth);
   const router = useRouter();
 
   const [groups, setGroups] = useState([]);
@@ -75,8 +75,12 @@ export default function GroupsPage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
+    if (!checked || authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
 
@@ -98,7 +102,7 @@ export default function GroupsPage() {
     };
 
     fetchGroups();
-  }, [isAuthenticated, router]);
+  }, [authLoading, checked, isAuthenticated, router]);
 
   const filteredGroups = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -204,7 +208,7 @@ export default function GroupsPage() {
     setActiveFilter("all");
   };
 
-  if (!isAuthenticated) {
+  if (!checked || authLoading || !isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
         <motion.div

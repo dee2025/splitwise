@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { loginSuccess, logout, setLoading } from '@/redux/slices/authSlice';
+import { loginSuccess, logout, setChecked, setLoading } from '@/redux/slices/authSlice';
 import { usePathname } from 'next/navigation';
 import axios from 'axios';
 
@@ -26,6 +26,7 @@ export function useAuthCheck() {
 
     if (!shouldCheckAuth) {
       dispatch(setLoading(false));
+      dispatch(setChecked(true));
       return;
     }
 
@@ -43,6 +44,7 @@ export function useAuthCheck() {
         console.error('Auth check failed:', error);
         dispatch(logout());
       } finally {
+        dispatch(setChecked(true));
         dispatch(setLoading(false));
       }
     };

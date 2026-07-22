@@ -15,6 +15,7 @@ const authSlice = createSlice({
       emailVerified: true,
     },
     loading: false,
+    checked: false,
     error: null,
   },
   reducers: {
@@ -24,6 +25,7 @@ const authSlice = createSlice({
     },
     loginSuccess(state, action) {
       state.loading = false;
+      state.checked = true;
       state.isAuthenticated = true;
       state.user = {
         id: action.payload.user?.id || "",
@@ -39,6 +41,7 @@ const authSlice = createSlice({
     },
     loginFailure(state, action) {
       state.loading = false;
+      state.checked = true;
       state.isAuthenticated = false;
       state.user = {
         fullName: "",
@@ -63,6 +66,7 @@ const authSlice = createSlice({
         emailVerified: true,
       };
       state.loading = false;
+      state.checked = true;
       state.error = null;
     },
     updateUser(state, action) {
@@ -73,6 +77,9 @@ const authSlice = createSlice({
     },
     setLoading(state, action) {
       state.loading = action.payload;
+    },
+    setChecked(state, action) {
+      state.checked = action.payload;
     },
   },
 });
@@ -85,6 +92,7 @@ export const {
   updateUser,
   clearError,
   setLoading,
+  setChecked,
 } = authSlice.actions;
 
 export default authSlice.reducer;

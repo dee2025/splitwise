@@ -458,7 +458,7 @@ function ExpenseFilterModal({
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ExpensesPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, loading: authLoading, user } = useSelector((state) => state.auth);
 
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -470,12 +470,16 @@ export default function ExpensesPage() {
   const [selectedExpense, setSelectedExpense] = useState(null);
 
   useEffect(() => {
+    if (!checked || authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
     fetchExpenses();
-  }, [isAuthenticated]);
+  }, [authLoading, checked, isAuthenticated, router]);
 
   const fetchExpenses = async () => {
     try {
@@ -558,7 +562,7 @@ export default function ExpensesPage() {
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  if (!isAuthenticated) {
+  if (!checked || authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />

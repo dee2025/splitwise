@@ -121,13 +121,15 @@ function BalanceMetric({ label, value, detail, tone, icon: Icon }) {
 
 export default function HomePage() {
   const router = useRouter();
-  const { user } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, loading: authLoading, user } = useSelector((state) => state.auth);
   const [groups, setGroups] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!checked || authLoading || !isAuthenticated) return;
+
     let mounted = true;
 
     Promise.all([
@@ -149,7 +151,7 @@ export default function HomePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [authLoading, checked, isAuthenticated]);
 
   const userId = getId(user);
   const displayName = profile?.fullName || user?.fullName || "User";

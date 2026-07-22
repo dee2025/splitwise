@@ -321,7 +321,7 @@ async function loadImageToDataUrl(src) {
 export default function GroupPage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { checked, isAuthenticated, loading: authLoading, user } = useSelector((state) => state.auth);
 
   const [group, setGroup] = useState(null);
   const [expenses, setExpenses] = useState([]);
@@ -355,12 +355,16 @@ export default function GroupPage() {
   }, [currentUserId, group?.members]);
 
   useEffect(() => {
+    if (!checked || authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
     fetchGroupData();
-  }, [groupId, isAuthenticated, router]);
+  }, [authLoading, checked, groupId, isAuthenticated, router]);
 
   const fetchGroupData = async () => {
     try {
