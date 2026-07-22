@@ -35,7 +35,7 @@ function getFirstName(fullName) {
   return String(fullName || "there").trim().split(/\s+/)[0] || "there";
 }
 
-function brandHeader(appUrl) {
+function brandHeader(appUrl) {     
   return `
     <tr>
       <td align="center" style="padding-bottom: 28px;">
