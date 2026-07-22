@@ -73,6 +73,19 @@ export async function POST(req) {
       );
     }
 
+    if (user.emailVerified === false) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "EMAIL_NOT_VERIFIED",
+          error: "Please verify your email before signing in",
+          errors: { email: "Check your inbox for the MoneySplit verification email" },
+          email: user.email,
+        },
+        { status: 403 }
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(

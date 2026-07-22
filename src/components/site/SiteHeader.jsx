@@ -18,8 +18,8 @@ export default function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 inset-x-0 z-50 px-5 sm:px-8 py-4 bg-slate-950/85 backdrop-blur-md border-b border-white/6">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <header className="sticky inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/90 px-5 py-4 backdrop-blur-md sm:px-8">
+      <div className="mx-auto flex max-w-6xl items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/logo.png"
@@ -29,8 +29,8 @@ export default function SiteHeader() {
             className="h-8 w-8 shrink-0 rounded-lg"
             priority
           />
-          <span className="text-base font-bold text-slate-100 tracking-tight">
-            Money<span className="text-indigo-400">Split</span>
+          <span className="text-base font-bold tracking-tight text-slate-950">
+            Money<span className="text-indigo-700">Split</span>
           </span>
         </Link>
 
@@ -40,7 +40,7 @@ export default function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-slate-400 hover:text-slate-100 font-medium transition-colors"
+              className="text-sm font-semibold text-slate-600 transition-colors hover:text-slate-950"
             >
               {link.label}
             </Link>
@@ -52,13 +52,13 @@ export default function SiteHeader() {
           <div className="hidden sm:flex items-center gap-3">
             <Link
               href="/login"
-              className="text-sm text-slate-400 hover:text-slate-100 font-medium transition-colors"
+              className="text-sm font-semibold text-slate-600 transition-colors hover:text-slate-950"
             >
               Sign in
             </Link>
             <Link
               href="/signup"
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-950/60"
+              className="flex items-center gap-1.5 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] transition-colors hover:bg-indigo-700"
             >
               Get started
               <ArrowRight className="w-3.5 h-3.5" />
@@ -67,7 +67,7 @@ export default function SiteHeader() {
 
           {/* Mobile Menu Button */}
           <button
-            className="sm:hidden p-1.5 text-slate-400 hover:text-slate-100 transition-colors"
+            className="rounded-lg p-1.5 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 sm:hidden"
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation"
           >
@@ -78,28 +78,28 @@ export default function SiteHeader() {
 
       {/* Mobile Navigation */}
       {menuOpen && (
-        <div className="sm:hidden mt-3 pb-4 border-t border-white/6 pt-4 flex flex-col gap-3 max-w-6xl mx-auto">
+        <div className="mx-auto mt-3 flex max-w-6xl flex-col gap-3 border-t border-slate-200 pt-4 pb-4 sm:hidden">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-slate-400 hover:text-slate-100 font-medium py-2"
+              className="py-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <div className="pt-2 flex flex-col gap-2 border-t border-white/6">
+          <div className="flex flex-col gap-2 border-t border-slate-200 pt-2">
             <Link
               href="/login"
-              className="text-sm text-slate-400 font-medium py-1"
+              className="py-1 text-sm font-semibold text-slate-600"
               onClick={() => setMenuOpen(false)}
             >
               Sign in
             </Link>
             <Link
               href="/signup"
-              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 py-3 text-sm font-bold text-white transition-colors hover:bg-indigo-700"
               onClick={() => setMenuOpen(false)}
             >
               Get started free

@@ -1,8 +1,6 @@
 import { requireAdmin } from "@/lib/adminAuth";
+import { deleteUserAccountData } from "@/lib/accountDeletion";
 import { connectDB } from "@/lib/db";
-import Activity from "@/models/Activity";
-import Group from "@/models/Group";
-import Notification from "@/models/Notification";
 import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
@@ -87,17 +85,7 @@ export async function DELETE(req) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const objectId = new mongoose.Types.ObjectId(userId);
-
-    await Promise.all([
-      Notification.deleteMany({ userId: objectId }),
-      Activity.deleteMany({ userId: objectId }),
-      Group.updateMany(
-        { "members.userId": objectId },
-        { $pull: { members: { userId: objectId } } }
-      ),
-      User.deleteOne({ _id: objectId }),
-    ]);
+    await deleteUserAccountData(user._id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

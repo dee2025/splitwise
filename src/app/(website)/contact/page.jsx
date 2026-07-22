@@ -1,3 +1,6 @@
+import { InfoCard, InfoGrid, InfoPageShell } from "@/components/site/InfoPageShell";
+import ContactForm from "./ContactForm";
+
 export const metadata = {
   title: "Contact Money Split",
   description:
@@ -7,45 +10,32 @@ export const metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-4 py-12 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Contact Us</h1>
-        <p className="text-slate-300 leading-7">
-          For support, business queries, feedback, or legal communication, reach us
-          through the details below.
+    <InfoPageShell
+      eyebrow="Support"
+      title="Contact Us"
+      description="For support, business queries, feedback, or legal communication, reach us through the details below."
+    >
+      <ContactForm />
+
+      <InfoCard title="Money Split Support">
+        <p>Email: deepaksingh@moneysplit.in</p>
+        <p className="mt-1">Phone: +91 8112260346</p>
+        <p className="mt-3 text-xs font-semibold text-slate-500">
+          Response window: Mon-Sat, 10:00 AM - 7:00 PM IST
         </p>
+      </InfoCard>
 
-        <div className="rounded-xl border border-white/10 bg-slate-800/40 p-5 space-y-3">
-          <p className="text-slate-200 font-medium">Money Split Support</p>
-          <p className="text-slate-300">Email: deepaksingh@moneysplit.in</p>
-          <p className="text-slate-300">Phone: +91 8112260346</p>
-          <p className="text-slate-400 text-sm mt-2">
-            Response window: Mon-Sat, 10:00 AM - 7:00 PM IST
-          </p>
-        </div>
-
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <article className="rounded-xl border border-white/10 bg-slate-800/40 p-4">
-            <h2 className="text-base font-semibold">Support Topics</h2>
-            <p className="text-sm text-slate-300 mt-2 leading-6">
-              Login help, account access, group questions, and report-related assistance.
-            </p>
-          </article>
-          <article className="rounded-xl border border-white/10 bg-slate-800/40 p-4">
-            <h2 className="text-base font-semibold">Partnerships</h2>
-            <p className="text-sm text-slate-300 mt-2 leading-6">
-              Reach out for integrations, campus communities, and brand partnerships.
-            </p>
-          </article>
-          <article className="rounded-xl border border-white/10 bg-slate-800/40 p-4">
-            <h2 className="text-base font-semibold">Legal & Compliance</h2>
-            <p className="text-sm text-slate-300 mt-2 leading-6">
-              For notices and policy clarifications, use the same official email and phone.
-            </p>
-          </article>
-        </section>
-      </div>
-    </main>
+      <InfoGrid>
+        <InfoCard title="Support Topics">
+          Login help, account access, group questions, and report-related assistance.
+        </InfoCard>
+        <InfoCard title="Partnerships">
+          Reach out for integrations, campus communities, and brand partnerships.
+        </InfoCard>
+        <InfoCard title="Legal & Compliance">
+          For notices and policy clarifications, use the same official email and phone.
+        </InfoCard>
+      </InfoGrid>
+    </InfoPageShell>
   );
 }
-

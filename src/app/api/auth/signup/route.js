@@ -1,11 +1,11 @@
 import { connectDB } from "@/lib/db";
+import { buildEmailVerificationUrl, createEmailVerificationToken } from "@/lib/emailVerification";
+import { sendVerificationEmail } from "@/lib/mailer";
+import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
+import { generateUniqueUsername } from "@/lib/username";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { generateToken, setTokenCookie } from "@/lib/auth";
-import { sendWelcomeEmail } from "@/lib/mailer";
-import { generateUniqueUsername } from "@/lib/username";
-import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(req) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req) {
     await connectDB();
     const body = await req.json();
 
-    const { fullName, email, password, confirmPassword } = body;
+    const { fullName, email, password } = body;
 
     const normalizedFullName = fullName?.trim() || "";
     const normalizedEmail = email?.toLowerCase().trim() || "";
@@ -59,9 +59,7 @@ export async function POST(req) {
       );
     }
 
-    // Check if email already exists
     const existingEmail = await User.findOne({ email: normalizedEmail }).select("_id");
-
     if (existingEmail) {
       return NextResponse.json(
         {
@@ -73,11 +71,9 @@ export async function POST(req) {
       );
     }
 
-    // Generate unique username
     const generatedUsername = await generateUniqueUsername(normalizedFullName);
-
-    // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 12);
+    const verification = createEmailVerificationToken();
 
     const newUser = new User({
       fullName: normalizedFullName,
@@ -86,17 +82,15 @@ export async function POST(req) {
       contact: "",
       password: hashedPassword,
       authProvider: "local",
+      emailVerified: false,
+      emailVerifiedAt: null,
+      emailVerificationTokenHash: verification.tokenHash,
+      emailVerificationExpiresAt: verification.expiresAt,
+      emailVerificationLastSentAt: new Date(),
     });
     newUser.googleId = undefined;
     await newUser.save();
 
-    // Generate JWT token
-    const token = generateToken({
-      userId: newUser._id,
-      email: newUser.email
-    });
-
-    // Remove password from response
     const userResponse = {
       id: newUser._id,
       fullName: newUser.fullName,
@@ -104,28 +98,25 @@ export async function POST(req) {
       email: newUser.email,
       contact: newUser.contact,
       avatar: newUser.avatar,
+      emailVerified: newUser.emailVerified,
       createdAt: newUser.createdAt,
     };
 
-    // Create response
-    const response = NextResponse.json({
-      success: true,
-      message: "Account created successfully!",
-      user: userResponse,
-    }, { status: 201 });
-
-    // Set HTTP-only cookie
-    setTokenCookie(response, token);
-
-    // Send welcome email in background (non-blocking — never fails the signup)
-    sendWelcomeEmail({
+    sendVerificationEmail({
       to: newUser.email,
       fullName: newUser.fullName,
-      username: newUser.username,
-    }).catch((err) => console.error("Welcome email failed:", err.message));
+      verificationUrl: buildEmailVerificationUrl(verification.token),
+    }).catch((err) => console.error("Verification email failed:", err.message));
 
-    return response;
-
+    return NextResponse.json(
+      {
+        success: true,
+        requiresEmailVerification: true,
+        message: "Account created. Please verify your email before signing in.",
+        user: userResponse,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Signup error:", error);
 
@@ -147,10 +138,13 @@ export async function POST(req) {
       );
     }
 
-    return NextResponse.json({ 
-      success: false,
-      error: "Internal server error",
-      message: "Something went wrong. Please try again later."
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+        message: "Something went wrong. Please try again later.",
+      },
+      { status: 500 },
+    );
   }
 }

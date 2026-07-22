@@ -21,6 +21,28 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
+    emailVerified: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+    emailVerificationTokenHash: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    emailVerificationExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    emailVerificationLastSentAt: {
+      type: Date,
+      default: null,
+    },
     contact: {
       type: String,
       trim: true,

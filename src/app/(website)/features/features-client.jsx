@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
   BarChart3,
   CheckCircle,
   FileText,
@@ -10,7 +11,6 @@ import {
   TrendingDown,
   Users,
   Zap,
-  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -19,8 +19,8 @@ const FEATURES = [
     icon: Users,
     title: "Smart Groups",
     desc: "Create groups for trips, roommates, or events. Everyone added in seconds with a link.",
-    accent: "text-sky-400",
-    accentBg: "bg-sky-500/10",
+    accent: "text-sky-700",
+    accentBg: "bg-sky-50 border-sky-100",
     details: [
       "Instant group creation",
       "Shareable invite links",
@@ -31,9 +31,9 @@ const FEATURES = [
   {
     icon: TrendingDown,
     title: "Auto-Split",
-    desc: "Expenses split instantly — equally or custom. Zero mental math, ever.",
-    accent: "text-violet-400",
-    accentBg: "bg-violet-500/10",
+    desc: "Expenses split instantly, equally or custom. Zero mental math, ever.",
+    accent: "text-violet-700",
+    accentBg: "bg-violet-50 border-violet-100",
     details: [
       "Equal split calculation",
       "Custom split ratios",
@@ -45,8 +45,8 @@ const FEATURES = [
     icon: BarChart3,
     title: "Balance Tracking",
     desc: "Always know who owes who. Balances update live with every new expense.",
-    accent: "text-emerald-400",
-    accentBg: "bg-emerald-500/10",
+    accent: "text-emerald-700",
+    accentBg: "bg-emerald-50 border-emerald-100",
     details: [
       "Real-time balance updates",
       "Visual balance charts",
@@ -58,8 +58,8 @@ const FEATURES = [
     icon: FileText,
     title: "Expense History",
     desc: "Review every group expense, payer, participant, and split from one clear timeline.",
-    accent: "text-indigo-400",
-    accentBg: "bg-indigo-500/10",
+    accent: "text-indigo-700",
+    accentBg: "bg-indigo-50 border-indigo-100",
     details: [
       "Date-wise activity timeline",
       "Expense detail views",
@@ -70,27 +70,27 @@ const FEATURES = [
   {
     icon: Zap,
     title: "Lightning Fast",
-    desc: "Works offline. Syncs the moment you're back. Blazing speed always.",
-    accent: "text-amber-400",
-    accentBg: "bg-amber-500/10",
+    desc: "Works smoothly on mobile and keeps expense creation focused.",
+    accent: "text-amber-700",
+    accentBg: "bg-amber-50 border-amber-100",
     details: [
       "Instant calculations",
-      "Offline functionality",
-      "Auto-sync capability",
-      "Zero lag experience",
+      "Mobile-first screens",
+      "Fast group switching",
+      "Low-friction expense entry",
     ],
   },
   {
     icon: Shield,
     title: "Private & Secure",
-    desc: "Your data is encrypted and never shared. Clear pricing, no hidden fees.",
-    accent: "text-rose-400",
-    accentBg: "bg-rose-500/10",
+    desc: "Your account and group records are handled with careful access controls.",
+    accent: "text-rose-700",
+    accentBg: "bg-rose-50 border-rose-100",
     details: [
-      "End-to-end encryption",
-      "Private data storage",
+      "Verified user accounts",
+      "Private group data",
       "No data selling",
-      "Transparent pricing",
+      "Clear deletion controls",
     ],
   },
 ];
@@ -109,88 +109,79 @@ const ADDITIONAL_FEATURES = [
   {
     icon: CheckCircle,
     title: "Expense Notifications",
-    desc: "Get notified instantly when expenses are added to your groups.",
+    desc: "Get notified when expenses are added to your groups.",
   },
+];
+
+const COMPARISON_ROWS = [
+  { feature: "Instant Group Creation", money: true, others: false },
+  { feature: "Auto-Split Calculation", money: true, others: true },
+  { feature: "Invite Links", money: true, others: false },
+  { feature: "Activity Timeline", money: true, others: false },
+  { feature: "Detailed Split Records", money: true, others: true },
+  { feature: "Account Deletion Controls", money: true, others: false },
 ];
 
 export function FeaturesPageClient() {
   return (
     <>
-      {/* Hero Section */}
-      <section className="pt-20 pb-16 px-5 sm:px-8">
-        <div className="max-w-5xl mx-auto text-center">
+      <section className="bg-slate-50 px-5 pb-16 pt-16 sm:px-8 sm:pb-20 lg:pt-20">
+        <div className="mx-auto max-w-5xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <span className="w-4 h-px bg-indigo-400" />
-              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
-                Powerful Features
+            <div className="mb-5 flex items-center justify-center gap-2">
+              <span className="h-px w-6 bg-indigo-300" />
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-700">
+                Powerful features
               </span>
             </div>
-            <h1 className="text-5xl sm:text-7xl font-bold tracking-tight leading-tight mb-6">
-              Everything you need to<br />
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                split expenses
-              </span>
+            <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-6xl">
+              Everything you need to split expenses clearly.
             </h1>
-            <p className="text-xl text-slate-400 leading-relaxed max-w-3xl mx-auto mb-10">
-              From simple bill splits to complex group trips, Money Split has all the tools you need to manage shared expenses effortlessly.
+            <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
+              From simple bill splits to complex group trips, Money Split keeps shared expenses organized,
+              searchable, and easy to settle.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Core Features Grid */}
-      <section className="py-20 px-5 sm:px-8">
-        <div className="max-w-6xl mx-auto">
+      <section className="bg-white px-5 py-20 sm:px-8">
+        <div className="mx-auto max-w-6xl">
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-3xl sm:text-4xl font-bold text-center mb-16"
+            className="mb-12 text-center text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
           >
-            Core Features
+            Core features
           </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FEATURES.map((feature, i) => {
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <motion.div
-                  key={i}
+                  key={feature.title}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="group relative bg-slate-800/50 backdrop-blur-sm border border-white/6 rounded-2xl p-8 hover:border-white/20 hover:bg-slate-800/80 transition-all duration-300"
+                  transition={{ delay: index * 0.06, duration: 0.45 }}
+                  className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.06)] transition-colors hover:border-indigo-200"
                 >
-                  {/* Background Icon */}
-                  <div className="absolute top-4 right-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Icon className="w-24 h-24" />
+                  <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-lg border ${feature.accentBg}`}>
+                    <Icon className={`h-6 w-6 ${feature.accent}`} />
                   </div>
-
-                  {/* Icon Badge */}
-                  <div className={`w-14 h-14 ${feature.accentBg} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                    <Icon className={`w-7 h-7 ${feature.accent}`} />
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="text-2xl font-bold text-slate-100 mb-3 group-hover:text-white transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-slate-400 leading-relaxed mb-6 group-hover:text-slate-300 transition-colors">
-                    {feature.desc}
-                  </p>
-
-                  {/* Feature Details */}
-                  <ul className="space-y-2">
-                    {feature.details.map((detail, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-sm text-slate-400">
-                        <CheckCircle className={`w-4 h-4 ${feature.accent}`} />
+                  <h3 className="text-xl font-bold text-slate-950">{feature.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{feature.desc}</p>
+                  <ul className="mt-5 space-y-2">
+                    {feature.details.map((detail) => (
+                      <li key={detail} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle className={`h-4 w-4 ${feature.accent}`} />
                         {detail}
                       </li>
                     ))}
@@ -202,38 +193,33 @@ export function FeaturesPageClient() {
         </div>
       </section>
 
-      {/* Additional Features */}
-      <section className="py-20 px-5 sm:px-8 border-t border-white/6">
-        <div className="max-w-6xl mx-auto">
+      <section className="border-y border-slate-200 bg-slate-50 px-5 py-20 sm:px-8">
+        <div className="mx-auto max-w-6xl">
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-3xl sm:text-4xl font-bold text-center mb-16"
+            className="mb-10 text-center text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
           >
-            More Features
+            More tools for shared clarity
           </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ADDITIONAL_FEATURES.map((feature, i) => {
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {ADDITIONAL_FEATURES.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <motion.div
-                  key={i}
+                  key={feature.title}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.08, duration: 0.5 }}
-                  className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition-all group"
+                  transition={{ delay: index * 0.06, duration: 0.45 }}
+                  className="rounded-lg border border-slate-200 bg-white p-6"
                 >
-                  <Icon className="w-8 h-8 text-indigo-400 mb-4 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-lg font-bold text-slate-100 mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    {feature.desc}
-                  </p>
+                  <Icon className="mb-4 h-7 w-7 text-indigo-700" />
+                  <h3 className="text-lg font-bold text-slate-950">{feature.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{feature.desc}</p>
                 </motion.div>
               );
             })}
@@ -241,18 +227,21 @@ export function FeaturesPageClient() {
         </div>
       </section>
 
-      {/* Comparison Section */}
-      <section className="py-20 px-5 sm:px-8 border-t border-white/6">
-        <div className="max-w-4xl mx-auto">
+      <section className="bg-white px-5 py-20 sm:px-8">
+        <div className="mx-auto max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-16"
+            className="mb-12 text-center"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Why Choose Money Split?</h2>
-            <p className="text-lg text-slate-400">Compare features and see why we&apos;re the smart choice for expense splitting.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+              Why choose Money Split?
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              Compare the core controls people need for reliable group expense tracking.
+            </p>
           </motion.div>
 
           <motion.div
@@ -260,42 +249,29 @@ export function FeaturesPageClient() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="bg-slate-800/50 backdrop-blur border border-white/6 rounded-2xl overflow-hidden"
+            className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_14px_45px_rgba(15,23,42,0.08)]"
           >
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/6">
-                    <th className="text-left px-6 py-4 font-semibold text-slate-300">Feature</th>
-                    <th className="text-center px-6 py-4 font-semibold text-indigo-400">Money Split</th>
-                    <th className="text-center px-6 py-4 font-semibold text-slate-400">Others</th>
+                <thead className="bg-slate-50">
+                  <tr className="border-b border-slate-200">
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Feature</th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-indigo-700">Money Split</th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-slate-500">Basic tools</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { feature: "Instant Group Creation", money: true, others: false },
-                    { feature: "Auto-Split Calculation", money: true, others: true },
-                    { feature: "Offline Support", money: true, others: false },
-                    { feature: "Receipt Scanning", money: true, others: false },
-                    { feature: "Advanced Analytics", money: true, others: false },
-                    { feature: "Bank-Level Security", money: true, others: true },
-                    { feature: "Multi-Currency Support", money: true, others: false },
-                    { feature: "24/7 Support", money: true, others: false },
-                  ].map((row, i) => (
-                    <tr key={i} className="border-b border-white/6 hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-slate-300">{row.feature}</td>
-                      <td className="text-center px-6 py-4">
-                        {row.money ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-400 mx-auto" />
-                        ) : (
-                          <div className="w-5 h-5 mx-auto" />
-                        )}
+                  {COMPARISON_ROWS.map((row) => (
+                    <tr key={row.feature} className="border-b border-slate-100 last:border-b-0">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">{row.feature}</td>
+                      <td className="px-6 py-4 text-center">
+                        <CheckCircle className="mx-auto h-5 w-5 text-emerald-600" />
                       </td>
-                      <td className="text-center px-6 py-4">
+                      <td className="px-6 py-4 text-center">
                         {row.others ? (
-                          <CheckCircle className="w-5 h-5 text-slate-500 mx-auto" />
+                          <CheckCircle className="mx-auto h-5 w-5 text-slate-400" />
                         ) : (
-                          <div className="w-1 h-6 bg-slate-700 mx-auto" />
+                          <span className="mx-auto block h-1 w-5 rounded-full bg-slate-300" />
                         )}
                       </td>
                     </tr>
@@ -307,35 +283,34 @@ export function FeaturesPageClient() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-5 sm:px-8 border-t border-white/6">
-        <div className="max-w-3xl mx-auto text-center">
+      <section className="bg-slate-50 px-5 py-20 sm:px-8">
+        <div className="mx-auto max-w-3xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
               Ready to split smarter?
             </h2>
-            <p className="text-lg text-slate-400 mb-10 leading-relaxed">
-              Start using Money Split today and experience the easiest way to split expenses with friends, roommates, or travel groups.
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              Start using Money Split today and keep every shared expense clear from the first bill.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 href="/signup"
-                className="group flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-950/60"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-indigo-700"
               >
-                Get Started Free
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                Get started free
+                <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/contact"
-                className="flex items-center justify-center gap-2 px-8 py-4 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-white/5 transition-all"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400 hover:bg-slate-50"
               >
-                Learn More
-                <ArrowRight className="w-4 h-4" />
+                Learn more
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </motion.div>

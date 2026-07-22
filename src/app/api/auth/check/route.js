@@ -44,6 +44,7 @@ export async function GET(req) {
         email: user.email,
         contact: user.contact,
         role: user.role || "user",
+        emailVerified: user.emailVerified !== false,
       }
     });
 

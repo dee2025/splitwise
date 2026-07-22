@@ -11,6 +11,7 @@ import {
   Loader2,
   Lock,
   Mail,
+  Send,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,8 +24,8 @@ import { useDispatch, useSelector } from "react-redux";
 const inputCls = (hasError) =>
   `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
     hasError
-      ? "bg-rose-500/10 border-rose-500/40 text-slate-100 placeholder:text-slate-500 focus:ring-rose-500"
-      : "bg-slate-700/50 border-white/8 text-slate-100 placeholder:text-slate-500 focus:ring-indigo-500"
+      ? "bg-rose-50 border-rose-300 text-slate-950 placeholder:text-slate-400 focus:ring-rose-500"
+      : "bg-white border-slate-300 text-slate-950 placeholder:text-slate-400 focus:ring-indigo-500"
   }`;
 
 function getRedirectFromLocation() {
@@ -48,6 +49,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/home");
@@ -65,6 +68,7 @@ export default function LoginPage() {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
+    if (name === "email" && unverifiedEmail) setUnverifiedEmail("");
   };
 
   const handleBlur = (e) => {
@@ -134,6 +138,9 @@ export default function LoginPage() {
       }
       toast.error("Login failed. Please try again.");
     } catch (err) {
+      if (err.response?.data?.code === "EMAIL_NOT_VERIFIED") {
+        setUnverifiedEmail(err.response.data.email || form.email.trim());
+      }
       const apiErrors = err.response?.data?.errors;
       if (apiErrors && typeof apiErrors === "object") {
         setErrors((prev) => ({ ...prev, ...apiErrors }));
@@ -142,6 +149,21 @@ export default function LoginPage() {
       toast.error(err.response?.data?.error || "Login failed");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const email = unverifiedEmail || form.email.trim();
+    if (!email) return;
+
+    setIsResending(true);
+    try {
+      const res = await axios.post("/api/auth/resend-verification", { email });
+      toast.success(res.data?.message || "Verification email sent");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Unable to resend verification email");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -204,14 +226,14 @@ export default function LoginPage() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-indigo-700" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       {googleClientId ? (
         <Script
           src="https://accounts.google.com/gsi/client"
@@ -223,7 +245,7 @@ export default function LoginPage() {
       {/* Back button */}
       <Link
         href="/"
-        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-200 transition-colors text-sm font-medium"
+        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-950 transition-colors text-sm font-medium"
       >
         <ChevronLeft className="w-4 h-4" />
         Back
@@ -236,7 +258,7 @@ export default function LoginPage() {
         className="w-full max-w-sm"
       >
         {/* Card */}
-        <div className="bg-slate-800 border border-white/8 rounded-2xl p-7 shadow-2xl">
+        <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
           {/* Header */}
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-6">
@@ -248,14 +270,14 @@ export default function LoginPage() {
                 className="h-9 w-9 shrink-0 rounded-lg"
                 priority
               />
-              <span className="text-lg font-bold text-slate-100 tracking-tight">
-                Money<span className="text-indigo-400">Split</span>
+              <span className="text-lg font-bold text-slate-950 tracking-tight">
+                Money<span className="text-indigo-700">Split</span>
               </span>
             </Link>
-            <h1 className="text-2xl font-bold text-slate-100 mb-1.5">
+            <h1 className="text-2xl font-bold text-slate-950 mb-1.5">
               Welcome back
             </h1>
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-600 text-sm">
               Sign in to your account to continue
             </p>
           </div>
@@ -276,10 +298,32 @@ export default function LoginPage() {
                 </button>
               )}
               {googleLoading && (
-                <p className="text-xs text-slate-400 text-center mt-2">
+                <p className="text-xs text-slate-500 text-center mt-2">
                   Signing in with Google...
                 </p>
               )}
+            </div>
+          ) : null}
+
+          {unverifiedEmail ? (
+            <div className="mb-4 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">
+              <p className="font-semibold">Email verification required</p>
+              <p className="mt-1 text-xs leading-5 text-amber-100/80">
+                Verify {unverifiedEmail} before signing in.
+              </p>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-300 px-3 py-2 text-xs font-bold text-slate-950 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isResending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Resend email
+              </button>
             </div>
           ) : null}
 
@@ -334,7 +378,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -359,7 +403,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-3.5 h-3.5 accent-indigo-500 rounded"
                 />
-                <span className="text-xs text-slate-400">Remember me</span>
+                <span className="text-xs text-slate-600">Remember me</span>
               </label>
               <Link
                 href="#forgot-password"
@@ -395,12 +439,12 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-3">
-            <div className="flex-1 h-px bg-white/6" />
+            <div className="flex-1 h-px bg-slate-200" />
             <span className="text-xs text-slate-500">New here?</span>
-            <div className="flex-1 h-px bg-white/6" />
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
 
-          <p className="text-center text-slate-400 text-sm">
+          <p className="text-center text-slate-600 text-sm">
             Create an account{" "}
             <Link
               href={redirectPath === "/home" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirectPath)}`}
@@ -411,18 +455,18 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
+        <p className="text-center text-xs text-slate-500 mt-6">
           By signing in, you agree to our{" "}
           <Link
             href="/terms-of-service"
-            className="hover:text-slate-400 transition-colors"
+            className="hover:text-slate-950 transition-colors"
           >
             Terms
           </Link>{" "}
           and{" "}
           <Link
             href="/privacy-policy"
-            className="hover:text-slate-400 transition-colors"
+            className="hover:text-slate-950 transition-colors"
           >
             Privacy Policy
           </Link>

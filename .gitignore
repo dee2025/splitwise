@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+*.jks
+*.keystore
 
 # debug
 npm-debug.log*
@@ -47,8 +49,6 @@ android-twa/.gradle/
 android-twa/.idea/
 android-twa/**/build/
 android-twa/gradle/gradle-daemon-jvm.properties
-android-twa/*.jks
-android-twa/*.keystore
 android-twa/keystore.properties
 android-twa/local.properties
 android-twa/captures/

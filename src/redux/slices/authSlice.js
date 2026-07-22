@@ -12,6 +12,7 @@ const authSlice = createSlice({
       contact: "",
       avatar: "",
       role: "",
+      emailVerified: true,
     },
     loading: false,
     error: null,
@@ -32,6 +33,7 @@ const authSlice = createSlice({
         contact: action.payload.user?.contact || "",
         avatar: action.payload.user?.avatar || "",
         role: action.payload.user?.role || "",
+        emailVerified: action.payload.user?.emailVerified !== false,
       };
       state.error = null;
     },
@@ -44,6 +46,7 @@ const authSlice = createSlice({
         email: "",
         contact: "",
         avatar: "",
+        emailVerified: true,
       };
       state.error = action.payload?.error || "Login failed";
     },
@@ -57,6 +60,7 @@ const authSlice = createSlice({
         contact: "",
         avatar: "",
         role: "",
+        emailVerified: true,
       };
       state.loading = false;
       state.error = null;

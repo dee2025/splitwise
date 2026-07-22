@@ -124,6 +124,8 @@ export async function POST(request) {
         avatar: googleData.picture || null,
         authProvider: "google",
         googleId: googleData.sub,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
       });
     } else {
       if (user.isBlocked) {
@@ -158,6 +160,14 @@ export async function POST(request) {
         shouldSave = true;
       }
 
+      if (user.emailVerified !== true) {
+        user.emailVerified = true;
+        user.emailVerifiedAt = new Date();
+        user.emailVerificationTokenHash = null;
+        user.emailVerificationExpiresAt = null;
+        shouldSave = true;
+      }
+
       if (user.authProvider !== "local") {
         user.authProvider = "google";
         shouldSave = true;
@@ -181,6 +191,7 @@ export async function POST(request) {
       role: user.role,
       contact: user.contact,
       avatar: user.avatar,
+      emailVerified: user.emailVerified !== false,
       createdAt: user.createdAt,
     };
 

@@ -6,11 +6,13 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   ChevronLeft,
+  CheckCircle,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
+  Send,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,8 +26,8 @@ import { useDispatch, useSelector } from "react-redux";
 const inputCls = (hasError) =>
   `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
     hasError
-      ? "bg-rose-500/10 border-rose-500/40 text-slate-100 placeholder:text-slate-500 focus:ring-rose-500"
-      : "bg-slate-700/50 border-white/8 text-slate-100 placeholder:text-slate-500 focus:ring-indigo-500"
+      ? "bg-rose-50 border-rose-300 text-slate-950 placeholder:text-slate-400 focus:ring-rose-500"
+      : "bg-white border-slate-300 text-slate-950 placeholder:text-slate-400 focus:ring-indigo-500"
   }`;
 
 function getRedirectFromLocation() {
@@ -52,6 +54,8 @@ export default function SignupPage() {
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/home");
@@ -155,6 +159,11 @@ export default function SignupPage() {
 
       const res = await axios.post("/api/auth/signup", payload);
       if (res.data.success) {
+        if (res.data.requiresEmailVerification) {
+          setVerificationEmail(res.data.user?.email || payload.email);
+          toast.success("Verification email sent");
+          return;
+        }
         dispatch(loginSuccess({ user: res.data.user }));
         toast.success(res.data.message || "Account created successfully");
         router.replace(redirectPath);
@@ -178,6 +187,22 @@ export default function SignupPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+
+    setIsResending(true);
+    try {
+      const res = await axios.post("/api/auth/resend-verification", {
+        email: verificationEmail,
+      });
+      toast.success(res.data?.message || "Verification email sent");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Unable to resend verification email");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -240,8 +265,8 @@ export default function SignupPage() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-indigo-700" />
       </div>
     );
   }
@@ -277,7 +302,7 @@ export default function SignupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       {googleClientId ? (
         <Script
           src="https://accounts.google.com/gsi/client"
@@ -288,7 +313,7 @@ export default function SignupPage() {
 
       <Link
         href="/"
-        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-200 transition-colors text-sm font-medium"
+        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-950 transition-colors text-sm font-medium"
       >
         <ChevronLeft className="w-4 h-4" />
         Back
@@ -300,7 +325,7 @@ export default function SignupPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-sm"
       >
-        <div className="bg-slate-800 border border-white/8 rounded-2xl p-7 shadow-2xl">
+        <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
           {/* Header */}
           <div className="text-center mb-7">
             <Link href="/" className="inline-flex items-center gap-2 mb-5">
@@ -312,18 +337,63 @@ export default function SignupPage() {
                 className="h-9 w-9 shrink-0 rounded-lg"
                 priority
               />
-              <span className="text-lg font-bold text-slate-100 tracking-tight">
-                Money<span className="text-indigo-400">Split</span>
+              <span className="text-lg font-bold text-slate-950 tracking-tight">
+                Money<span className="text-indigo-700">Split</span>
               </span>
             </Link>
-            <h1 className="text-2xl font-bold text-slate-100 mb-1.5">
+            <h1 className="text-2xl font-bold text-slate-950 mb-1.5">
               Create account
             </h1>
-            <p className="text-slate-400 text-sm">
-              Join thousands splitting expenses smarter
+            <p className="text-slate-600 text-sm">
+              {verificationEmail
+                ? "Verify your email to activate your account"
+                : "Join thousands splitting expenses smarter"}
             </p>
           </div>
 
+          {verificationEmail ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-5 text-center"
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+                <CheckCircle className="h-7 w-7" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-slate-950">
+                  Check your inbox
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  We sent a verification link to{" "}
+                  <span className="font-semibold text-slate-950">
+                    {verificationEmail}
+                  </span>
+                  . The link expires in 24 hours.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isResending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                Resend verification email
+              </button>
+              <Link
+                href={redirectPath === "/home" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}
+                className="block text-sm font-semibold text-indigo-400 transition-colors hover:text-indigo-300"
+              >
+                Go to sign in
+              </Link>
+            </motion.div>
+          ) : (
+            <>
           {googleClientId ? (
             <div className="mb-5">
               <div
@@ -340,17 +410,17 @@ export default function SignupPage() {
                 </button>
               )}
               {googleLoading && (
-                <p className="text-xs text-slate-400 text-center mt-2">
+                <p className="text-xs text-slate-500 text-center mt-2">
                   Signing up with Google...
                 </p>
               )}
 
               <div className="my-4 flex items-center gap-3">
-                <div className="flex-1 h-px bg-white/6" />
+                <div className="flex-1 h-px bg-slate-200" />
                 <span className="text-xs text-slate-500 uppercase tracking-wide">
                   or
                 </span>
-                <div className="flex-1 h-px bg-white/6" />
+                <div className="flex-1 h-px bg-slate-200" />
               </div>
             </div>
           ) : null}
@@ -391,7 +461,7 @@ export default function SignupPage() {
                       <button
                         type="button"
                         onClick={() => field.setShowToggle(!field.showToggle)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 transition-colors"
                       >
                         {field.showToggle ? (
                           <EyeOff className="w-4 h-4" />
@@ -436,14 +506,14 @@ export default function SignupPage() {
           </form>
 
           <div className="my-5 flex items-center gap-3">
-            <div className="flex-1 h-px bg-white/6" />
+            <div className="flex-1 h-px bg-slate-200" />
             <span className="text-xs text-slate-500">
               Already have an account?
             </span>
-            <div className="flex-1 h-px bg-white/6" />
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
 
-          <p className="text-center text-slate-400 text-sm">
+          <p className="text-center text-slate-600 text-sm">
             Sign in{" "}
             <Link
               href={redirectPath === "/home" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}
@@ -452,20 +522,22 @@ export default function SignupPage() {
               here
             </Link>
           </p>
+            </>
+          )}
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
+        <p className="text-center text-xs text-slate-500 mt-6">
           By creating an account, you agree to our{" "}
           <Link
             href="/terms-of-service"
-            className="hover:text-slate-400 transition-colors"
+            className="hover:text-slate-950 transition-colors"
           >
             Terms
           </Link>{" "}
           and{" "}
           <Link
             href="/privacy-policy"
-            className="hover:text-slate-400 transition-colors"
+            className="hover:text-slate-950 transition-colors"
           >
             Privacy Policy
           </Link>

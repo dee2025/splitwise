@@ -1,3 +1,5 @@
+import { InfoCard, InfoPageShell } from "@/components/site/InfoPageShell";
+
 export const metadata = {
   title: "Disclaimer | Money Split",
   description:
@@ -5,44 +7,37 @@ export const metadata = {
   alternates: { canonical: "https://www.moneysplit.in/disclaimer" },
 };
 
+const sections = [
+  {
+    title: "1. Informational Use",
+    body: "Money Split provides expense tracking tools for informational and organizational use.",
+  },
+  {
+    title: "2. User Responsibility",
+    body: "Financial decisions and any real-world transfers outside the app are the responsibility of users and group members.",
+  },
+  {
+    title: "3. No Professional Advice",
+    body: "We do not provide legal, tax, accounting, or financial advisory services. Please consult qualified professionals when needed.",
+  },
+  {
+    title: "4. Accuracy and Availability",
+    body: "While we work to keep calculations and records reliable, users should verify critical entries and maintain independent records when appropriate.",
+  },
+  {
+    title: "5. Contact",
+    body: "deepaksingh@moneysplit.in | +91 8112260346",
+  },
+];
+
 export default function DisclaimerPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-4 py-12 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Disclaimer</h1>
-
-        <section className="space-y-5 text-slate-300 leading-7">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">1. Informational Use</h2>
-            <p>
-              Money Split provides expense tracking tools for informational and organizational use.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">2. User Responsibility</h2>
-            <p>
-              Financial decisions and any real-world transfers outside the app are the responsibility of users and group members.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">3. No Professional Advice</h2>
-            <p>
-              We do not provide legal, tax, accounting, or financial advisory services. Please consult qualified professionals when needed.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">4. Accuracy and Availability</h2>
-            <p>
-              While we work to keep calculations and records reliable, users should verify critical entries and maintain independent records when appropriate.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">5. Contact</h2>
-            <p>deepaksingh@moneysplit.in | +91 8112260346</p>
-          </div>
-        </section>
-      </div>
-    </main>
+    <InfoPageShell eyebrow="Legal" title="Disclaimer">
+      {sections.map((section) => (
+        <InfoCard key={section.title} title={section.title}>
+          {section.body}
+        </InfoCard>
+      ))}
+    </InfoPageShell>
   );
 }
-

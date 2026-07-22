@@ -1,3 +1,5 @@
+import { InfoCard, InfoPageShell } from "@/components/site/InfoPageShell";
+
 export const metadata = {
   title: "Privacy Policy | Money Split",
   description:
@@ -5,42 +7,42 @@ export const metadata = {
   alternates: { canonical: "https://www.moneysplit.in/privacy-policy" },
 };
 
+const sections = [
+  {
+    title: "1. Data We Collect",
+    body: "Account details, group and expense records, member activity, and technical logs needed for security and performance.",
+  },
+  {
+    title: "2. How We Use Data",
+    body: "To provide core product features, improve reliability, prevent abuse, and communicate important account or policy updates.",
+  },
+  {
+    title: "3. Data Retention",
+    body: "We keep data only as long as needed for product operation, legal compliance, and dispute resolution.",
+  },
+  {
+    title: "4. Security Controls",
+    body: "We apply standard safeguards to protect data in transit and at rest, and monitor unusual access behavior.",
+  },
+  {
+    title: "5. Contact",
+    body: "Email: deepaksingh@moneysplit.in | Phone: +91 8112260346",
+  },
+];
+
 export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-4 py-12 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Privacy Policy</h1>
-        <p className="text-slate-300">Effective date: April 4, 2026</p>
-        <p className="text-slate-300 leading-7">
-          Money Split collects only the information necessary to provide group
-          expense tracking, group management, and account security. We do not sell user
-          personal data.
-        </p>
-
-        <section className="space-y-5 text-slate-300 leading-7">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">1. Data We Collect</h2>
-            <p>Account details, group and expense records, member activity, and technical logs needed for security and performance.</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">2. How We Use Data</h2>
-            <p>To provide core product features, improve reliability, prevent abuse, and communicate important account or policy updates.</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">3. Data Retention</h2>
-            <p>We keep data only as long as needed for product operation, legal compliance, and dispute resolution.</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">4. Security Controls</h2>
-            <p>We apply standard safeguards to protect data in transit and at rest, and monitor unusual access behavior.</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">5. Contact</h2>
-            <p>Email: deepaksingh@moneysplit.in | Phone: +91 8112260346</p>
-          </div>
-        </section>
-      </div>
-    </main>
+    <InfoPageShell
+      eyebrow="Privacy"
+      title="Privacy Policy"
+      effectiveDate="April 4, 2026"
+      description="Money Split collects only the information necessary to provide group expense tracking, group management, and account security. We do not sell user personal data."
+    >
+      {sections.map((section) => (
+        <InfoCard key={section.title} title={section.title}>
+          {section.body}
+        </InfoCard>
+      ))}
+    </InfoPageShell>
   );
 }
-

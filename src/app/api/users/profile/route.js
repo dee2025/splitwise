@@ -14,7 +14,7 @@ export async function GET(request) {
 
     const decoded = auth.decoded;
     // select everything except password; User has no "groups" array so no populate needed
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(decoded.userId).select("-password -emailVerificationTokenHash");
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -60,6 +60,7 @@ export async function GET(request) {
         avatar: user.avatar ?? null,
         bio: user.bio ?? "",
         role: user.role ?? "user",
+        emailVerified: user.emailVerified !== false,
         createdAt: user.createdAt,
       },
       stats: {
@@ -155,6 +156,7 @@ export async function PUT(request) {
         avatar: user.avatar ?? null,
         bio: user.bio ?? "",
         role: user.role ?? "user",
+        emailVerified: user.emailVerified !== false,
       },
     });
   } catch (error) {

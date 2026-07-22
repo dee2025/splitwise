@@ -1,14 +1,16 @@
-import Link from 'next/link';
-import { articlesIndexJsonLd } from '@/lib/articleUtils';
-import { getPublishedArticles } from '@/lib/articles';
-import { ArrowRight, Calendar, Clock } from 'lucide-react';
+import { articlesIndexJsonLd } from "@/lib/articleUtils";
+import { getPublishedArticles } from "@/lib/articles";
+import { ArrowRight, Calendar, Clock } from "lucide-react";
+import Link from "next/link";
 
 export const revalidate = 3600;
 
 export const metadata = {
-  title: 'Articles | Money Split - Expert Guides on Expense Sharing',
-  description: 'Learn how to manage expenses with friends, plan trips, and split bills effectively. Professional guides and tips for better financial management.',
-  keywords: 'expense sharing, split bills, trip planning, friends expenses, financial management, money split guides',
+  title: "Articles | Money Split - Expert Guides on Expense Sharing",
+  description:
+    "Learn how to manage expenses with friends, plan trips, and split bills effectively. Professional guides and tips for better financial management.",
+  keywords:
+    "expense sharing, split bills, trip planning, friends expenses, financial management, money split guides",
   alternates: {
     canonical: "https://www.moneysplit.in/articles",
   },
@@ -19,112 +21,98 @@ export default async function ArticlesPage() {
   const articlesSchema = articlesIndexJsonLd(articles);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-white text-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articlesSchema) }}
       />
-      {/* Hero Section */}
-      <section className="pt-20 pb-16 px-5 sm:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <span className="w-4 h-px bg-indigo-400" />
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.25em]">
-              Knowledge Base
+
+      <section className="bg-slate-50 px-5 py-16 sm:px-8 sm:py-20">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mb-5 flex items-center justify-center gap-2">
+            <span className="h-px w-6 bg-indigo-300" />
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-700">
+              Knowledge base
             </span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight mb-6">
-            Master Expense Sharing
-            <br />
-            <span className="text-slate-500">with Expert Guides</span>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+            Master expense sharing with practical guides.
           </h1>
-          <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            Discover professional tips and strategies for managing shared expenses,
-            from trips with friends to living with roommates. Make every group experience stress-free.
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            Professional tips for managing shared expenses, planning trips, and keeping every group experience clear.
           </p>
         </div>
       </section>
 
-      {/* Articles Grid */}
-      <section className="pb-28 px-5 sm:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <section className="px-5 py-16 sm:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => (
               <article
                 key={article.slug}
-                className="group bg-slate-800 border border-white/6 rounded-2xl overflow-hidden hover:border-white/10 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50"
+                className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.06)] transition-colors hover:border-indigo-200"
               >
-                {/* Thumbnail */}
-                <div className="relative aspect-[16/10] overflow-hidden">
+                <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
                   <img
                     src={article.thumbnail}
                     alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
-                  {/* Category Badge */}
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm border border-white/10 rounded-full text-xs font-semibold text-slate-300">
+                  <div className="absolute left-4 top-4">
+                    <span className="rounded-lg bg-white/90 px-3 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur">
                       {article.category}
                     </span>
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="p-6">
-                  <h2 className="text-xl font-bold text-slate-100 mb-3 line-clamp-2 group-hover:text-indigo-300 transition-colors">
-                    <Link href={`/articles/${article.slug}`}>
-                      {article.title}
-                    </Link>
+                  <h2 className="mb-3 line-clamp-2 text-xl font-bold text-slate-950 transition-colors group-hover:text-indigo-800">
+                    <Link href={`/articles/${article.slug}`}>{article.title}</Link>
                   </h2>
 
-                  <p className="text-slate-400 leading-relaxed mb-4 line-clamp-3">
+                  <p className="mb-4 line-clamp-3 text-sm leading-6 text-slate-600">
                     {article.excerpt}
                   </p>
 
-                  {/* Meta Info */}
-                  <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{new Date(article.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}</span>
+                  <div className="mb-5 flex items-center justify-between gap-3 text-xs font-semibold text-slate-500">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {new Date(article.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-4 w-4" />
                       <span>{article.readTime} min read</span>
                     </div>
                   </div>
 
-                  {/* Read More Link */}
                   <Link
                     href={`/articles/${article.slug}`}
-                    className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-semibold text-sm transition-colors group-hover:gap-3"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-indigo-700 transition-colors hover:text-indigo-900"
                   >
-                    Read Article
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    Read article
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </div>
               </article>
             ))}
           </div>
 
-          {/* Bottom CTA */}
-          <div className="mt-16 text-center">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 hover:border-white/20 transition-all">
+          <div className="mt-14 text-center">
+            <div className="inline-flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-700 sm:flex-row">
               <span>Ready to start splitting expenses?</span>
-              <Link
-                href="/signup"
-                className="text-indigo-400 hover:text-indigo-300 font-bold ml-2"
-              >
-                Get Started Free →
+              <Link href="/signup" className="font-bold text-indigo-700 hover:text-indigo-900">
+                Get started free
               </Link>
             </div>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

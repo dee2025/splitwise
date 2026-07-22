@@ -24,6 +24,7 @@ import {
   Save,
   Shield,
   ShieldCheck,
+  Trash2,
   Upload,
   User,
   X,
@@ -932,6 +933,14 @@ export default function ProfilePage() {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-white/8 bg-slate-900 shadow-lg shadow-black/10">
+          <SettingsRow
+            icon={Trash2}
+            title="Delete Account"
+            description="Permanently delete your account and data"
+            iconTone="bg-rose-500/10 text-rose-300"
+            danger
+            onClick={() => router.push("/delete-account")}
+          />
           <SettingsRow
             icon={loggingOut ? Loader2 : LogOut}
             title={loggingOut ? "Logging out" : "Logout"}

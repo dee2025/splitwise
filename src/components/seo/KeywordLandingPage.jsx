@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle, Receipt, Users } from "lucide-react";
+import { ArrowRight, CheckCircle, ChevronDown, Receipt, Users } from "lucide-react";
 import Link from "next/link";
 
 function pageJsonLd(page) {
@@ -104,115 +104,121 @@ export function keywordPageMetadata(page) {
   };
 }
 
+function PreviewCard({ page }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
+              <Receipt className="h-5 w-5 text-indigo-700" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-950">{page.shortTitle}</p>
+              <p className="text-xs text-slate-500">4 members joined</p>
+            </div>
+          </div>
+          <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+            Active
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {["Shared dinner", "Transport", "Groceries"].map((item, index) => (
+            <div
+              key={item}
+              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+                  <Users className="h-4 w-4 text-slate-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{item}</p>
+                  <p className="text-xs text-slate-500">Split across group</p>
+                </div>
+              </div>
+              <p className="text-sm font-bold text-slate-950">Rs {["1,240", "860", "2,100"][index]}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-700">
+            Balance summary
+          </p>
+          <p className="mt-2 text-2xl font-bold text-slate-950">Clear group records</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Everyone can review payments, members, and balances before settling up.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function KeywordLandingPage({ page }) {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-white text-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd(page)) }}
       />
 
-      <section className="px-5 py-16 sm:px-8 sm:py-20">
+      <section className="bg-slate-50 px-5 py-16 sm:px-8 sm:py-20">
         <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
           <div>
             <div className="mb-5 flex items-center gap-2">
-              <span className="h-px w-5 bg-indigo-400" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-400">
+              <span className="h-px w-6 bg-indigo-300" />
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-700">
                 {page.heroLabel}
               </span>
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-100 sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
               {page.h1}
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
               {page.intro}
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-950/60 transition-colors hover:bg-indigo-500"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-6 py-3.5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(15,23,42,0.2)] transition-colors hover:bg-indigo-700"
               >
                 {page.cta}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href={page.slug === "trip-expense-splitter" ? "/articles/planning-a-trip-with-friends-budget-tips" : page.slug === "roommate-bill-splitter" ? "/articles/managing-group-expenses-for-shared-living" : "/features"}
-                className="inline-flex items-center justify-center rounded-xl border border-white/10 px-6 py-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400 hover:bg-slate-50"
               >
                 {page.secondaryCta}
               </Link>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-slate-900 p-4 shadow-2xl shadow-black/30">
-            <div className="rounded-xl border border-white/8 bg-slate-800 p-4">
-              <div className="mb-4 flex items-center justify-between border-b border-white/8 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10">
-                    <Receipt className="h-5 w-5 text-indigo-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-100">{page.shortTitle}</p>
-                    <p className="text-xs text-slate-500">4 members joined</p>
-                  </div>
-                </div>
-                <span className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                  Active
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {["Shared dinner", "Transport", "Groceries"].map((item, index) => (
-                  <div
-                    key={item}
-                    className="flex items-center justify-between rounded-xl border border-white/6 bg-slate-900/70 px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5">
-                        <Users className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-200">{item}</p>
-                        <p className="text-xs text-slate-500">Split across group</p>
-                      </div>
-                    </div>
-                    <p className="text-sm font-bold text-slate-100">Rs {["1,240", "860", "2,100"][index]}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-300">
-                  Balance summary
-                </p>
-                <p className="mt-2 text-2xl font-bold text-white">Clear group records</p>
-                <p className="mt-1 text-sm leading-6 text-slate-400">
-                  Everyone can review payments, members and balances before settling up.
-                </p>
-              </div>
-            </div>
-          </div>
+          <PreviewCard page={page} />
         </div>
       </section>
 
-      <section className="border-t border-white/6 px-5 py-16 sm:px-8">
+      <section className="bg-white px-5 py-16 sm:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-slate-100 sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 Built for real shared expenses
               </h2>
-              <p className="mt-4 max-w-xl leading-7 text-slate-400">
+              <p className="mt-4 max-w-xl leading-7 text-slate-600">
                 These are the common situations people search for when they need a bill splitter or group expense tracker.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {page.useCases.map((item) => (
-                <div key={item} className="rounded-xl border border-white/8 bg-slate-900 p-4">
-                  <CheckCircle className="mb-3 h-5 w-5 text-emerald-300" />
-                  <p className="text-sm font-semibold leading-6 text-slate-200">{item}</p>
+                <div key={item} className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+                  <CheckCircle className="mb-3 h-5 w-5 text-emerald-600" />
+                  <p className="text-sm font-semibold leading-6 text-slate-700">{item}</p>
                 </div>
               ))}
             </div>
@@ -220,24 +226,24 @@ export default function KeywordLandingPage({ page }) {
         </div>
       </section>
 
-      <section className="border-t border-white/6 px-5 py-16 sm:px-8">
+      <section className="border-y border-slate-200 bg-slate-50 px-5 py-16 sm:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-4 md:grid-cols-3">
             {page.benefits.map((benefit) => (
-              <article key={benefit.title} className="rounded-xl border border-white/8 bg-slate-900 p-6">
-                <h2 className="text-lg font-bold text-slate-100">{benefit.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-400">{benefit.text}</p>
+              <article key={benefit.title} className="rounded-lg border border-slate-200 bg-white p-6">
+                <h2 className="text-lg font-bold text-slate-950">{benefit.title}</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{benefit.text}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="border-t border-white/6 px-5 py-16 sm:px-8">
+      <section className="bg-white px-5 py-16 sm:px-8">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-100">Common questions</h2>
-            <p className="mt-4 leading-7 text-slate-400">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950">Common questions</h2>
+            <p className="mt-4 leading-7 text-slate-600">
               Quick answers for people comparing expense splitting tools before they create a group.
             </p>
           </div>
@@ -246,12 +252,13 @@ export default function KeywordLandingPage({ page }) {
               <details
                 key={faq.question}
                 open={index === 0}
-                className="rounded-xl border border-white/8 bg-slate-900 px-5 py-4"
+                className="group rounded-lg border border-slate-200 bg-white px-5 py-4 open:border-indigo-200 open:shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
               >
-                <summary className="cursor-pointer text-sm font-bold text-slate-100">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold text-slate-950">
                   {faq.question}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180 group-open:text-indigo-700" />
                 </summary>
-                <p className="mt-3 text-sm leading-7 text-slate-400">{faq.answer}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{faq.answer}</p>
               </details>
             ))}
           </div>
