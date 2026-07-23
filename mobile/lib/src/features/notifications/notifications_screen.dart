@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/models.dart';
+import '../../shared/app_top_bar.dart';
 import '../../shared/providers.dart';
 import '../../shared/screen_utils.dart';
 
@@ -9,7 +10,8 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
@@ -33,7 +35,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     try {
       final json = await ref.read(apiProvider).getJson('/api/notifications');
       setState(() {
-        _notifications = listOf(json['notifications']).whereType<Map<String, dynamic>>().map(NotificationItem.fromJson).toList();
+        _notifications = listOf(json['notifications'])
+            .whereType<Map<String, dynamic>>()
+            .map(NotificationItem.fromJson)
+            .toList();
       });
     } catch (error) {
       _error = error;
@@ -44,8 +49,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: LoadingView());
-    if (_error != null) return Scaffold(body: ErrorView(message: _error.toString(), onRetry: _load));
+    if (_loading) {
+      return const Scaffold(body: LoadingView());
+    }
+    if (_error != null) {
+      return Scaffold(
+          body: ErrorView(message: _error.toString(), onRetry: _load));
+    }
 
     final unreadCount = _notifications.where((item) => !item.isRead).length;
     final filtered = _notifications.where((item) {
@@ -55,8 +65,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
+      appBar: AppTopBar(
         actions: [
           if (unreadCount > 0)
             TextButton(
@@ -78,11 +87,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             SegmentedButton<String>(
               segments: [
                 const ButtonSegment(value: 'all', label: Text('All')),
-                ButtonSegment(value: 'unread', label: Text('Unread ($unreadCount)')),
+                ButtonSegment(
+                    value: 'unread', label: Text('Unread ($unreadCount)')),
                 const ButtonSegment(value: 'read', label: Text('Read')),
               ],
               selected: {_filter},
-              onSelectionChanged: (value) => setState(() => _filter = value.first),
+              onSelectionChanged: (value) =>
+                  setState(() => _filter = value.first),
             ),
             const SizedBox(height: 16),
             if (filtered.isEmpty)
@@ -99,12 +110,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     leading: Checkbox(
                       value: selected,
                       onChanged: (_) => setState(() {
-                        selected ? _selected.remove(item.id) : _selected.add(item.id);
+                        selected
+                            ? _selected.remove(item.id)
+                            : _selected.add(item.id);
                       }),
                     ),
-                    title: Text(item.title, style: TextStyle(fontWeight: item.isRead ? FontWeight.w500 : FontWeight.w800)),
+                    title: Text(item.title,
+                        style: TextStyle(
+                            fontWeight: item.isRead
+                                ? FontWeight.w500
+                                : FontWeight.w800)),
                     subtitle: Text(item.message),
-                    trailing: item.isRead ? null : const Icon(Icons.circle, size: 10, color: Colors.greenAccent),
+                    trailing: item.isRead
+                        ? null
+                        : const Icon(Icons.circle,
+                            size: 10, color: Colors.greenAccent),
                     onTap: item.isRead ? null : () => _markRead(item.id),
                   ),
                 );
@@ -117,7 +137,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Future<void> _markRead(String id) async {
     try {
-      await ref.read(apiProvider).putJson('/api/notifications', {'notificationId': id});
+      await ref
+          .read(apiProvider)
+          .putJson('/api/notifications', {'notificationId': id});
       setState(() {
         _notifications = _notifications.map((item) {
           if (item.id != id) return item;
@@ -138,7 +160,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Future<void> _markAllRead() async {
     try {
-      await ref.read(apiProvider).putJson('/api/notifications', {'markAllAsRead': true});
+      await ref
+          .read(apiProvider)
+          .putJson('/api/notifications', {'markAllAsRead': true});
       _load();
     } catch (error) {
       if (mounted) showError(context, error);
@@ -154,9 +178,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
     if (!confirmed) return;
     try {
-      await ref.read(apiProvider).deleteJson('/api/notifications', {'notificationIds': _selected.toList()});
+      await ref.read(apiProvider).deleteJson(
+          '/api/notifications', {'notificationIds': _selected.toList()});
       setState(() {
-        _notifications = _notifications.where((item) => !_selected.contains(item.id)).toList();
+        _notifications = _notifications
+            .where((item) => !_selected.contains(item.id))
+            .toList();
         _selected.clear();
       });
     } catch (error) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../shared/api_client.dart';
+import '../../shared/app_top_bar.dart';
 import '../../shared/models.dart';
 import '../../shared/providers.dart';
 import '../../shared/screen_utils.dart';
@@ -37,7 +38,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final json = await ref.read(apiProvider).getJson('/api/users/profile');
       setState(() {
         _profile = AppUser.fromJson(json['user'] as Map<String, dynamic>);
-        _stats = json['stats'] is Map<String, dynamic> ? json['stats'] as Map<String, dynamic> : const {};
+        _stats = json['stats'] is Map<String, dynamic>
+            ? json['stats'] as Map<String, dynamic>
+            : const {};
       });
     } catch (error) {
       _error = error;
@@ -48,12 +51,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: LoadingView());
-    if (_error != null || _profile == null) return Scaffold(body: ErrorView(message: _error.toString(), onRetry: _load));
+    if (_loading) {
+      return const Scaffold(body: LoadingView());
+    }
+    if (_error != null || _profile == null) {
+      return Scaffold(
+          body: ErrorView(message: _error.toString(), onRetry: _load));
+    }
     final profile = _profile!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: const AppTopBar(),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -66,11 +74,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 42,
-                      backgroundImage: profile.avatar == null ? null : NetworkImage(absoluteAssetUrl(profile.avatar)),
-                      child: profile.avatar == null ? Text(_initials(profile.fullName)) : null,
+                      backgroundImage: profile.avatar == null
+                          ? null
+                          : NetworkImage(absoluteAssetUrl(profile.avatar)),
+                      child: profile.avatar == null
+                          ? Text(_initials(profile.fullName))
+                          : null,
                     ),
                     const SizedBox(height: 12),
-                    Text(profile.fullName, style: Theme.of(context).textTheme.titleLarge),
+                    Text(profile.fullName,
+                        style: Theme.of(context).textTheme.titleLarge),
                     Text('@${profile.username}'),
                     const SizedBox(height: 4),
                     Text(profile.email),
@@ -80,9 +93,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             Row(
               children: [
-                Expanded(child: StatCard(label: 'Groups', value: '${_stats['groupsCount'] ?? 0}')),
+                Expanded(
+                    child: StatCard(
+                        label: 'Groups',
+                        value: '${_stats['groupsCount'] ?? 0}')),
                 const SizedBox(width: 12),
-                Expanded(child: StatCard(label: 'Expenses', value: '${_stats['expenseCount'] ?? 0}')),
+                Expanded(
+                    child: StatCard(
+                        label: 'Expenses',
+                        value: '${_stats['expenseCount'] ?? 0}')),
               ],
             ),
             const SizedBox(height: 12),
@@ -93,24 +112,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     leading: const Icon(Icons.edit_outlined),
                     title: const Text('Edit profile'),
                     onTap: () async {
-                      final changed = await showProfileEditor(context: context, ref: ref, profile: profile);
+                      final changed = await showProfileEditor(
+                          context: context, ref: ref, profile: profile);
                       if (changed == true) _load();
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.password_outlined),
                     title: const Text('Change password'),
-                    onTap: () => showChangePasswordDialog(context: context, ref: ref),
+                    onTap: () =>
+                        showChangePasswordDialog(context: context, ref: ref),
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
-                    onTap: () => ref.read(authControllerProvider.notifier).logout(),
+                    onTap: () =>
+                        ref.read(authControllerProvider.notifier).logout(),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                    title: const Text('Delete account', style: TextStyle(color: Colors.redAccent)),
-                    onTap: () => showDeleteAccountDialog(context: context, ref: ref),
+                    leading: const Icon(Icons.delete_outline,
+                        color: Colors.redAccent),
+                    title: const Text('Delete account',
+                        style: TextStyle(color: Colors.redAccent)),
+                    onTap: () =>
+                        showDeleteAccountDialog(context: context, ref: ref),
                   ),
                 ],
               ),
@@ -210,24 +235,31 @@ class _ProfileEditorSheetState extends ConsumerState<ProfileEditorSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Edit profile', style: Theme.of(context).textTheme.titleLarge),
+                Text('Edit profile',
+                    style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 14),
                 OutlinedButton.icon(
                   onPressed: _pickAvatar,
                   icon: const Icon(Icons.image_outlined),
-                  label: Text(_avatar == null ? 'Upload avatar' : 'Change avatar'),
+                  label:
+                      Text(_avatar == null ? 'Upload avatar' : 'Change avatar'),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _name,
                   decoration: const InputDecoration(labelText: 'Full name'),
-                  validator: (value) => (value ?? '').trim().length < 2 ? 'Enter your full name' : null,
+                  validator: (value) => (value ?? '').trim().length < 2
+                      ? 'Enter your full name'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _username,
                   decoration: const InputDecoration(labelText: 'Username'),
-                  validator: (value) => RegExp(r'^[a-z0-9_]{3,20}$').hasMatch((value ?? '').trim()) ? null : 'Use 3-20 lowercase letters, numbers, or underscore',
+                  validator: (value) => RegExp(r'^[a-z0-9_]{3,20}$')
+                          .hasMatch((value ?? '').trim())
+                      ? null
+                      : 'Use 3-20 lowercase letters, numbers, or underscore',
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -244,7 +276,12 @@ class _ProfileEditorSheetState extends ConsumerState<ProfileEditorSheet> {
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save changes'),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Save changes'),
                 ),
               ],
             ),
@@ -255,11 +292,13 @@ class _ProfileEditorSheetState extends ConsumerState<ProfileEditorSheet> {
   }
 
   Future<void> _pickAvatar() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200);
+    final image = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, maxWidth: 1200);
     if (image == null) return;
     setState(() => _saving = true);
     try {
-      final path = await ref.read(apiProvider).uploadImage(File(image.path), 'profile');
+      final path =
+          await ref.read(apiProvider).uploadImage(File(image.path), 'profile');
       setState(() => _avatar = path);
     } catch (error) {
       if (mounted) showError(context, error);
@@ -303,17 +342,27 @@ Future<void> showChangePasswordDialog({
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(controller: current, obscureText: true, decoration: const InputDecoration(labelText: 'Current password')),
+          TextField(
+              controller: current,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Current password')),
           const SizedBox(height: 12),
-          TextField(controller: next, obscureText: true, decoration: const InputDecoration(labelText: 'New password')),
+          TextField(
+              controller: next,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'New password')),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         FilledButton(
           onPressed: () async {
             try {
-              await ref.read(apiProvider).putJson('/api/users/change-password', {
+              await ref
+                  .read(apiProvider)
+                  .putJson('/api/users/change-password', {
                 'currentPassword': current.text,
                 'newPassword': next.text,
               });
@@ -342,15 +391,24 @@ Future<void> showDeleteAccountDialog({
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Type DELETE to permanently remove your account and associated data.'),
+          const Text(
+              'Type DELETE to permanently remove your account and associated data.'),
           const SizedBox(height: 12),
-          TextField(controller: confirmation, decoration: const InputDecoration(labelText: 'Confirmation')),
+          TextField(
+              controller: confirmation,
+              decoration: const InputDecoration(labelText: 'Confirmation')),
           const SizedBox(height: 12),
-          TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password, if local account')),
+          TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(
+                  labelText: 'Password, if local account')),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         FilledButton(
           onPressed: () async {
             try {
@@ -372,7 +430,11 @@ Future<void> showDeleteAccountDialog({
 }
 
 String _initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return 'U';
   return parts.take(2).map((part) => part[0]).join().toUpperCase();
 }

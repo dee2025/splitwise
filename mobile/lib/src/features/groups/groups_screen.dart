@@ -6,8 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../expenses/expenses_screen.dart';
+import '../expenses/expense_components.dart';
 import '../../shared/api_client.dart';
+import '../../shared/app_top_bar.dart';
 import '../../shared/models.dart';
 import '../../shared/money.dart';
 import '../../shared/providers.dart';
@@ -48,8 +49,14 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
         api.getJson('/api/expenses'),
       ]);
       setState(() {
-        _groups = listOf(results[0]['groups']).whereType<Map<String, dynamic>>().map(MoneyGroup.fromJson).toList();
-        _expenses = listOf(results[1]['expenses']).whereType<Map<String, dynamic>>().map(Expense.fromJson).toList();
+        _groups = listOf(results[0]['groups'])
+            .whereType<Map<String, dynamic>>()
+            .map(MoneyGroup.fromJson)
+            .toList();
+        _expenses = listOf(results[1]['expenses'])
+            .whereType<Map<String, dynamic>>()
+            .map(Expense.fromJson)
+            .toList();
       });
     } catch (error) {
       _error = error;
@@ -61,14 +68,20 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider).user;
-    if (_loading) return const Scaffold(body: LoadingView());
-    if (_error != null) return Scaffold(body: ErrorView(message: _error.toString(), onRetry: _load));
+    if (_loading) {
+      return const Scaffold(body: LoadingView());
+    }
+    if (_error != null) {
+      return Scaffold(
+          body: ErrorView(message: _error.toString(), onRetry: _load));
+    }
 
     final filtered = _groups.where((group) {
       final matchesQuery = _query.trim().isEmpty ||
           group.name.toLowerCase().contains(_query.toLowerCase()) ||
           group.description.toLowerCase().contains(_query.toLowerCase()) ||
-          group.members.any((member) => member.name.toLowerCase().contains(_query.toLowerCase()));
+          group.members.any((member) =>
+              member.name.toLowerCase().contains(_query.toLowerCase()));
       if (!matchesQuery) return false;
       if (_filter == 'admin') return group.isAdmin(user?.id ?? '');
       if (_filter == 'member') return !group.isAdmin(user?.id ?? '');
@@ -76,7 +89,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Groups')),
+      appBar: const AppTopBar(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final created = await showGroupEditor(context: context, ref: ref);
@@ -91,7 +104,9 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
             TextField(
-              decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Search groups or members'),
+              decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  labelText: 'Search groups or members'),
               onChanged: (value) => setState(() => _query = value),
             ),
             const SizedBox(height: 12),
@@ -102,7 +117,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                 ButtonSegment(value: 'member', label: Text('Member')),
               ],
               selected: {_filter},
-              onSelectionChanged: (value) => setState(() => _filter = value.first),
+              onSelectionChanged: (value) =>
+                  setState(() => _filter = value.first),
             ),
             const SizedBox(height: 16),
             if (filtered.isEmpty)
@@ -112,7 +128,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                 message: 'Create a group or adjust your filters.',
                 action: FilledButton(
                   onPressed: () async {
-                    final created = await showGroupEditor(context: context, ref: ref);
+                    final created =
+                        await showGroupEditor(context: context, ref: ref);
                     if (created == true) _load();
                   },
                   child: const Text('Create group'),
@@ -120,15 +137,23 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
               )
             else
               ...filtered.map((group) {
-                final balance = groupBalance(_expenses, user?.id ?? '', group.id);
+                final balance =
+                    groupBalance(_expenses, user?.id ?? '', group.id);
                 return Card(
                   child: ListTile(
                     leading: group.image == null
                         ? CircleAvatar(child: Text(initials(group.name)))
-                        : CircleAvatar(backgroundImage: NetworkImage(absoluteAssetUrl(group.image))),
+                        : CircleAvatar(
+                            backgroundImage:
+                                NetworkImage(absoluteAssetUrl(group.image))),
                     title: Text(group.name),
-                    subtitle: Text('${group.members.length} members - ${group.type}'),
-                    trailing: Text(money(balance), style: TextStyle(color: balance >= 0 ? Colors.greenAccent : Colors.redAccent)),
+                    subtitle:
+                        Text('${group.members.length} members - ${group.type}'),
+                    trailing: Text(money(balance),
+                        style: TextStyle(
+                            color: balance >= 0
+                                ? Colors.greenAccent
+                                : Colors.redAccent)),
                     onTap: () => context.go('/groups/${group.id}'),
                   ),
                 );
@@ -149,7 +174,8 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
-class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with SingleTickerProviderStateMixin {
+class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   var _loading = true;
   Object? _error;
@@ -180,12 +206,21 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
       final results = await Future.wait([
         api.getJson('/api/groups/${widget.groupId}'),
         api.getJson('/api/expenses', query: {'groupId': widget.groupId}),
-        api.getJson('/api/activity', query: {'groupId': widget.groupId}).catchError((_) => {'activity': []}),
+        api.getJson('/api/activity', query: {
+          'groupId': widget.groupId
+        }).catchError((_) => {'activity': []}),
       ]);
       setState(() {
-        _group = MoneyGroup.fromJson(results[0]['group'] as Map<String, dynamic>);
-        _expenses = listOf(results[1]['expenses']).whereType<Map<String, dynamic>>().map(Expense.fromJson).toList();
-        _activity = listOf(results[2]['activity']).whereType<Map<String, dynamic>>().map(ActivityItem.fromJson).toList();
+        _group =
+            MoneyGroup.fromJson(results[0]['group'] as Map<String, dynamic>);
+        _expenses = listOf(results[1]['expenses'])
+            .whereType<Map<String, dynamic>>()
+            .map(Expense.fromJson)
+            .toList();
+        _activity = listOf(results[2]['activity'])
+            .whereType<Map<String, dynamic>>()
+            .map(ActivityItem.fromJson)
+            .toList();
       });
     } catch (error) {
       _error = error;
@@ -198,18 +233,23 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider).user;
     final group = _group;
-    if (_loading) return const Scaffold(body: LoadingView());
-    if (_error != null || group == null) return Scaffold(body: ErrorView(message: _error.toString(), onRetry: _load));
+    if (_loading) {
+      return const Scaffold(body: LoadingView());
+    }
+    if (_error != null || group == null) {
+      return Scaffold(
+          body: ErrorView(message: _error.toString(), onRetry: _load));
+    }
     final isAdmin = group.isAdmin(user?.id ?? '');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(group.name),
+      appBar: AppTopBar(
         actions: [
           if (isAdmin)
             IconButton(
               onPressed: () async {
-                final changed = await showGroupEditor(context: context, ref: ref, group: group);
+                final changed = await showGroupEditor(
+                    context: context, ref: ref, group: group);
                 if (changed == true) _load();
               },
               icon: const Icon(Icons.settings_outlined),
@@ -253,12 +293,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(group.description.isEmpty ? 'No description' : group.description),
+                        Text(group.description.isEmpty
+                            ? 'No description'
+                            : group.description),
                         const SizedBox(height: 16),
-                        Text('Total expenses', style: Theme.of(context).textTheme.labelLarge),
-                        Text(money(group.totalExpenses), style: Theme.of(context).textTheme.headlineSmall),
+                        Text('Total expenses',
+                            style: Theme.of(context).textTheme.labelLarge),
+                        Text(money(group.totalExpenses),
+                            style: Theme.of(context).textTheme.headlineSmall),
                         const SizedBox(height: 8),
-                        Text('${group.members.length} members - ${group.type} - INR'),
+                        Text(
+                            '${group.members.length} members - ${group.type} - INR'),
                       ],
                     ),
                   ),
@@ -268,10 +313,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
                     child: ListTile(
                       leading: const Icon(Icons.link_outlined),
                       title: const Text('Invite link'),
-                      subtitle: Text('$apiBaseUrl/groups/join/${group.inviteToken}'),
+                      subtitle:
+                          Text('$apiBaseUrl/groups/join/${group.inviteToken}'),
                       trailing: IconButton(
                         icon: const Icon(Icons.share_outlined),
-                        onPressed: () => Share.share('$apiBaseUrl/groups/join/${group.inviteToken}'),
+                        onPressed: () => Share.share(
+                            '$apiBaseUrl/groups/join/${group.inviteToken}'),
                       ),
                     ),
                   ),
@@ -360,7 +407,8 @@ class MembersTab extends ConsumerWidget {
         if (isAdmin)
           FilledButton.icon(
             onPressed: () async {
-              final changed = await showAddMemberDialog(context: context, ref: ref, group: group);
+              final changed = await showAddMemberDialog(
+                  context: context, ref: ref, group: group);
               if (changed == true) onChanged();
             },
             icon: const Icon(Icons.person_add_alt_1),
@@ -371,7 +419,8 @@ class MembersTab extends ConsumerWidget {
               child: ListTile(
                 leading: CircleAvatar(child: Text(initials(member.name))),
                 title: Text(member.name),
-                subtitle: Text('${member.email.isEmpty ? member.type : member.email} - ${member.role}'),
+                subtitle: Text(
+                    '${member.email.isEmpty ? member.type : member.email} - ${member.role}'),
                 trailing: isAdmin && member.role != 'admin'
                     ? IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
@@ -379,12 +428,18 @@ class MembersTab extends ConsumerWidget {
                           final confirmed = await confirmDestructive(
                             context,
                             title: 'Remove member?',
-                            message: 'This removes ${member.name} from ${group.name}.',
+                            message:
+                                'This removes ${member.name} from ${group.name}.',
                             action: 'Remove',
                           );
                           if (!confirmed) return;
                           try {
-                            await ref.read(apiProvider).putJson('/api/groups/${group.id}', {'removeMemberId': member.id.isNotEmpty ? member.id : member.userId});
+                            await ref.read(apiProvider).putJson(
+                                '/api/groups/${group.id}', {
+                              'removeMemberId': member.id.isNotEmpty
+                                  ? member.id
+                                  : member.userId
+                            });
                             onChanged();
                           } catch (error) {
                             if (context.mounted) showError(context, error);
@@ -462,12 +517,15 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(group == null ? 'Create group' : 'Group settings', style: Theme.of(context).textTheme.titleLarge),
+                Text(group == null ? 'Create group' : 'Group settings',
+                    style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _name,
                   decoration: const InputDecoration(labelText: 'Group name'),
-                  validator: (value) => (value ?? '').trim().isEmpty ? 'Group name is required' : null,
+                  validator: (value) => (value ?? '').trim().isEmpty
+                      ? 'Group name is required'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -480,19 +538,30 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
                 DropdownButtonFormField<String>(
                   initialValue: _type,
                   decoration: const InputDecoration(labelText: 'Type'),
-                  items: groupTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
-                  onChanged: (value) => setState(() => _type = value ?? 'event'),
+                  items: groupTypes
+                      .map((type) =>
+                          DropdownMenuItem(value: type, child: Text(type)))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => _type = value ?? 'event'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: _pickImage,
                   icon: const Icon(Icons.image_outlined),
-                  label: Text(_image == null ? 'Upload group image' : 'Change group image'),
+                  label: Text(_image == null
+                      ? 'Upload group image'
+                      : 'Change group image'),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save'),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Save'),
                 ),
                 if (group != null) ...[
                   const SizedBox(height: 8),
@@ -517,11 +586,13 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
   }
 
   Future<void> _pickImage() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600);
+    final image = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, maxWidth: 1600);
     if (image == null) return;
     setState(() => _saving = true);
     try {
-      final path = await ref.read(apiProvider).uploadImage(File(image.path), 'groups');
+      final path =
+          await ref.read(apiProvider).uploadImage(File(image.path), 'groups');
       setState(() => _image = path);
     } catch (error) {
       if (mounted) showError(context, error);
@@ -559,7 +630,9 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
     final group = widget.group;
     if (group == null) return;
     try {
-      final json = await ref.read(apiProvider).postJson('/api/groups/${group.id}/invite/regenerate', {});
+      final json = await ref
+          .read(apiProvider)
+          .postJson('/api/groups/${group.id}/invite/regenerate', {});
       final token = json['inviteToken']?.toString();
       if (token != null && token.isNotEmpty) {
         await Share.share('$apiBaseUrl/groups/join/$token');
@@ -579,7 +652,9 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
     );
     if (!confirmed) return;
     try {
-      await ref.read(apiProvider).putJson('/api/groups/${group.id}', {'action': 'delete'});
+      await ref
+          .read(apiProvider)
+          .putJson('/api/groups/${group.id}', {'action': 'delete'});
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) showError(context, error);
@@ -625,8 +700,11 @@ class _AddMemberDialogState extends ConsumerState<AddMemberDialog> {
       setState(() => _matches = const []);
       return;
     }
-    final json = await ref.read(apiProvider).getJson('/api/users/search', query: {'q': value});
-    setState(() => _matches = listOf(json['users']).whereType<Map<String, dynamic>>().toList());
+    final json = await ref
+        .read(apiProvider)
+        .getJson('/api/users/search', query: {'q': value});
+    setState(() => _matches =
+        listOf(json['users']).whereType<Map<String, dynamic>>().toList());
   }
 
   @override
@@ -640,7 +718,8 @@ class _AddMemberDialogState extends ConsumerState<AddMemberDialog> {
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Registered user email'),
+              decoration:
+                  const InputDecoration(labelText: 'Registered user email'),
               onChanged: _search,
             ),
             ..._matches.map((user) => ListTile(
@@ -651,13 +730,16 @@ class _AddMemberDialogState extends ConsumerState<AddMemberDialog> {
             const Divider(),
             TextField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Or custom member name'),
+              decoration:
+                  const InputDecoration(labelText: 'Or custom member name'),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel')),
         FilledButton(
           onPressed: _saving ? null : _addCustom,
           child: const Text('Add custom'),
@@ -691,7 +773,9 @@ class _AddMemberDialogState extends ConsumerState<AddMemberDialog> {
   Future<void> _add(Map<String, dynamic> member) async {
     setState(() => _saving = true);
     try {
-      await ref.read(apiProvider).postJson('/api/groups/${widget.group.id}/members', {
+      await ref
+          .read(apiProvider)
+          .postJson('/api/groups/${widget.group.id}/members', {
         'members': [member],
       });
       if (mounted) Navigator.pop(context, true);
@@ -704,7 +788,11 @@ class _AddMemberDialogState extends ConsumerState<AddMemberDialog> {
 }
 
 String initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return 'G';
   return parts.take(2).map((part) => part[0]).join().toUpperCase();
 }

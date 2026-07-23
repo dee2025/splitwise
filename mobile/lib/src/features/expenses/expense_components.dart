@@ -6,137 +6,14 @@ import '../../shared/money.dart';
 import '../../shared/providers.dart';
 import '../../shared/screen_utils.dart';
 
-const expenseCategories = ['food', 'travel', 'accommodation', 'shopping', 'entertainment', 'other'];
-
-class ExpensesScreen extends ConsumerStatefulWidget {
-  const ExpensesScreen({super.key});
-
-  @override
-  ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
-}
-
-class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
-  var _loading = true;
-  Object? _error;
-  List<Expense> _expenses = const [];
-  List<MoneyGroup> _groups = const [];
-  String _category = 'all';
-  String _groupId = 'all';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final api = ref.read(apiProvider);
-      final results = await Future.wait([
-        api.getJson('/api/expenses'),
-        api.getJson('/api/groups'),
-      ]);
-      setState(() {
-        _expenses = listOf(results[0]['expenses']).whereType<Map<String, dynamic>>().map(Expense.fromJson).toList();
-        _groups = listOf(results[1]['groups']).whereType<Map<String, dynamic>>().map(MoneyGroup.fromJson).toList();
-      });
-    } catch (error) {
-      _error = error;
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = ref.watch(authControllerProvider).user;
-    if (_loading) return const Scaffold(body: LoadingView());
-    if (_error != null) return Scaffold(body: ErrorView(message: _error.toString(), onRetry: _load));
-
-    final filtered = _expenses.where((expense) {
-      return (_category == 'all' || expense.category == _category) && (_groupId == 'all' || expense.groupId == _groupId);
-    }).toList();
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _groups.isEmpty
-            ? null
-            : () async {
-                final changed = await showExpenseEditor(
-                  context: context,
-                  ref: ref,
-                  groups: _groups,
-                  currentUser: user,
-                );
-                if (changed == true) _load();
-              },
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                DropdownMenu<String>(
-                  initialSelection: _category,
-                  label: const Text('Category'),
-                  onSelected: (value) => setState(() => _category = value ?? 'all'),
-                  dropdownMenuEntries: [
-                    const DropdownMenuEntry(value: 'all', label: 'All categories'),
-                    ...expenseCategories.map((category) => DropdownMenuEntry(value: category, label: categoryLabel(category))),
-                  ],
-                ),
-                DropdownMenu<String>(
-                  initialSelection: _groupId,
-                  label: const Text('Group'),
-                  onSelected: (value) => setState(() => _groupId = value ?? 'all'),
-                  dropdownMenuEntries: [
-                    const DropdownMenuEntry(value: 'all', label: 'All groups'),
-                    ..._groups.map((group) => DropdownMenuEntry(value: group.id, label: group.name)),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (filtered.isEmpty)
-              const EmptyView(
-                icon: Icons.receipt_long_outlined,
-                title: 'No expenses',
-                message: 'Expenses you add or share will appear here.',
-              )
-            else
-              ...filtered.map(
-                (expense) => ExpenseTile(
-                  expense: expense,
-                  currentUserId: user?.id ?? '',
-                  onTap: () async {
-                    final changed = await showExpenseDetails(
-                      context: context,
-                      ref: ref,
-                      expense: expense,
-                      groups: _groups,
-                      currentUser: user,
-                    );
-                    if (changed == true) _load();
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+const expenseCategories = [
+  'food',
+  'travel',
+  'accommodation',
+  'shopping',
+  'entertainment',
+  'other'
+];
 
 class ExpenseTile extends StatelessWidget {
   const ExpenseTile({
@@ -165,13 +42,16 @@ class ExpenseTile extends StatelessWidget {
       child: ListTile(
         leading: Icon(categoryIcon(expense.category)),
         title: Text(expense.description),
-        subtitle: Text('${expense.groupName} - paid by ${isPayer ? 'you' : expense.paidByName}'),
+        subtitle: Text(
+            '${expense.groupName} - paid by ${isPayer ? 'you' : expense.paidByName}'),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(money(expense.amount), style: const TextStyle(fontWeight: FontWeight.w800)),
-            Text(isPayer ? 'you paid' : 'share ${money(myShare?.amount ?? 0)}', style: Theme.of(context).textTheme.labelSmall),
+            Text(money(expense.amount),
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(isPayer ? 'you paid' : 'share ${money(myShare?.amount ?? 0)}',
+                style: Theme.of(context).textTheme.labelSmall),
           ],
         ),
         onTap: onTap,
@@ -198,11 +78,14 @@ Future<bool?> showExpenseDetails({
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(expense.description, style: Theme.of(context).textTheme.titleLarge),
+            Text(expense.description,
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            Text('${money(expense.amount)} - ${categoryLabel(expense.category)}'),
+            Text(
+                '${money(expense.amount)} - ${categoryLabel(expense.category)}'),
             const SizedBox(height: 16),
-            Text('Split details', style: Theme.of(context).textTheme.titleMedium),
+            Text('Split details',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             ...expense.splitBetween.map((split) => ListTile(
                   dense: true,
@@ -235,7 +118,9 @@ Future<bool?> showExpenseDetails({
                   );
                   if (!confirmed) return;
                   try {
-                    await ref.read(apiProvider).deleteJson('/api/expenses/${expense.id}', {});
+                    await ref
+                        .read(apiProvider)
+                        .deleteJson('/api/expenses/${expense.id}', {});
                     if (context.mounted) Navigator.pop(context, true);
                   } catch (error) {
                     if (context.mounted) showError(context, error);
@@ -303,13 +188,22 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
   @override
   void initState() {
     super.initState();
-    _description = TextEditingController(text: widget.expense?.description ?? '');
-    _amount = TextEditingController(text: widget.expense?.amount.toStringAsFixed(2) ?? '');
-    _groupId = widget.fixedGroupId ?? widget.expense?.groupId ?? widget.groups.first.id;
+    _description =
+        TextEditingController(text: widget.expense?.description ?? '');
+    _amount = TextEditingController(
+        text: widget.expense?.amount.toStringAsFixed(2) ?? '');
+    _groupId = widget.fixedGroupId ??
+        widget.expense?.groupId ??
+        widget.groups.first.id;
     _category = widget.expense?.category ?? 'other';
     _splitIds = {
-      if (widget.expense != null) ...widget.expense!.splitBetween.map((s) => s.userId),
-      if (widget.expense == null) ...(_selectedGroup?.members.map(_splitIdForMember).where((id) => id.isNotEmpty) ?? <String>[]),
+      if (widget.expense != null)
+        ...widget.expense!.splitBetween.map((s) => s.userId),
+      if (widget.expense == null)
+        ...(_selectedGroup?.members
+                .map(_splitIdForMember)
+                .where((id) => id.isNotEmpty) ??
+            <String>[]),
     };
   }
 
@@ -345,32 +239,45 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(widget.expense == null ? 'Add expense' : 'Edit expense', style: Theme.of(context).textTheme.titleLarge),
+                Text(widget.expense == null ? 'Add expense' : 'Edit expense',
+                    style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 16),
                 if (widget.fixedGroupId == null)
                   DropdownButtonFormField<String>(
                     initialValue: _groupId,
                     decoration: const InputDecoration(labelText: 'Group'),
-                    items: widget.groups.map((group) => DropdownMenuItem(value: group.id, child: Text(group.name))).toList(),
+                    items: widget.groups
+                        .map((group) => DropdownMenuItem(
+                            value: group.id, child: Text(group.name)))
+                        .toList(),
                     onChanged: (value) => setState(() {
                       _groupId = value ?? _groupId;
-                      _splitIds = _selectedGroup?.members.map(_splitIdForMember).where((id) => id.isNotEmpty).toSet() ?? {};
+                      _splitIds = _selectedGroup?.members
+                              .map(_splitIdForMember)
+                              .where((id) => id.isNotEmpty)
+                              .toSet() ??
+                          {};
                     }),
                   ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _description,
                   decoration: const InputDecoration(labelText: 'Description'),
-                  validator: (value) => (value ?? '').trim().isEmpty ? 'Description is required' : null,
+                  validator: (value) => (value ?? '').trim().isEmpty
+                      ? 'Description is required'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _amount,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(labelText: 'Amount'),
                   validator: (value) {
                     final amount = double.tryParse(value ?? '');
-                    if (amount == null || amount <= 0) return 'Enter a valid amount';
+                    if (amount == null || amount <= 0) {
+                      return 'Enter a valid amount';
+                    }
                     return null;
                   },
                 ),
@@ -378,17 +285,27 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
                 DropdownButtonFormField<String>(
                   initialValue: _category,
                   decoration: const InputDecoration(labelText: 'Category'),
-                  items: expenseCategories.map((category) => DropdownMenuItem(value: category, child: Text(categoryLabel(category)))).toList(),
-                  onChanged: (value) => setState(() => _category = value ?? 'other'),
+                  items: expenseCategories
+                      .map((category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(categoryLabel(category))))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => _category = value ?? 'other'),
                 ),
                 const SizedBox(height: 16),
-                Text('Split between', style: Theme.of(context).textTheme.titleMedium),
+                Text('Split between',
+                    style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (group != null)
-                  ...group.members.where((m) => _splitIdForMember(m).isNotEmpty).map(
+                  ...group.members
+                      .where((m) => _splitIdForMember(m).isNotEmpty)
+                      .map(
                         (member) => CheckboxListTile(
                           value: _splitIds.contains(_splitIdForMember(member)),
-                          title: Text(member.userId == widget.currentUser.id ? 'You' : member.name),
+                          title: Text(member.userId == widget.currentUser.id
+                              ? 'You'
+                              : member.name),
                           onChanged: (checked) => setState(() {
                             final splitId = _splitIdForMember(member);
                             if (checked == true) {
@@ -402,7 +319,12 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save expense'),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Save expense'),
                 ),
               ],
             ),

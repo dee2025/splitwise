@@ -6,7 +6,8 @@ import '../../shared/models.dart';
 
 const googleServerClientId = String.fromEnvironment(
   'GOOGLE_SERVER_CLIENT_ID',
-  defaultValue: '888884092284-kvpqvogq4ks1h7m437e3u9d5tkadefvt.apps.googleusercontent.com',
+  defaultValue:
+      '888884092284-kvpqvogq4ks1h7m437e3u9d5tkadefvt.apps.googleusercontent.com',
 );
 
 class AuthState {
@@ -14,7 +15,7 @@ class AuthState {
     this.loading = true,
     this.submitting = false,
     this.user,
-    this.error,   
+    this.error,
     this.verificationEmail,
   });
 
@@ -41,7 +42,9 @@ class AuthState {
       submitting: submitting ?? this.submitting,
       user: clearUser ? null : user ?? this.user,
       error: clearError ? null : error ?? this.error,
-      verificationEmail: clearVerificationEmail ? null : verificationEmail ?? this.verificationEmail,
+      verificationEmail: clearVerificationEmail
+          ? null
+          : verificationEmail ?? this.verificationEmail,
     );
   }
 }
@@ -70,8 +73,11 @@ class AuthController extends StateNotifier<AuthState> {
 
     try {
       final json = await _api.getJson('/api/auth/check');
-      if (json['isAuthenticated'] == true && json['user'] is Map<String, dynamic>) {
-        state = AuthState(loading: false, user: AppUser.fromJson(json['user'] as Map<String, dynamic>));
+      if (json['isAuthenticated'] == true &&
+          json['user'] is Map<String, dynamic>) {
+        state = AuthState(
+            loading: false,
+            user: AppUser.fromJson(json['user'] as Map<String, dynamic>));
       } else {
         await _tokenStore.clear();
         state = const AuthState(loading: false);
@@ -83,7 +89,8 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> login({required String email, required String password}) async {
-    state = state.copyWith(submitting: true, clearError: true, clearVerificationEmail: true);
+    state = state.copyWith(
+        submitting: true, clearError: true, clearVerificationEmail: true);
     try {
       final json = await _api.postJson('/api/auth/login', {
         'email': email.trim(),
@@ -92,7 +99,10 @@ class AuthController extends StateNotifier<AuthState> {
       });
       await _completeAuth(json);
     } on ApiException catch (error) {
-      final verificationEmail = error.statusCode == 403 && error.errors.containsKey('email') ? email.trim() : null;
+      final verificationEmail =
+          error.statusCode == 403 && error.errors.containsKey('email')
+              ? email.trim()
+              : null;
       state = state.copyWith(
         submitting: false,
         error: error.message,
@@ -108,7 +118,8 @@ class AuthController extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(submitting: true, clearError: true);
+    state = state.copyWith(
+        submitting: true, clearError: true, clearVerificationEmail: true);
     try {
       final json = await _api.postJson('/api/auth/signup', {
         'fullName': fullName.trim(),
@@ -119,7 +130,9 @@ class AuthController extends StateNotifier<AuthState> {
         final user = json['user'];
         state = state.copyWith(
           submitting: false,
-          verificationEmail: user is Map<String, dynamic> ? stringOf(user['email'], fallback: email.trim()) : email.trim(),
+          verificationEmail: user is Map<String, dynamic>
+              ? stringOf(user['email'], fallback: email.trim())
+              : email.trim(),
         );
         return;
       }
@@ -166,10 +179,32 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> resendVerification(String email) async {
     state = state.copyWith(submitting: true, clearError: true);
     try {
-      await _api.postJson('/api/auth/resend-verification', {'email': email.trim()});
-      state = state.copyWith(submitting: false, verificationEmail: email.trim());
+      await _api
+          .postJson('/api/auth/resend-verification', {'email': email.trim()});
+      state =
+          state.copyWith(submitting: false, verificationEmail: email.trim());
     } on ApiException catch (error) {
       state = state.copyWith(submitting: false, error: error.message);
+    }
+  }
+
+  Future<void> verifyEmailOtp({
+    required String email,
+    required String otp,
+  }) async {
+    state = state.copyWith(submitting: true, clearError: true);
+    try {
+      final json = await _api.postJson('/api/auth/verify-email', {
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'client': 'flutter',
+      });
+      await _completeAuth(json);
+    } on ApiException catch (error) {
+      state = state.copyWith(submitting: false, error: error.message);
+    } catch (_) {
+      state =
+          state.copyWith(submitting: false, error: 'Email verification failed');
     }
   }
 
