@@ -14,7 +14,7 @@ class AuthState {
     this.loading = true,
     this.submitting = false,
     this.user,
-    this.error,
+    this.error,   
     this.verificationEmail,
   });
 
