@@ -33,10 +33,27 @@ jobs:
             git pull --ff-only origin main
 
             echo "Installing dependencies..."
+            OLD_NODE_MODULES=""
+            if [ -d node_modules ]; then
+              OLD_NODE_MODULES="node_modules.deploy-old-$(date +%s)"
+              mv node_modules "$OLD_NODE_MODULES"
+            fi
+
+            restore_node_modules() {
+              if [ -n "$OLD_NODE_MODULES" ] && [ -d "$OLD_NODE_MODULES" ]; then
+                rm -rf node_modules
+                mv "$OLD_NODE_MODULES" node_modules
+              fi
+            }
+
             if [ -f package-lock.json ]; then
-              npm ci
+              npm ci || { restore_node_modules; exit 1; }
             else
-              npm install
+              npm install || { restore_node_modules; exit 1; }
+            fi
+
+            if [ -n "${OLD_NODE_MODULES:-}" ]; then
+              rm -rf "$OLD_NODE_MODULES"
             fi
 
             echo "Building app..."
