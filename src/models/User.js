@@ -43,6 +43,16 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    emailVerificationOtpHash: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    emailVerificationOtpAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     contact: {
       type: String,
       trim: true,

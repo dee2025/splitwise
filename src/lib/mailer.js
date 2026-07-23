@@ -88,31 +88,30 @@ function emailShell(content, footer) {
 </html>`;
 }
 
-export async function sendVerificationEmail({ to, fullName, verificationUrl }) {
+export async function sendVerificationEmail({ to, fullName, otp }) {
   const firstName = escapeHtml(getFirstName(fullName));
-  const safeUrl = escapeHtml(verificationUrl);
+  const safeOtp = escapeHtml(otp);
   const appUrl = getAppUrl();
 
   const html = emailShell(
     `
       <p style="margin:0 0 8px; font-size:26px; font-weight:700; color:#f1f5f9;">
-        Verify your email, ${firstName}
+        Your MoneySplit code, ${firstName}
       </p>
-      <p style="margin:0 0 28px; font-size:15px; color:#94a3b8; line-height:1.6;">
-        Confirm this email address to activate your MoneySplit account. This link expires in 24 hours.
+      <p style="margin:0 0 24px; font-size:15px; color:#94a3b8; line-height:1.6;">
+        Enter this one-time code in MoneySplit to activate your account. The code expires in 10 minutes.
       </p>
-      <table width="100%" cellpadding="0" cellspacing="0">
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
         <tr>
           <td align="center">
-            <a href="${safeUrl}" style="display:inline-block; background:#4f46e5; color:#ffffff; font-size:15px; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none;">
-              Verify email address
-            </a>
+            <div style="display:inline-block; background:#0f172a; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px 24px;">
+              <span style="font-size:32px; line-height:1; letter-spacing:0.22em; font-weight:800; color:#f8fafc;">${safeOtp}</span>
+            </div>
           </td>
         </tr>
       </table>
-      <p style="margin:28px 0 0; font-size:13px; color:#94a3b8; line-height:1.6;">
-        If the button does not work, open this secure link:<br />
-        <a href="${safeUrl}" style="color:#a5b4fc; word-break:break-all;">${safeUrl}</a>
+      <p style="margin:0; font-size:13px; color:#94a3b8; line-height:1.6;">
+        Do not share this code with anyone. MoneySplit will never ask for it outside the verification screen.
       </p>
     `,
     `MoneySplit account security<br />This email was sent to ${escapeHtml(to)}. If you did not sign up, ignore this message.`,
@@ -121,9 +120,9 @@ export async function sendVerificationEmail({ to, fullName, verificationUrl }) {
   await getTransporter().sendMail({
     from: `"Money Split" <${process.env.ZOHO_EMAIL}>`,
     to,
-    subject: "Verify your MoneySplit email address",
+    subject: `${otp} is your MoneySplit verification code`,
     html,
-    text: `Verify your MoneySplit email address\n\nOpen this link within 24 hours:\n${verificationUrl}\n\nIf you did not sign up, ignore this email.\n\n${appUrl}`,
+    text: `Your MoneySplit verification code is ${otp}.\n\nEnter this code in MoneySplit within 10 minutes. Do not share it with anyone.\n\nIf you did not sign up, ignore this email.\n\n${appUrl}`,
   });
 }
 

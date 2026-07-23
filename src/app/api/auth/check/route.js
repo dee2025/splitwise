@@ -17,7 +17,9 @@ export async function GET(req) {
     const decoded = await verifyToken(token);
     
     await connectDB();
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.userId).select(
+      "-password -emailVerificationTokenHash -emailVerificationOtpHash -emailVerificationExpiresAt -emailVerificationLastSentAt",
+    );
     
     if (!user) {
       const response = NextResponse.json({ 

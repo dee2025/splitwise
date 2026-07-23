@@ -55,6 +55,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationOtp, setVerificationOtp] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
@@ -161,7 +163,7 @@ export default function SignupPage() {
       if (res.data.success) {
         if (res.data.requiresEmailVerification) {
           setVerificationEmail(res.data.user?.email || payload.email);
-          toast.success("Verification email sent");
+          toast.success("Verification OTP sent");
           return;
         }
         dispatch(loginSuccess({ user: res.data.user }));
@@ -198,11 +200,37 @@ export default function SignupPage() {
       const res = await axios.post("/api/auth/resend-verification", {
         email: verificationEmail,
       });
-      toast.success(res.data?.message || "Verification email sent");
+      toast.success(res.data?.message || "Verification OTP sent");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Unable to resend verification email");
+      toast.error(err.response?.data?.error || "Unable to resend verification OTP");
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!verificationEmail || verificationOtp.trim().length !== 6) {
+      toast.error("Enter the 6-digit OTP");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await axios.post("/api/auth/verify-email", {
+        email: verificationEmail,
+        otp: verificationOtp,
+      });
+      if (res.data?.success) {
+        dispatch(loginSuccess({ user: res.data.user }));
+        toast.success(res.data.message || "Email verified");
+        router.replace(redirectPath);
+        return;
+      }
+      toast.error("Unable to verify OTP");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Unable to verify OTP");
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -362,16 +390,37 @@ export default function SignupPage() {
               </div>
               <div>
                 <h2 className="text-base font-semibold text-slate-950">
-                  Check your inbox
+                  Enter the OTP
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  We sent a verification link to{" "}
+                  We sent a 6-digit code to{" "}
                   <span className="font-semibold text-slate-950">
                     {verificationEmail}
                   </span>
-                  . The link expires in 24 hours.
+                  . It expires in 10 minutes.
                 </p>
               </div>
+              <input
+                inputMode="numeric"
+                maxLength={6}
+                value={verificationOtp}
+                onChange={(event) => setVerificationOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="000000"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-2xl font-black tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={isVerifyingOtp}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isVerifyingOtp ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                Verify and continue
+              </button>
               <button
                 type="button"
                 onClick={handleResendVerification}
@@ -383,7 +432,7 @@ export default function SignupPage() {
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                Resend verification email
+                Resend OTP
               </button>
               <Link
                 href={redirectPath === "/home" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}

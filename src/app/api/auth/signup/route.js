@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/db";
-import { buildEmailVerificationUrl, createEmailVerificationToken } from "@/lib/emailVerification";
+import { applyEmailVerificationOtp } from "@/lib/emailVerification";
 import { sendVerificationEmail } from "@/lib/mailer";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import { generateUniqueUsername } from "@/lib/username";
@@ -73,7 +73,6 @@ export async function POST(req) {
 
     const generatedUsername = await generateUniqueUsername(normalizedFullName);
     const hashedPassword = await bcrypt.hash(password, 12);
-    const verification = createEmailVerificationToken();
 
     const newUser = new User({
       fullName: normalizedFullName,
@@ -84,10 +83,8 @@ export async function POST(req) {
       authProvider: "local",
       emailVerified: false,
       emailVerifiedAt: null,
-      emailVerificationTokenHash: verification.tokenHash,
-      emailVerificationExpiresAt: verification.expiresAt,
-      emailVerificationLastSentAt: new Date(),
     });
+    const verification = applyEmailVerificationOtp(newUser);
     newUser.googleId = undefined;
     await newUser.save();
 
@@ -105,14 +102,14 @@ export async function POST(req) {
     sendVerificationEmail({
       to: newUser.email,
       fullName: newUser.fullName,
-      verificationUrl: buildEmailVerificationUrl(verification.token),
+      otp: verification.otp,
     }).catch((err) => console.error("Verification email failed:", err.message));
 
     return NextResponse.json(
       {
         success: true,
         requiresEmailVerification: true,
-        message: "Account created. Please verify your email before signing in.",
+        message: "Account created. Enter the OTP sent to your email to activate your account.",
         user: userResponse,
       },
       { status: 201 },

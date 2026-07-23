@@ -172,7 +172,9 @@ export async function POST(request) {
         user.emailVerified = true;
         user.emailVerifiedAt = new Date();
         user.emailVerificationTokenHash = null;
+        user.emailVerificationOtpHash = null;
         user.emailVerificationExpiresAt = null;
+        user.emailVerificationOtpAttempts = 0;
         shouldSave = true;
       }
 

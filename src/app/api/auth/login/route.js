@@ -1,6 +1,8 @@
 // app/api/auth/login/route.js
 import { generateToken } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import { applyEmailVerificationOtp, canSendEmailVerificationOtp } from "@/lib/emailVerification";
+import { sendVerificationEmail } from "@/lib/mailer";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
@@ -81,19 +83,6 @@ export async function POST(req) {
       );
     }
 
-    if (user.emailVerified === false) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "EMAIL_NOT_VERIFIED",
-          error: "Please verify your email before signing in",
-          errors: { email: "Check your inbox for the MoneySplit verification email" },
-          email: user.email,
-        },
-        { status: 403 }
-      );
-    }
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -102,6 +91,33 @@ export async function POST(req) {
           errors: { password: "Incorrect password" },
         },
         { status: 400 }
+      );
+    }
+
+    if (user.emailVerified === false) {
+      let otpSent = false;
+      if (canSendEmailVerificationOtp(user)) {
+        const verification = applyEmailVerificationOtp(user);
+        await user.save();
+        otpSent = true;
+        sendVerificationEmail({
+          to: user.email,
+          fullName: user.fullName,
+          otp: verification.otp,
+        }).catch((err) => console.error("Login verification email failed:", err.message));
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          code: "EMAIL_NOT_VERIFIED",
+          error: otpSent
+            ? "Enter the OTP sent to your email to finish signing in"
+            : "Enter your verification OTP or request a new one",
+          errors: { email: "Email verification is required" },
+          email: user.email,
+        },
+        { status: 403 }
       );
     }
 

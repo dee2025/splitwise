@@ -1,16 +1,14 @@
 import { connectDB } from "@/lib/db";
-import { buildEmailVerificationUrl, createEmailVerificationToken } from "@/lib/emailVerification";
+import { applyEmailVerificationOtp, canSendEmailVerificationOtp } from "@/lib/emailVerification";
 import { sendVerificationEmail } from "@/lib/mailer";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
-const RESEND_COOLDOWN_MS = 60 * 1000;
-
 function neutralResponse() {
   return NextResponse.json({
     success: true,
-    message: "If this email needs verification, a new link will be sent shortly.",
+    message: "If this email needs verification, a new OTP will be sent shortly.",
   });
 }
 
@@ -22,7 +20,7 @@ export async function POST(request) {
       windowMs: 60 * 1000,
     });
     if (limit.limited) {
-      return rateLimitResponse("Too many verification email requests. Please wait and try again.", limit);
+      return rateLimitResponse("Too many OTP requests. Please wait and try again.", limit);
     }
 
     const body = await request.json().catch(() => ({}));
@@ -39,21 +37,17 @@ export async function POST(request) {
       return neutralResponse();
     }
 
-    const lastSent = user.emailVerificationLastSentAt?.getTime?.() || 0;
-    if (Date.now() - lastSent < RESEND_COOLDOWN_MS) {
+    if (!canSendEmailVerificationOtp(user)) {
       return neutralResponse();
     }
 
-    const verification = createEmailVerificationToken();
-    user.emailVerificationTokenHash = verification.tokenHash;
-    user.emailVerificationExpiresAt = verification.expiresAt;
-    user.emailVerificationLastSentAt = new Date();
+    const verification = applyEmailVerificationOtp(user);
     await user.save();
 
     sendVerificationEmail({
       to: user.email,
       fullName: user.fullName,
-      verificationUrl: buildEmailVerificationUrl(verification.token),
+      otp: verification.otp,
     }).catch((err) => console.error("Verification resend email failed:", err.message));
 
     return neutralResponse();

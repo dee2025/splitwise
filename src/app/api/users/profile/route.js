@@ -14,7 +14,7 @@ export async function GET(request) {
 
     const decoded = auth.decoded;
     // select everything except password; User has no "groups" array so no populate needed
-    const user = await User.findById(decoded.userId).select("-password -emailVerificationTokenHash");
+    const user = await User.findById(decoded.userId).select("-password -emailVerificationTokenHash -emailVerificationOtpHash");
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

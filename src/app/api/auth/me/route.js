@@ -9,7 +9,7 @@ export async function GET(req) {
   if (auth.error) return auth.error;
 
   const user = await User.findById(auth.decoded.userId || auth.decoded.id).select(
-    "-password -emailVerificationTokenHash -emailVerificationExpiresAt -emailVerificationLastSentAt",
+    "-password -emailVerificationTokenHash -emailVerificationOtpHash -emailVerificationExpiresAt -emailVerificationLastSentAt",
   );
 
   return Response.json({ user });

@@ -50,6 +50,8 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [verificationOtp, setVerificationOtp] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
@@ -68,7 +70,10 @@ export default function LoginPage() {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
-    if (name === "email" && unverifiedEmail) setUnverifiedEmail("");
+    if (name === "email" && unverifiedEmail) {
+      setUnverifiedEmail("");
+      setVerificationOtp("");
+    }
   };
 
   const handleBlur = (e) => {
@@ -159,11 +164,38 @@ export default function LoginPage() {
     setIsResending(true);
     try {
       const res = await axios.post("/api/auth/resend-verification", { email });
-      toast.success(res.data?.message || "Verification email sent");
+      toast.success(res.data?.message || "Verification OTP sent");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Unable to resend verification email");
+      toast.error(err.response?.data?.error || "Unable to resend verification OTP");
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const email = unverifiedEmail || form.email.trim();
+    if (!email || verificationOtp.trim().length !== 6) {
+      toast.error("Enter the 6-digit OTP");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await axios.post("/api/auth/verify-email", {
+        email,
+        otp: verificationOtp,
+      });
+      if (res.data?.success) {
+        dispatch(loginSuccess({ user: res.data.user }));
+        toast.success(res.data.message || "Email verified");
+        router.replace(redirectPath);
+        return;
+      }
+      toast.error("Unable to verify OTP");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Unable to verify OTP");
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -306,23 +338,44 @@ export default function LoginPage() {
           ) : null}
 
           {unverifiedEmail ? (
-            <div className="mb-4 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">
+            <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-50 p-4 text-sm text-slate-950">
               <p className="font-semibold">Email verification required</p>
-              <p className="mt-1 text-xs leading-5 text-amber-100/80">
-                Verify {unverifiedEmail} before signing in.
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Enter the 6-digit OTP sent to {unverifiedEmail}. It expires in 10 minutes.
               </p>
+              <input
+                inputMode="numeric"
+                maxLength={6}
+                value={verificationOtp}
+                onChange={(event) => setVerificationOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="000000"
+                className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-xl font-black tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={isVerifyingOtp}
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isVerifyingOtp ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5" />
+                )}
+                Verify and continue
+              </button>
               <button
                 type="button"
                 onClick={handleResendVerification}
                 disabled={isResending}
-                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-300 px-3 py-2 text-xs font-bold text-slate-950 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-950 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isResending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Send className="h-3.5 w-3.5" />
                 )}
-                Resend email
+                Resend OTP
               </button>
             </div>
           ) : null}
