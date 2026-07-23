@@ -26,8 +26,10 @@ void main() {
         paidById: 'u1',
         paidByName: 'User One',
         splitBetween: const [
-          ExpenseSplit(userId: 'u1', name: 'User One', amount: 50, percentage: 50),
-          ExpenseSplit(userId: 'u2', name: 'User Two', amount: 50, percentage: 50),
+          ExpenseSplit(
+              userId: 'u1', name: 'User One', amount: 50, percentage: 50),
+          ExpenseSplit(
+              userId: 'u2', name: 'User Two', amount: 50, percentage: 50),
         ],
       ),
       Expense(
@@ -41,8 +43,10 @@ void main() {
         paidById: 'u2',
         paidByName: 'User Two',
         splitBetween: const [
-          ExpenseSplit(userId: 'u1', name: 'User One', amount: 40, percentage: 50),
-          ExpenseSplit(userId: 'u2', name: 'User Two', amount: 40, percentage: 50),
+          ExpenseSplit(
+              userId: 'u1', name: 'User One', amount: 40, percentage: 50),
+          ExpenseSplit(
+              userId: 'u2', name: 'User Two', amount: 40, percentage: 50),
         ],
       ),
     ];

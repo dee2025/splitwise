@@ -59,19 +59,23 @@ class MoneySplitApi {
   final TokenStore _tokenStore;
   final Dio dio;
 
-  Future<Map<String, dynamic>> getJson(String path, {Map<String, dynamic>? query}) async {
+  Future<Map<String, dynamic>> getJson(String path,
+      {Map<String, dynamic>? query}) async {
     return _request(() => dio.get(path, queryParameters: query));
   }
 
-  Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> postJson(
+      String path, Map<String, dynamic> body) async {
     return _request(() => dio.post(path, data: body));
   }
 
-  Future<Map<String, dynamic>> putJson(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> putJson(
+      String path, Map<String, dynamic> body) async {
     return _request(() => dio.put(path, data: body));
   }
 
-  Future<Map<String, dynamic>> deleteJson(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> deleteJson(
+      String path, Map<String, dynamic> body) async {
     return _request(() => dio.delete(path, data: body));
   }
 
@@ -80,11 +84,13 @@ class MoneySplitApi {
       'folder': folder,
       'file': await MultipartFile.fromFile(file.path),
     });
-    final json = await _request(() => dio.post('/api/uploads/image', data: data));
+    final json =
+        await _request(() => dio.post('/api/uploads/image', data: data));
     return json['path']?.toString() ?? '';
   }
 
-  Future<Map<String, dynamic>> _request(Future<Response<dynamic>> Function() send) async {
+  Future<Map<String, dynamic>> _request(
+      Future<Response<dynamic>> Function() send) async {
     try {
       final response = await send();
       final data = response.data;
@@ -94,12 +100,17 @@ class MoneySplitApi {
       final data = error.response?.data;
       if (data is Map<String, dynamic>) {
         throw ApiException(
-          data['error']?.toString() ?? data['message']?.toString() ?? 'Request failed',
+          data['error']?.toString() ??
+              data['message']?.toString() ??
+              'Request failed',
           statusCode: error.response?.statusCode,
-          errors: data['errors'] is Map<String, dynamic> ? data['errors'] as Map<String, dynamic> : const {},
+          errors: data['errors'] is Map<String, dynamic>
+              ? data['errors'] as Map<String, dynamic>
+              : const {},
         );
       }
-      throw ApiException(error.message ?? 'Request failed', statusCode: error.response?.statusCode);
+      throw ApiException(error.message ?? 'Request failed',
+          statusCode: error.response?.statusCode);
     }
   }
 }

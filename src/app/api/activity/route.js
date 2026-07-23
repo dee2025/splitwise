@@ -23,6 +23,7 @@ export async function GET(request) {
     const group = await Group.findOne({
       _id: groupId,
       "members.userId": decoded.userId,
+      isActive: { $ne: false },
     }).select("_id");
 
     if (!group) {

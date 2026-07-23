@@ -92,6 +92,13 @@ export async function GET(request, context) {
       );
     }
 
+    if (groupExists.isActive === false) {
+      return NextResponse.json(
+        { error: "Group not found" },
+        { status: 404 },
+      );
+    }
+
     // Now find the group with population
     const group = await Group.findById(groupObjectId)
       .populate("createdBy", "fullName username email")

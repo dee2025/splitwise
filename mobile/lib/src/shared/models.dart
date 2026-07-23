@@ -179,7 +179,8 @@ class Expense {
           : 'Unknown group',
       paidById: idOf(paidBy),
       paidByName: paidBy is Map<String, dynamic>
-          ? stringOf(paidBy['fullName'] ?? paidBy['username'], fallback: 'Unknown')
+          ? stringOf(paidBy['fullName'] ?? paidBy['username'],
+              fallback: 'Unknown')
           : 'Unknown',
       splitBetween: listOf(json['splitBetween'])
           .whereType<Map<String, dynamic>>()
@@ -213,7 +214,8 @@ class NotificationItem {
       message: stringOf(json['message']),
       type: stringOf(json['type'], fallback: 'default'),
       isRead: json['isRead'] == true,
-      createdAt: DateTime.tryParse(stringOf(json['createdAt'])) ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(stringOf(json['createdAt'])) ?? DateTime.now(),
     );
   }
 }
@@ -236,7 +238,8 @@ class ActivityItem {
       id: idOf(json['_id'] ?? json['id']),
       message: stringOf(json['message']),
       type: stringOf(json['type'], fallback: 'activity'),
-      createdAt: DateTime.tryParse(stringOf(json['createdAt'])) ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(stringOf(json['createdAt'])) ?? DateTime.now(),
     );
   }
 }

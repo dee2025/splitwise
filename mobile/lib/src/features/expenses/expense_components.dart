@@ -182,6 +182,7 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
   late final TextEditingController _amount;
   late String _groupId;
   late String _category;
+  late DateTime _date;
   late Set<String> _splitIds;
   var _saving = false;
 
@@ -196,6 +197,7 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
         widget.expense?.groupId ??
         widget.groups.first.id;
     _category = widget.expense?.category ?? 'other';
+    _date = widget.expense?.date ?? DateTime.now();
     _splitIds = {
       if (widget.expense != null)
         ...widget.expense!.splitBetween.map((s) => s.userId),
@@ -293,6 +295,12 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
                   onChanged: (value) =>
                       setState(() => _category = value ?? 'other'),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text('Date: ${compactDate(_date)}'),
+                ),
                 const SizedBox(height: 16),
                 Text('Split between',
                     style: Theme.of(context).textTheme.titleMedium),
@@ -351,7 +359,7 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
       'paidBy': widget.currentUser.id,
       'paidTo': _splitIds.toList(),
       'splitBetween': splitBetween,
-      'date': DateTime.now().toIso8601String(),
+      'date': _date.toIso8601String(),
     };
 
     try {
@@ -367,6 +375,26 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    setState(() {
+      _date = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        _date.hour,
+        _date.minute,
+        _date.second,
+      );
+    });
   }
 }
 

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../shared/api_client.dart';
 import '../../shared/app_top_bar.dart';
 import '../../shared/models.dart';
+import '../../shared/money.dart';
 import '../../shared/providers.dart';
 import '../../shared/screen_utils.dart';
 
@@ -104,6 +105,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         value: '${_stats['expenseCount'] ?? 0}')),
               ],
             ),
+            StatCard(
+                label: 'Total activity',
+                value: money(numberOf(_stats['totalExpenses']))),
+            const SizedBox(height: 12),
+            if (profile.contact.isNotEmpty || profile.bio.isNotEmpty)
+              Card(
+                child: Column(
+                  children: [
+                    if (profile.contact.isNotEmpty)
+                      ListTile(
+                        leading: const Icon(Icons.phone_outlined),
+                        title: const Text('Contact'),
+                        subtitle: Text(profile.contact),
+                      ),
+                    if (profile.bio.isNotEmpty)
+                      ListTile(
+                        leading: const Icon(Icons.notes_outlined),
+                        title: const Text('Bio'),
+                        subtitle: Text(profile.bio),
+                      ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 12),
             Card(
               child: Column(
@@ -126,7 +150,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ListTile(
                     leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
-                    onTap: () =>
+                    onTap: () async =>
                         ref.read(authControllerProvider.notifier).logout(),
                   ),
                   ListTile(
@@ -333,100 +357,211 @@ Future<void> showChangePasswordDialog({
   required BuildContext context,
   required WidgetRef ref,
 }) {
-  final current = TextEditingController();
-  final next = TextEditingController();
   return showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => const ChangePasswordDialog(),
+  );
+}
+
+class ChangePasswordDialog extends ConsumerStatefulWidget {
+  const ChangePasswordDialog({super.key});
+
+  @override
+  ConsumerState<ChangePasswordDialog> createState() =>
+      _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _current = TextEditingController();
+  final _next = TextEditingController();
+  final _confirm = TextEditingController();
+  var _saving = false;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _next.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
       title: const Text('Change password'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-              controller: current,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _current,
+              enabled: !_saving,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current password')),
-          const SizedBox(height: 12),
-          TextField(
-              controller: next,
+              decoration: const InputDecoration(labelText: 'Current password'),
+              validator: (value) =>
+                  (value ?? '').isEmpty ? 'Current password is required' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _next,
+              enabled: !_saving,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'New password')),
-        ],
+              decoration: const InputDecoration(labelText: 'New password'),
+              validator: (value) =>
+                  (value ?? '').length < 6 ? 'Use at least 6 characters' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _confirm,
+              enabled: !_saving,
+              obscureText: true,
+              decoration:
+                  const InputDecoration(labelText: 'Confirm new password'),
+              validator: (value) =>
+                  value != _next.text ? 'Passwords do not match' : null,
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _saving ? null : () => Navigator.pop(context),
             child: const Text('Cancel')),
         FilledButton(
-          onPressed: () async {
-            try {
-              await ref
-                  .read(apiProvider)
-                  .putJson('/api/users/change-password', {
-                'currentPassword': current.text,
-                'newPassword': next.text,
-              });
-              if (context.mounted) Navigator.pop(context);
-            } catch (error) {
-              if (context.mounted) showError(context, error);
-            }
-          },
-          child: const Text('Save'),
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Save'),
         ),
       ],
-    ),
-  );
+    );
+  }
+
+  Future<void> _save() async {
+    if (_formKey.currentState?.validate() != true) return;
+    setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(apiProvider).putJson('/api/users/change-password', {
+        'currentPassword': _current.text,
+        'newPassword': _next.text,
+      });
+      if (mounted) {
+        Navigator.pop(context);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Password changed successfully')),
+        );
+      }
+    } catch (error) {
+      if (mounted) showError(context, error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 }
 
 Future<void> showDeleteAccountDialog({
   required BuildContext context,
   required WidgetRef ref,
 }) {
-  final confirmation = TextEditingController();
-  final password = TextEditingController();
   return showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => const DeleteAccountDialog(),
+  );
+}
+
+class DeleteAccountDialog extends ConsumerStatefulWidget {
+  const DeleteAccountDialog({super.key});
+
+  @override
+  ConsumerState<DeleteAccountDialog> createState() =>
+      _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _confirmation = TextEditingController();
+  final _password = TextEditingController();
+  var _saving = false;
+
+  @override
+  void dispose() {
+    _confirmation.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
       title: const Text('Delete account'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-              'Type DELETE to permanently remove your account and associated data.'),
-          const SizedBox(height: 12),
-          TextField(
-              controller: confirmation,
-              decoration: const InputDecoration(labelText: 'Confirmation')),
-          const SizedBox(height: 12),
-          TextField(
-              controller: password,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+                'Type DELETE to permanently remove your account and associated data.'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _confirmation,
+              enabled: !_saving,
+              decoration: const InputDecoration(labelText: 'Confirmation'),
+              validator: (value) => (value ?? '').trim() == 'DELETE'
+                  ? null
+                  : 'Type DELETE to continue',
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _password,
+              enabled: !_saving,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: 'Password, if local account')),
-        ],
+                  labelText: 'Password, if local account'),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _saving ? null : () => Navigator.pop(context),
             child: const Text('Cancel')),
         FilledButton(
-          onPressed: () async {
-            try {
-              await ref.read(apiProvider).deleteJson('/api/users/account', {
-                'confirmation': confirmation.text.trim(),
-                'password': password.text,
-              });
-              await ref.read(authControllerProvider.notifier).logout();
-              if (context.mounted) Navigator.pop(context);
-            } catch (error) {
-              if (context.mounted) showError(context, error);
-            }
-          },
-          child: const Text('Delete'),
+          onPressed: _saving ? null : _delete,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Delete'),
         ),
       ],
-    ),
-  );
+    );
+  }
+
+  Future<void> _delete() async {
+    if (_formKey.currentState?.validate() != true) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(apiProvider).deleteJson('/api/users/account', {
+        'confirmation': _confirmation.text.trim(),
+        'password': _password.text,
+      });
+      if (mounted) {
+        Navigator.pop(context);
+      }
+      await ref.read(authControllerProvider.notifier).logout();
+    } catch (error) {
+      if (mounted) showError(context, error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 }
 
 String _initials(String name) {

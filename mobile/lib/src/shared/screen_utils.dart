@@ -33,7 +33,9 @@ class EmptyView extends StatelessWidget {
           children: [
             Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 12),
-            Text(title, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+            Text(title,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center),
             const SizedBox(height: 6),
             Text(message, textAlign: TextAlign.center),
             if (action != null) ...[
@@ -65,7 +67,8 @@ class ErrorView extends StatelessWidget {
 }
 
 void showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+  ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(error.toString())));
 }
 
 Future<bool> confirmDestructive(
@@ -80,7 +83,9 @@ Future<bool> confirmDestructive(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel')),
         FilledButton.tonal(
           onPressed: () => Navigator.pop(context, true),
           child: Text(action),
@@ -105,7 +110,8 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+        Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
         if (trailing != null) trailing!,
       ],
     );

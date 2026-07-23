@@ -162,6 +162,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         subtitle: Text(
                             '${expense.groupName} - ${compactDate(expense.date)}'),
                         trailing: Text(money(expense.amount)),
+                        onTap: expense.groupId.isEmpty
+                            ? null
+                            : () => context.go('/groups/${expense.groupId}'),
                       ),
                     ),
                   ),

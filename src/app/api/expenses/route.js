@@ -1,4 +1,5 @@
 import { verifyRequestToken } from "@/lib/apiAuth";
+import { createActivity } from "@/lib/createActivity";
 import { connectDB } from "@/lib/db";
 import Expense from "@/models/Expense";
 import Group from "@/models/Group";
@@ -26,7 +27,12 @@ export async function GET(request) {
       return NextResponse.json({ error: "Account blocked" }, { status: 403 });
     }
 
-    let query = { "splitBetween.userId": user._id };
+    const query = {
+      $or: [
+        { paidBy: user._id },
+        { "splitBetween.userId": user._id },
+      ],
+    };
 
     if (groupId) {
       query.groupId = groupId;
@@ -200,6 +206,18 @@ export async function POST(request) {
     // Update group total
     group.totalExpenses = (group.totalExpenses || 0) + amountValue;
     await group.save();
+
+    await createActivity({
+      groupId: group._id,
+      userId: user._id,
+      type: "expense_added",
+      message: `${user.fullName || user.username || "A member"} added an expense`,
+      metadata: {
+        expenseId: expense._id,
+        amount: amountValue,
+        category: category || "other",
+      },
+    });
 
     // Send notifications to involved users (except payer)
     const involvedUsers = normalizedSplit

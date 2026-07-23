@@ -14,7 +14,8 @@ String compactDate(DateTime date) {
   return DateFormat('d MMM yyyy').format(date.toLocal());
 }
 
-({double owed, double owe}) computeBalances(List<Expense> expenses, String userId) {
+({double owed, double owe}) computeBalances(
+    List<Expense> expenses, String userId) {
   double owed = 0;
   double owe = 0;
 
@@ -52,11 +53,14 @@ List<Map<String, dynamic>> equalSplits(double amount, List<String> userIds) {
       .map((id) => {
             'userId': id,
             'amount': base,
-            'percentage': double.parse(((base / amount) * 100).toStringAsFixed(2)),
+            'percentage':
+                double.parse(((base / amount) * 100).toStringAsFixed(2)),
           })
       .toList();
-  final used = splits.fold<double>(0, (sum, split) => sum + (split['amount'] as double));
+  final used =
+      splits.fold<double>(0, (sum, split) => sum + (split['amount'] as double));
   final diff = double.parse((amount - used).toStringAsFixed(2));
-  splits.last['amount'] = double.parse(((splits.last['amount'] as double) + diff).toStringAsFixed(2));
+  splits.last['amount'] = double.parse(
+      ((splits.last['amount'] as double) + diff).toStringAsFixed(2));
   return splits;
 }

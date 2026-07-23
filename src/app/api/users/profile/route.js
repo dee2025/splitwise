@@ -27,6 +27,7 @@ export async function GET(request) {
     // Groups the user belongs to
     const groupsCount = await Group.countDocuments({
       "members.userId": user._id,
+      isActive: { $ne: false },
     });
 
     // Expense stats:

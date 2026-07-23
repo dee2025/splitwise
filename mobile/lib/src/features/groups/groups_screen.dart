@@ -16,6 +16,8 @@ import '../../shared/screen_utils.dart';
 
 const groupTypes = ['trip', 'home', 'couple', 'event', 'office'];
 
+enum GroupEditorResult { saved, deleted }
+
 class GroupsScreen extends ConsumerStatefulWidget {
   const GroupsScreen({super.key});
 
@@ -92,8 +94,10 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
       appBar: const AppTopBar(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final created = await showGroupEditor(context: context, ref: ref);
-          if (created == true) _load();
+          final result = await showGroupEditor(context: context, ref: ref);
+          if (result != null) {
+            _load();
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Create'),
@@ -128,9 +132,11 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                 message: 'Create a group or adjust your filters.',
                 action: FilledButton(
                   onPressed: () async {
-                    final created =
+                    final result =
                         await showGroupEditor(context: context, ref: ref);
-                    if (created == true) _load();
+                    if (result != null) {
+                      _load();
+                    }
                   },
                   child: const Text('Create group'),
                 ),
@@ -186,7 +192,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 4, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
     _load();
   }
 
@@ -248,9 +254,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           if (isAdmin)
             IconButton(
               onPressed: () async {
-                final changed = await showGroupEditor(
+                final result = await showGroupEditor(
                     context: context, ref: ref, group: group);
-                if (changed == true) _load();
+                if (result == GroupEditorResult.deleted) {
+                  if (context.mounted) {
+                    context.go('/groups');
+                  }
+                  return;
+                }
+                if (result == GroupEditorResult.saved) {
+                  _load();
+                }
               },
               icon: const Icon(Icons.settings_outlined),
             ),
@@ -258,10 +272,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         bottom: TabBar(
           controller: _tabs,
           tabs: const [
-            Tab(text: 'Summary'),
-            Tab(text: 'Expenses'),
-            Tab(text: 'Members'),
             Tab(text: 'Activity'),
+            Tab(text: 'Members'),
+            Tab(text: 'Summary'),
           ],
         ),
       ),
@@ -282,109 +295,319 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
       body: TabBarView(
         controller: _tabs,
         children: [
-          RefreshIndicator(
+          GroupActivityTab(
+            group: group,
+            expenses: _expenses,
+            activity: _activity,
+            currentUser: user,
             onRefresh: _load,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(group.description.isEmpty
-                            ? 'No description'
-                            : group.description),
-                        const SizedBox(height: 16),
-                        Text('Total expenses',
-                            style: Theme.of(context).textTheme.labelLarge),
-                        Text(money(group.totalExpenses),
-                            style: Theme.of(context).textTheme.headlineSmall),
-                        const SizedBox(height: 8),
-                        Text(
-                            '${group.members.length} members - ${group.type} - INR'),
-                      ],
-                    ),
-                  ),
-                ),
-                if (group.inviteToken != null && isAdmin)
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.link_outlined),
-                      title: const Text('Invite link'),
-                      subtitle:
-                          Text('$apiBaseUrl/groups/join/${group.inviteToken}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.share_outlined),
-                        onPressed: () => Share.share(
-                            '$apiBaseUrl/groups/join/${group.inviteToken}'),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          RefreshIndicator(
-            onRefresh: _load,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              children: _expenses.isEmpty
-                  ? const [
-                      EmptyView(
-                        icon: Icons.receipt_long_outlined,
-                        title: 'No expenses',
-                        message: 'Add the first expense for this group.',
-                      ),
-                    ]
-                  : _expenses
-                      .map(
-                        (expense) => ExpenseTile(
-                          expense: expense,
-                          currentUserId: user?.id ?? '',
-                          onTap: () async {
-                            final changed = await showExpenseDetails(
-                              context: context,
-                              ref: ref,
-                              expense: expense,
-                              groups: [group],
-                              currentUser: user,
-                            );
-                            if (changed == true) _load();
-                          },
-                        ),
-                      )
-                      .toList(),
-            ),
+            onExpenseChanged: _load,
+            onAddExpense: () async {
+              final changed = await showExpenseEditor(
+                context: context,
+                ref: ref,
+                groups: [group],
+                currentUser: user,
+                fixedGroupId: group.id,
+              );
+              if (changed == true) _load();
+            },
           ),
           MembersTab(group: group, isAdmin: isAdmin, onChanged: _load),
-          RefreshIndicator(
+          GroupSummaryTab(
+            group: group,
+            expenses: _expenses,
+            currentUser: user,
+            isAdmin: isAdmin,
             onRefresh: _load,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: _activity.isEmpty
-                  ? const [
-                      EmptyView(
-                        icon: Icons.history_outlined,
-                        title: 'No activity',
-                        message: 'Group activity will appear here.',
-                      ),
-                    ]
-                  : _activity
-                      .map((item) => Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.history),
-                              title: Text(item.message),
-                              subtitle: Text(compactDate(item.createdAt)),
-                            ),
-                          ))
-                      .toList(),
-            ),
           ),
         ],
       ),
     );
   }
+}
+
+class GroupSummaryTab extends StatelessWidget {
+  const GroupSummaryTab({
+    required this.group,
+    required this.expenses,
+    required this.currentUser,
+    required this.isAdmin,
+    required this.onRefresh,
+    super.key,
+  });
+
+  final MoneyGroup group;
+  final List<Expense> expenses;
+  final AppUser? currentUser;
+  final bool isAdmin;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final balances = computeBalances(expenses, currentUser?.id ?? '');
+    final netBalance = balances.owed - balances.owe;
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(group.description.isEmpty
+                      ? 'No description'
+                      : group.description),
+                  const SizedBox(height: 16),
+                  Text('Total expenses',
+                      style: Theme.of(context).textTheme.labelLarge),
+                  Text(money(group.totalExpenses),
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Text(
+                      '${group.members.length} members - ${group.type} - ${group.currency}'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryMetricCard(
+                  label: 'You are owed',
+                  value: money(balances.owed),
+                  color: Colors.greenAccent,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SummaryMetricCard(
+                  label: 'You owe',
+                  value: money(balances.owe),
+                  color: Colors.redAccent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('Net balance'),
+              subtitle: Text(
+                  netBalance >= 0 ? 'You are owed overall' : 'You owe overall'),
+              trailing: Text(
+                money(netBalance.abs()),
+                style: TextStyle(
+                  color:
+                      netBalance >= 0 ? Colors.greenAccent : Colors.redAccent,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          if (group.inviteToken != null && isAdmin)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.link_outlined),
+                title: const Text('Invite link'),
+                subtitle: Text('$apiBaseUrl/groups/join/${group.inviteToken}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.share_outlined),
+                  onPressed: () => Share.share(
+                      '$apiBaseUrl/groups/join/${group.inviteToken}'),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryMetricCard extends StatelessWidget {
+  const _SummaryMetricCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: color, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GroupActivityTab extends ConsumerWidget {
+  const GroupActivityTab({
+    required this.group,
+    required this.expenses,
+    required this.activity,
+    required this.currentUser,
+    required this.onRefresh,
+    required this.onExpenseChanged,
+    required this.onAddExpense,
+    super.key,
+  });
+
+  final MoneyGroup group;
+  final List<Expense> expenses;
+  final List<ActivityItem> activity;
+  final AppUser? currentUser;
+  final Future<void> Function() onRefresh;
+  final VoidCallback onExpenseChanged;
+  final Future<void> Function() onAddExpense;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sortedExpenses = [...expenses]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final sections = _expenseSections(sortedExpenses);
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Expenses',
+                    style: Theme.of(context).textTheme.titleLarge),
+              ),
+              FilledButton.icon(
+                onPressed: onAddExpense,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (sortedExpenses.isEmpty)
+            EmptyView(
+              icon: Icons.receipt_long_outlined,
+              title: 'No expenses yet',
+              message: 'Add the first expense for this group.',
+              action: FilledButton.icon(
+                onPressed: onAddExpense,
+                icon: const Icon(Icons.add),
+                label: const Text('Add expense'),
+              ),
+            )
+          else
+            ...sections.expand((section) {
+              return [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(section.label,
+                            style: Theme.of(context).textTheme.titleMedium),
+                      ),
+                      Text(
+                          '${section.expenses.length} - ${money(section.total)}',
+                          style: Theme.of(context).textTheme.labelLarge),
+                    ],
+                  ),
+                ),
+                ...section.expenses.map(
+                  (expense) => ExpenseTile(
+                    expense: expense,
+                    currentUserId: currentUser?.id ?? '',
+                    onTap: () async {
+                      final changed = await showExpenseDetails(
+                        context: context,
+                        ref: ref,
+                        expense: expense,
+                        groups: [group],
+                        currentUser: currentUser,
+                      );
+                      if (changed == true) onExpenseChanged();
+                    },
+                  ),
+                ),
+              ];
+            }),
+          if (activity.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('Other activity',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            ...activity.take(8).map(
+                  (item) => Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.history_outlined),
+                      title: Text(item.message),
+                      subtitle: Text(compactDate(item.createdAt)),
+                    ),
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpenseDateSection {
+  const _ExpenseDateSection({
+    required this.label,
+    required this.expenses,
+    required this.total,
+  });
+
+  final String label;
+  final List<Expense> expenses;
+  final double total;
+}
+
+List<_ExpenseDateSection> _expenseSections(List<Expense> expenses) {
+  final sections = <String, List<Expense>>{};
+  for (final expense in expenses) {
+    final key = compactDate(expense.date);
+    sections.putIfAbsent(key, () => []).add(expense);
+  }
+
+  return sections.entries
+      .map(
+        (entry) => _ExpenseDateSection(
+          label: entry.key,
+          expenses: entry.value,
+          total: entry.value.fold<double>(
+            0,
+            (sum, expense) => sum + expense.amount,
+          ),
+        ),
+      )
+      .toList();
 }
 
 class MembersTab extends ConsumerWidget {
@@ -454,12 +677,12 @@ class MembersTab extends ConsumerWidget {
   }
 }
 
-Future<bool?> showGroupEditor({
+Future<GroupEditorResult?> showGroupEditor({
   required BuildContext context,
   required WidgetRef ref,
   MoneyGroup? group,
 }) {
-  return showModalBottomSheet<bool>(
+  return showModalBottomSheet<GroupEditorResult>(
     context: context,
     isScrollControlled: true,
     builder: (context) => GroupEditorSheet(group: group),
@@ -618,7 +841,7 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
       } else {
         await api.putJson('/api/groups/${widget.group!.id}', body);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, GroupEditorResult.saved);
     } catch (error) {
       if (mounted) showError(context, error);
     } finally {
@@ -655,7 +878,7 @@ class _GroupEditorSheetState extends ConsumerState<GroupEditorSheet> {
       await ref
           .read(apiProvider)
           .putJson('/api/groups/${group.id}', {'action': 'delete'});
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, GroupEditorResult.deleted);
     } catch (error) {
       if (mounted) showError(context, error);
     }

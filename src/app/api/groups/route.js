@@ -67,7 +67,7 @@ export async function GET(request) {
 
     let groups = await Group.find({
       "members.userId": user._id,
-      isActive: true,
+      isActive: { $ne: false },
     })
       .populate("createdBy", "fullName username email")
       .populate("members.userId", "fullName username email contact")

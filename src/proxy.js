@@ -7,9 +7,6 @@ const protectedRoutes = [
   "/expenses",
   "/notifications",
   "/profile",
-  "/api/users",
-  "/api/expenses",
-  "/api/groups",
 ];
 
 const authRoutes = ["/login", "/signup"];
@@ -58,8 +55,5 @@ export const config = {
     "/profile/:path*",
     "/login",
     "/signup",
-    "/api/users/:path*",
-    "/api/expenses/:path*",
-    "/api/groups/:path*",
   ],
 };
