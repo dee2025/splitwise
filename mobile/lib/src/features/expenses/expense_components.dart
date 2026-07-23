@@ -183,6 +183,7 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
   late String _groupId;
   late String _category;
   late DateTime _date;
+  late String _paidById;
   late Set<String> _splitIds;
   var _saving = false;
 
@@ -198,6 +199,8 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
         widget.groups.first.id;
     _category = widget.expense?.category ?? 'other';
     _date = widget.expense?.date ?? DateTime.now();
+    _paidById = widget.expense?.paidById ?? widget.currentUser.id;
+    _paidById = _safePaidById(_selectedGroup, _paidById);
     _splitIds = {
       if (widget.expense != null)
         ...widget.expense!.splitBetween.map((s) => s.userId),
@@ -254,6 +257,7 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
                         .toList(),
                     onChanged: (value) => setState(() {
                       _groupId = value ?? _groupId;
+                      _paidById = _safePaidById(_selectedGroup, _paidById);
                       _splitIds = _selectedGroup?.members
                               .map(_splitIdForMember)
                               .where((id) => id.isNotEmpty)
@@ -262,6 +266,24 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
                     }),
                   ),
                 const SizedBox(height: 12),
+                if (group != null) ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: _paidById,
+                    decoration: const InputDecoration(labelText: 'Paid by'),
+                    items: group.members
+                        .where((member) => member.userId.isNotEmpty)
+                        .map((member) => DropdownMenuItem(
+                              value: member.userId,
+                              child: Text(member.userId == widget.currentUser.id
+                                  ? 'You'
+                                  : member.name),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _paidById = value ?? _paidById),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextFormField(
                   controller: _description,
                   decoration: const InputDecoration(labelText: 'Description'),
@@ -356,7 +378,7 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
       'amount': amount,
       'groupId': _groupId,
       'category': _category,
-      'paidBy': widget.currentUser.id,
+      'paidBy': _paidById,
       'paidTo': _splitIds.toList(),
       'splitBetween': splitBetween,
       'date': _date.toIso8601String(),
@@ -396,6 +418,18 @@ class _ExpenseEditorSheetState extends ConsumerState<ExpenseEditorSheet> {
       );
     });
   }
+}
+
+String _safePaidById(MoneyGroup? group, String preferredId) {
+  final registeredMembers =
+      group?.members.where((member) => member.userId.isNotEmpty).toList() ??
+          const <GroupMember>[];
+  if (registeredMembers.any((member) => member.userId == preferredId)) {
+    return preferredId;
+  }
+  return registeredMembers.isEmpty
+      ? preferredId
+      : registeredMembers.first.userId;
 }
 
 String categoryLabel(String category) {

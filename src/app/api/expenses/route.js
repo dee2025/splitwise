@@ -106,32 +106,13 @@ export async function POST(request) {
     const group = await Group.findOne({
       _id: groupId,
       "members.userId": user._id,
+      isActive: { $ne: false },
     });
 
     if (!group) {
       return NextResponse.json(
         { error: "Group not found or access denied" },
         { status: 404 },
-      );
-    }
-
-    const paidById = String(user._id);
-
-    if (paidBy && String(paidBy) !== paidById) {
-      return NextResponse.json(
-        { error: "You can only add expenses paid by your own account" },
-        { status: 403 },
-      );
-    }
-
-    // Validate paidBy user is in the group
-    const paidByUser = group.members.find(
-      (m) => String(m.userId) === paidById,
-    );
-    if (!paidByUser) {
-      return NextResponse.json(
-        { error: "Paid by user is not a member of the group" },
-        { status: 400 },
       );
     }
 
@@ -145,6 +126,19 @@ export async function POST(request) {
         .map((m) => String(m.userId || m._id))
         .filter(Boolean),
     );
+    const paidById = paidBy ? String(paidBy) : String(user._id);
+
+    if (!registeredMemberIds.has(paidById)) {
+      return NextResponse.json(
+        { error: "Paid by must be a registered member of this group" },
+        { status: 400 },
+      );
+    }
+
+    const paidByMember = group.members.find(
+      (m) => m.userId && String(m.userId) === paidById,
+    );
+    const paidByName = paidByMember?.name || user.fullName || user.username;
 
     const normalizedSplit = splitBetween.map((sb) => ({
       userId: String(sb.userId),
@@ -211,11 +205,15 @@ export async function POST(request) {
       groupId: group._id,
       userId: user._id,
       type: "expense_added",
-      message: `${user.fullName || user.username || "A member"} added an expense`,
+      message:
+        paidById === String(user._id)
+          ? `${user.fullName || user.username || "A member"} added an expense`
+          : `${user.fullName || user.username || "A member"} added an expense paid by ${paidByName || "a member"}`,
       metadata: {
         expenseId: expense._id,
         amount: amountValue,
         category: category || "other",
+        paidBy: paidById,
       },
     });
 
@@ -237,7 +235,7 @@ export async function POST(request) {
           groupId: group._id,
           groupName: group.name,
           amount: amount,
-          paidBy: user.fullName,
+          paidBy: paidByName,
           type: "expense_added",
         },
         isRead: false,

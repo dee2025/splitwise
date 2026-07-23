@@ -90,7 +90,10 @@ async function authorizeExpenseMutation(request, expenseId) {
     return { error: NextResponse.json({ error: "Expense not found" }, { status: 404 }) };
   }
 
-  const group = await Group.findById(expense.groupId);
+  const group = await Group.findOne({
+    _id: expense.groupId,
+    isActive: { $ne: false },
+  });
   if (!group) {
     return { error: NextResponse.json({ error: "Group not found" }, { status: 404 }) };
   }
@@ -152,6 +155,11 @@ export async function PUT(request, context) {
         .map((m) => String(m.userId || m._id))
         .filter(Boolean),
     );
+    const registeredMemberIds = new Set(
+      (group.members || [])
+        .map((m) => m.userId && String(m.userId))
+        .filter(Boolean),
+    );
 
     if (body.description !== undefined) {
       const description = String(body.description || "").trim();
@@ -199,15 +207,9 @@ export async function PUT(request, context) {
 
     if (body.paidBy !== undefined) {
       const paidById = String(body.paidBy);
-      if (paidById !== user._id.toString()) {
+      if (!registeredMemberIds.has(paidById)) {
         return NextResponse.json(
-          { error: "You can only mark expenses as paid by your own account" },
-          { status: 403 },
-        );
-      }
-      if (!groupMemberIds.has(paidById)) {
-        return NextResponse.json(
-          { error: "Paid by user must belong to this group" },
+          { error: "Paid by must be a registered member of this group" },
           { status: 400 },
         );
       }
