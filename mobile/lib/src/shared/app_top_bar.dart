@@ -10,11 +10,17 @@ enum _TopBarMenuAction { profile, logout, toggleTheme }
 
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   const AppTopBar({
+    this.title,
+    this.subtitle,
+    this.leading,
     this.actions = const [],
     this.bottom,
     super.key,
   });
 
+  final String? title;
+  final String? subtitle;
+  final Widget? leading;
   final List<Widget> actions;
   final PreferredSizeWidget? bottom;
 
@@ -31,8 +37,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final isDark = themeMode != ThemeMode.light;
 
     return AppBar(
+      leading: leading,
       titleSpacing: 16,
-      title: const _BrandTitle(),
+      title: title == null
+          ? const _BrandTitle()
+          : _ScreenTitle(title: title!, subtitle: subtitle),
       actions: [
         ...actions,
         Padding(
@@ -86,6 +95,39 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
         ),
       ],
       bottom: bottom,
+    );
+  }
+}
+
+class _ScreenTitle extends StatelessWidget {
+  const _ScreenTitle({required this.title, this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        if (subtitle != null && subtitle!.isNotEmpty)
+          Text(
+            subtitle!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+      ],
     );
   }
 }

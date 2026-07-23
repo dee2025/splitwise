@@ -56,8 +56,13 @@ class MoneySplitApp extends ConsumerWidget {
                 routes: [
                   GoRoute(
                     path: ':groupId',
-                    builder: (context, state) => GroupDetailScreen(
-                        groupId: state.pathParameters['groupId']!),
+                    builder: (context, state) {
+                      final groupId = state.pathParameters['groupId']!;
+                      return GroupDetailScreen(
+                        key: ValueKey('group-detail-$groupId'),
+                        groupId: groupId,
+                      );
+                    },
                   ),
                 ],
               ),

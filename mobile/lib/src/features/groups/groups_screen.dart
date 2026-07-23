@@ -189,6 +189,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   List<Expense> _expenses = const [];
   List<ActivityItem> _activity = const [];
   List<SettlementItem> _settlements = const [];
+  var _loadRequestId = 0;
 
   @override
   void initState() {
@@ -198,34 +199,53 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   }
 
   @override
+  void didUpdateWidget(covariant GroupDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId != widget.groupId) {
+      _tabs.index = 0;
+      _load();
+    }
+  }
+
+  @override
   void dispose() {
     _tabs.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
+    final requestId = ++_loadRequestId;
+    final groupId = widget.groupId;
     setState(() {
       _loading = true;
       _error = null;
+      _group = null;
+      _expenses = const [];
+      _activity = const [];
+      _settlements = const [];
     });
     try {
       final api = ref.read(apiProvider);
       final results = await Future.wait([
-        api.getJson('/api/groups/${widget.groupId}'),
-        api.getJson('/api/expenses', query: {'groupId': widget.groupId}),
-        api.getJson('/api/activity', query: {
-          'groupId': widget.groupId
-        }).catchError((_) => {'activity': []}),
-        api.getJson('/api/settlements', query: {
-          'groupId': widget.groupId
-        }).catchError((_) => {'settlements': []}),
+        api.getJson('/api/groups/$groupId'),
+        api.getJson('/api/expenses', query: {'groupId': groupId}),
+        api.getJson('/api/activity',
+            query: {'groupId': groupId}).catchError((_) => {'activity': []}),
+        api.getJson('/api/settlements',
+            query: {'groupId': groupId}).catchError((_) => {'settlements': []}),
       ]);
+      if (!mounted ||
+          requestId != _loadRequestId ||
+          widget.groupId != groupId) {
+        return;
+      }
       setState(() {
         _group =
             MoneyGroup.fromJson(results[0]['group'] as Map<String, dynamic>);
         _expenses = listOf(results[1]['expenses'])
             .whereType<Map<String, dynamic>>()
             .map(Expense.fromJson)
+            .where((expense) => expense.groupId == groupId)
             .toList();
         _activity = listOf(results[2]['activity'])
             .whereType<Map<String, dynamic>>()
@@ -234,12 +254,20 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         _settlements = listOf(results[3]['settlements'])
             .whereType<Map<String, dynamic>>()
             .map(SettlementItem.fromJson)
+            .where((settlement) => settlement.groupId == groupId)
             .toList();
       });
     } catch (error) {
+      if (!mounted ||
+          requestId != _loadRequestId ||
+          widget.groupId != groupId) {
+        return;
+      }
       _error = error;
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && requestId == _loadRequestId && widget.groupId == groupId) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -258,9 +286,22 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
     return Scaffold(
       appBar: AppTopBar(
+        leading: IconButton(
+          tooltip: 'Back to groups',
+          onPressed: () => context.go('/groups'),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: group.name,
+        subtitle: '${group.members.length} members - ${group.type}',
         actions: [
+          IconButton(
+            tooltip: 'Download report',
+            onPressed: _downloadGroupReport,
+            icon: const Icon(Icons.download_outlined),
+          ),
           if (isAdmin)
             IconButton(
+              tooltip: 'Group settings',
               onPressed: () async {
                 final result = await showGroupEditor(
                     context: context, ref: ref, group: group);
@@ -340,6 +381,110 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _downloadGroupReport() async {
+    final group = _group;
+    if (group == null) return;
+
+    try {
+      final fileName = _reportFileName(group.name);
+      final file = File('${Directory.systemTemp.path}/$fileName');
+      await file.writeAsString(_buildGroupReport(group));
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'MoneySplit report - ${group.name}',
+        text: 'MoneySplit activity report for ${group.name}.',
+      );
+    } catch (error) {
+      if (mounted) showError(context, error);
+    }
+  }
+
+  String _buildGroupReport(MoneyGroup group) {
+    final buffer = StringBuffer()
+      ..writeln('MoneySplit Group Report')
+      ..writeln('Group: ${group.name}')
+      ..writeln('Generated: ${compactDate(DateTime.now())}')
+      ..writeln('Type: ${group.type}')
+      ..writeln('Currency: ${group.currency}')
+      ..writeln('Members: ${group.members.length}')
+      ..writeln('Total expenses: ${money(_expenses.fold<double>(
+        0,
+        (sum, expense) => sum + expense.amount,
+      ))}')
+      ..writeln('')
+      ..writeln('Members');
+
+    for (final member in group.members) {
+      buffer.writeln('- ${member.name} (${member.role})');
+    }
+
+    final plan = computeGroupSettlementPlan(group, _expenses, _settlements);
+    buffer
+      ..writeln('')
+      ..writeln('Balances');
+    for (final row in plan.balances) {
+      final status = row.balance > 0.01
+          ? 'receives'
+          : row.balance < -0.01
+              ? 'pays'
+              : 'settled';
+      buffer.writeln('- ${row.name}: $status ${money(row.balance.abs())}');
+    }
+
+    buffer
+      ..writeln('')
+      ..writeln('Suggested settlements');
+    if (plan.suggestions.isEmpty) {
+      buffer.writeln('- Everyone is settled');
+    } else {
+      for (final suggestion in plan.suggestions) {
+        buffer.writeln(
+          '- ${suggestion.fromName} pays ${suggestion.toName}: ${money(suggestion.amount)}',
+        );
+      }
+    }
+
+    buffer
+      ..writeln('')
+      ..writeln('Expenses');
+    if (_expenses.isEmpty) {
+      buffer.writeln('- No expenses recorded');
+    } else {
+      final expenses = [..._expenses]..sort((a, b) => b.date.compareTo(a.date));
+      for (final expense in expenses) {
+        buffer.writeln(
+          '- ${compactDate(expense.date)} | ${expense.description} | ${money(expense.amount)} | Paid by ${expense.paidByName} | ${categoryLabel(expense.category)}',
+        );
+      }
+    }
+
+    buffer
+      ..writeln('')
+      ..writeln('Recorded settlements');
+    if (_settlements.isEmpty) {
+      buffer.writeln('- No settlements recorded');
+    } else {
+      final settlements = [..._settlements]
+        ..sort((a, b) => b.date.compareTo(a.date));
+      for (final settlement in settlements) {
+        buffer.writeln(
+          '- ${compactDate(settlement.date)} | ${settlement.fromName} paid ${settlement.toName} | ${money(settlement.amount)}${settlement.note.isEmpty ? '' : ' | ${settlement.note}'}',
+        );
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  String _reportFileName(String groupName) {
+    final safeName = groupName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    final date = DateTime.now().toIso8601String().split('T').first;
+    return '${safeName.isEmpty ? 'group' : safeName}-activity-report-$date.txt';
   }
 }
 
