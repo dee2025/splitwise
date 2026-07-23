@@ -188,11 +188,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   MoneyGroup? _group;
   List<Expense> _expenses = const [];
   List<ActivityItem> _activity = const [];
+  List<SettlementItem> _settlements = const [];
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     _load();
   }
 
@@ -215,6 +216,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         api.getJson('/api/activity', query: {
           'groupId': widget.groupId
         }).catchError((_) => {'activity': []}),
+        api.getJson('/api/settlements', query: {
+          'groupId': widget.groupId
+        }).catchError((_) => {'settlements': []}),
       ]);
       setState(() {
         _group =
@@ -226,6 +230,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         _activity = listOf(results[2]['activity'])
             .whereType<Map<String, dynamic>>()
             .map(ActivityItem.fromJson)
+            .toList();
+        _settlements = listOf(results[3]['settlements'])
+            .whereType<Map<String, dynamic>>()
+            .map(SettlementItem.fromJson)
             .toList();
       });
     } catch (error) {
@@ -273,6 +281,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           controller: _tabs,
           tabs: const [
             Tab(text: 'Activity'),
+            Tab(text: 'Settle'),
             Tab(text: 'Members'),
             Tab(text: 'Summary'),
           ],
@@ -313,10 +322,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
               if (changed == true) _load();
             },
           ),
+          GroupSettleUpTab(
+            group: group,
+            expenses: _expenses,
+            settlements: _settlements,
+            onRefresh: _load,
+          ),
           MembersTab(group: group, isAdmin: isAdmin, onChanged: _load),
           GroupSummaryTab(
             group: group,
             expenses: _expenses,
+            settlements: _settlements,
             currentUser: user,
             isAdmin: isAdmin,
             onRefresh: _load,
@@ -331,6 +347,7 @@ class GroupSummaryTab extends StatelessWidget {
   const GroupSummaryTab({
     required this.group,
     required this.expenses,
+    required this.settlements,
     required this.currentUser,
     required this.isAdmin,
     required this.onRefresh,
@@ -339,6 +356,7 @@ class GroupSummaryTab extends StatelessWidget {
 
   final MoneyGroup group;
   final List<Expense> expenses;
+  final List<SettlementItem> settlements;
   final AppUser? currentUser;
   final bool isAdmin;
   final Future<void> Function() onRefresh;
@@ -346,7 +364,10 @@ class GroupSummaryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final balances = computeBalances(expenses, currentUser?.id ?? '');
-    final netBalance = balances.owed - balances.owe;
+    final plan = computeGroupSettlementPlan(group, expenses, settlements);
+    final currentBalance = plan.balances
+        .where((row) => row.id == currentUser?.id)
+        .fold<double>(0, (sum, row) => sum + row.balance);
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -399,13 +420,15 @@ class GroupSummaryTab extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.account_balance_wallet_outlined),
               title: const Text('Net balance'),
-              subtitle: Text(
-                  netBalance >= 0 ? 'You are owed overall' : 'You owe overall'),
+              subtitle: Text(currentBalance >= 0
+                  ? 'You are owed overall after settlements'
+                  : 'You owe overall after settlements'),
               trailing: Text(
-                money(netBalance.abs()),
+                money(currentBalance.abs()),
                 style: TextStyle(
-                  color:
-                      netBalance >= 0 ? Colors.greenAccent : Colors.redAccent,
+                  color: currentBalance >= 0
+                      ? Colors.greenAccent
+                      : Colors.redAccent,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -462,6 +485,332 @@ class _SummaryMetricCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class GroupSettleUpTab extends ConsumerWidget {
+  const GroupSettleUpTab({
+    required this.group,
+    required this.expenses,
+    required this.settlements,
+    required this.onRefresh,
+    super.key,
+  });
+
+  final MoneyGroup group;
+  final List<Expense> expenses;
+  final List<SettlementItem> settlements;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plan = computeGroupSettlementPlan(group, expenses, settlements);
+    final outstanding = plan.suggestions.fold<double>(
+      0,
+      (sum, suggestion) => sum + suggestion.amount,
+    );
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.swap_horiz_outlined, size: 32),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Settle up',
+                            style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        Text(plan.suggestions.isEmpty
+                            ? 'Everyone is settled.'
+                            : '${plan.suggestions.length} payment${plan.suggestions.length == 1 ? '' : 's'} suggested'),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    money(outstanding),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Suggested payments',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (plan.suggestions.isEmpty)
+            const EmptyView(
+              icon: Icons.check_circle_outline,
+              title: 'All settled',
+              message: 'No payments are needed for this group.',
+            )
+          else
+            ...plan.suggestions.map(
+              (suggestion) => Card(
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.payments_outlined),
+                  ),
+                  title:
+                      Text('${suggestion.fromName} pays ${suggestion.toName}'),
+                  subtitle:
+                      Text('Suggested amount ${money(suggestion.amount)}'),
+                  trailing: FilledButton(
+                    onPressed: () async {
+                      final changed = await showSettlementSheet(
+                        context: context,
+                        ref: ref,
+                        group: group,
+                        suggestion: suggestion,
+                      );
+                      if (changed == true) {
+                        await onRefresh();
+                      }
+                    },
+                    child: const Text('Settle'),
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 18),
+          Text('Member balances',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ...plan.balances.map((balance) {
+            final neutral = balance.balance.abs() <= 0.01;
+            final positive = balance.balance > 0.01;
+            return Card(
+              child: ListTile(
+                leading: CircleAvatar(child: Text(initials(balance.name))),
+                title: Text(balance.name),
+                subtitle: Text(neutral
+                    ? 'Settled'
+                    : positive
+                        ? 'Should receive'
+                        : 'Should pay'),
+                trailing: Text(
+                  neutral ? money(0) : money(balance.balance.abs()),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: neutral
+                        ? null
+                        : positive
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                  ),
+                ),
+              ),
+            );
+          }),
+          if (settlements.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('Recorded settlements',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            ...settlements.map(
+              (settlement) => Card(
+                child: ListTile(
+                  leading: const Icon(Icons.done_all_outlined),
+                  title:
+                      Text('${settlement.fromName} paid ${settlement.toName}'),
+                  subtitle: Text([
+                    compactDate(settlement.date),
+                    if (settlement.note.isNotEmpty) settlement.note,
+                  ].join(' - ')),
+                  trailing: Text(
+                    money(settlement.amount),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+Future<bool?> showSettlementSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required MoneyGroup group,
+  required SettlementSuggestion suggestion,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => SettlementSheet(
+      group: group,
+      suggestion: suggestion,
+    ),
+  );
+}
+
+class SettlementSheet extends ConsumerStatefulWidget {
+  const SettlementSheet({
+    required this.group,
+    required this.suggestion,
+    super.key,
+  });
+
+  final MoneyGroup group;
+  final SettlementSuggestion suggestion;
+
+  @override
+  ConsumerState<SettlementSheet> createState() => _SettlementSheetState();
+}
+
+class _SettlementSheetState extends ConsumerState<SettlementSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _amount;
+  late final TextEditingController _note;
+  late DateTime _date;
+  var _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = TextEditingController(
+        text: widget.suggestion.amount.toStringAsFixed(2));
+    _note = TextEditingController();
+    _date = DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Record settlement',
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(
+                  '${widget.suggestion.fromName} pays ${widget.suggestion.toName}',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _amount,
+                  enabled: !_saving,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Amount',
+                    helperText:
+                        'Maximum suggested ${money(widget.suggestion.amount)}',
+                  ),
+                  validator: (value) {
+                    final amount = double.tryParse(value ?? '');
+                    if (amount == null || amount <= 0) {
+                      return 'Enter a valid amount';
+                    }
+                    if (amount - widget.suggestion.amount > 0.01) {
+                      return 'Amount cannot exceed the suggested balance';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _note,
+                  enabled: !_saving,
+                  maxLength: 160,
+                  decoration: const InputDecoration(labelText: 'Note'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _pickDate,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text('Date: ${compactDate(_date)}'),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Record settlement'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    setState(() {
+      _date = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        _date.hour,
+        _date.minute,
+        _date.second,
+      );
+    });
+  }
+
+  Future<void> _save() async {
+    if (_formKey.currentState?.validate() != true) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(apiProvider).postJson('/api/settlements', {
+        'groupId': widget.group.id,
+        'fromMemberId': widget.suggestion.fromMemberId,
+        'toMemberId': widget.suggestion.toMemberId,
+        'amount': double.parse(_amount.text),
+        'note': _note.text.trim(),
+        'date': _date.toIso8601String(),
+      });
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) showError(context, error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }
 

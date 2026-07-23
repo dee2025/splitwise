@@ -56,4 +56,71 @@ void main() {
     expect(balances.owed, 50);
     expect(balances.owe, 40);
   });
+
+  test('computeGroupSettlementPlan reduces balances after partial settlement',
+      () {
+    const group = MoneyGroup(
+      id: 'g1',
+      name: 'Trip',
+      description: '',
+      type: 'trip',
+      currency: 'INR',
+      totalExpenses: 120,
+      members: [
+        GroupMember(
+          id: 'm1',
+          userId: 'u1',
+          name: 'Asha',
+          email: 'asha@example.com',
+          role: 'admin',
+          type: 'registered',
+        ),
+        GroupMember(
+          id: 'm2',
+          userId: 'u2',
+          name: 'Ravi',
+          email: 'ravi@example.com',
+          role: 'member',
+          type: 'registered',
+        ),
+      ],
+    );
+    final expenses = [
+      Expense(
+        id: 'e1',
+        description: 'Hotel',
+        amount: 120,
+        category: 'accommodation',
+        date: DateTime(2026),
+        groupId: 'g1',
+        groupName: 'Trip',
+        paidById: 'u1',
+        paidByName: 'Asha',
+        splitBetween: const [
+          ExpenseSplit(userId: 'u1', name: 'Asha', amount: 60, percentage: 50),
+          ExpenseSplit(userId: 'u2', name: 'Ravi', amount: 60, percentage: 50),
+        ],
+      ),
+    ];
+
+    final before = computeGroupSettlementPlan(group, expenses, const []);
+    expect(before.suggestions.single.fromMemberId, 'u2');
+    expect(before.suggestions.single.toMemberId, 'u1');
+    expect(before.suggestions.single.amount, 60);
+
+    final after = computeGroupSettlementPlan(group, expenses, [
+      SettlementItem(
+        id: 's1',
+        groupId: 'g1',
+        fromMemberId: 'u2',
+        fromName: 'Ravi',
+        toMemberId: 'u1',
+        toName: 'Asha',
+        amount: 25,
+        date: DateTime(2026),
+      ),
+    ]);
+
+    expect(after.suggestions.single.amount, 35);
+  });
 }

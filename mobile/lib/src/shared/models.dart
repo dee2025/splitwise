@@ -244,6 +244,44 @@ class ActivityItem {
   }
 }
 
+class SettlementItem {
+  const SettlementItem({
+    required this.id,
+    required this.groupId,
+    required this.fromMemberId,
+    required this.fromName,
+    required this.toMemberId,
+    required this.toName,
+    required this.amount,
+    required this.date,
+    this.note = '',
+  });
+
+  final String id;
+  final String groupId;
+  final String fromMemberId;
+  final String fromName;
+  final String toMemberId;
+  final String toName;
+  final double amount;
+  final DateTime date;
+  final String note;
+
+  factory SettlementItem.fromJson(Map<String, dynamic> json) {
+    return SettlementItem(
+      id: idOf(json['_id'] ?? json['id']),
+      groupId: idOf(json['groupId']),
+      fromMemberId: stringOf(json['fromMemberId']),
+      fromName: stringOf(json['fromName'], fallback: 'Member'),
+      toMemberId: stringOf(json['toMemberId']),
+      toName: stringOf(json['toName'], fallback: 'Member'),
+      amount: numberOf(json['amount']),
+      date: DateTime.tryParse(stringOf(json['date'])) ?? DateTime.now(),
+      note: stringOf(json['note']),
+    );
+  }
+}
+
 String stringOf(dynamic value, {String fallback = ''}) {
   if (value == null) return fallback;
   return value.toString();

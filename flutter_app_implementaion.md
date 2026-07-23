@@ -26,6 +26,7 @@ Build the native Flutter user panel using the existing MoneySplit backend APIs. 
 | `[x]` | Create group | `POST /api/groups`, `POST /api/uploads/image` | Create group with name, description, type, privacy, optional image. |
 | `[x]` | Group detail shell | `/api/groups/:groupId`, `/api/expenses?groupId=`, `/api/activity?groupId=` | Load group, expenses, and optional audit activity. Use tabs: `Activity`, `Members`, `Summary`. |
 | `[x]` | Group Activity | `/api/expenses?groupId=`, `/api/expenses/:expenseId` | Replace separate Expenses tab with a date-wise expense timeline. Open expense detail on tap. Edit/delete allowed only for payer. |
+| `[x]` | Group Settle Up | `/api/settlements?groupId=`, `POST /api/settlements` | Show calculated member balances, suggested payer-to-receiver settlements, recorded settlement history, and custom partial settlement amounts. |
 | `[x]` | Add group expense | `POST /api/expenses` | Add expense from group detail FAB or Activity empty state. Fixed group when opened from group detail. |
 | `[x]` | Edit group expense | `PUT /api/expenses/:expenseId` | Edit description, amount, category, date, and split members where supported. |
 | `[x]` | Delete group expense | `DELETE /api/expenses/:expenseId` | Confirm destructive action, delete expense, refresh group totals and activity timeline. |
@@ -45,6 +46,7 @@ Build the native Flutter user panel using the existing MoneySplit backend APIs. 
 | --- | --- | --- |
 | `[x]` | `POST /api/expenses` | Add `createActivity()` for `expense_added` so new expenses appear consistently in activity/audit history. |
 | `[x]` | `GET /api/activity?groupId=` | Confirm whether Flutter needs audit rows in addition to the expense timeline. Keep expense timeline primary. |
+| `[x]` | `GET/POST /api/settlements` | Store settlements separately from expenses so settle-up payments reduce balances without increasing group expenses. |
 
 ## Suggested Implementation Process
 
@@ -54,10 +56,11 @@ Build the native Flutter user panel using the existing MoneySplit backend APIs. 
 4. `[x]` Rework Group Detail tabs to `Activity`, `Members`, and `Summary`.
 5. `[x]` Build Activity timeline from group expenses, sorted date-wise.
 6. `[x]` Connect Activity expense detail, edit, delete, and refresh flows.
-7. `[x]` Add expense creation activity record in the backend.
-8. `[x]` Verify Groups list, Create group, Group settings, and Members flows.
-9. `[x]` Verify Notifications and Profile flows.
-10. `[x]` Run Flutter formatting, analyzer, and tests.
+7. `[x]` Add Settle Up tab with suggestions, custom settlement amount, and settlement history.
+8. `[x]` Add expense creation activity record in the backend.
+9. `[x]` Verify Groups list, Create group, Group settings, and Members flows.
+10. `[x]` Verify Notifications and Profile flows.
+11. `[x]` Run Flutter formatting, analyzer, and tests.
 
 ## Verification Checklist
 
@@ -71,6 +74,7 @@ Build the native Flutter user panel using the existing MoneySplit backend APIs. 
 | `[x]` | Bottom navigation has no Expenses tab. |
 | `[x]` | Home still shows recent expenses and balances. |
 | `[x]` | Group Activity shows expenses and supports add/edit/delete. |
+| `[x]` | Group Settle Up calculates balances and records partial settlements. |
 | `[x]` | Notifications read/delete actions update UI after API success. |
 | `[x]` | Profile edit, password change, logout, and delete account flows work. |
 
