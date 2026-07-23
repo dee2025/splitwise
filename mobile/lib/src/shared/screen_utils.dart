@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'api_client.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
@@ -67,8 +68,8 @@ class ErrorView extends StatelessWidget {
 }
 
 void showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(error.toString())));
+  final message = error is ApiException ? error.message : error.toString();
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
 Future<bool> confirmDestructive(

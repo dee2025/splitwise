@@ -109,8 +109,38 @@ class MoneySplitApi {
               : const {},
         );
       }
-      throw ApiException(error.message ?? 'Request failed',
+      throw ApiException(_friendlyDioMessage(error),
           statusCode: error.response?.statusCode);
+    }
+  }
+
+  String _friendlyDioMessage(DioException error) {
+    final statusCode = error.response?.statusCode;
+    if (statusCode == 401) {
+      return 'Your session has expired. Please log in again.';
+    }
+    if (statusCode == 404) {
+      return 'This feature is not available on the server yet. Please try again after the latest update is live.';
+    }
+    if (statusCode != null) {
+      return 'Request failed. Please try again.';
+    }
+
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
+        return 'Connection timed out. Please check your internet and try again.';
+      case DioExceptionType.connectionError:
+        return 'Unable to connect to MoneySplit. Please check your internet and try again.';
+      case DioExceptionType.cancel:
+        return 'Request was cancelled.';
+      case DioExceptionType.badCertificate:
+        return 'Secure connection failed. Please try again later.';
+      case DioExceptionType.badResponse:
+      case DioExceptionType.unknown:
+        return 'Something went wrong. Please try again.';
     }
   }
 }
