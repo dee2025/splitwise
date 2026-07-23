@@ -6,6 +6,13 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
+function isMobileClient(req, body = {}) {
+  return (
+    req.headers.get("x-moneysplit-client")?.toLowerCase() === "flutter" ||
+    String(body?.client || "").toLowerCase() === "flutter"
+  );
+}
+
 export async function POST(req) {
   try {
     const limit = rateLimit(req, {
@@ -18,7 +25,8 @@ export async function POST(req) {
     }
 
     await connectDB();
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password } = body;
 
     const errors = {};
 
@@ -113,11 +121,17 @@ export async function POST(req) {
       createdAt: user.createdAt,
     };
 
-    const response = NextResponse.json({
+    const responseBody = {
       success: true,
       message: "Login successful",
       user: userResponse,
-    });
+    };
+
+    if (isMobileClient(req, body)) {
+      responseBody.token = token;
+    }
+
+    const response = NextResponse.json(responseBody);
 
     response.cookies.set("token", token, {
       httpOnly: true,

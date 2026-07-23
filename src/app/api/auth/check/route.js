@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
+import { getRequestToken } from "@/lib/requestAuth";
 
 export async function GET(req) {
   try {
-    const token = req.cookies.get('token')?.value;
+    const token = getRequestToken(req);
 
     if (!token) {
       return NextResponse.json({ 

@@ -52,3 +52,14 @@ android-twa/gradle/gradle-daemon-jvm.properties
 android-twa/keystore.properties
 android-twa/local.properties
 android-twa/captures/
+
+# Flutter mobile app generated files
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/**/build/
+mobile/ios/Flutter/ephemeral/
+mobile/ios/Pods/

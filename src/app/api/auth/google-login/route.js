@@ -54,6 +54,13 @@ function getAllowedClientIds() {
   ].filter(Boolean);
 }
 
+function isMobileClient(request, body = {}) {
+  return (
+    request.headers.get("x-moneysplit-client")?.toLowerCase() === "flutter" ||
+    String(body?.client || "").toLowerCase() === "flutter"
+  );
+}
+
 export async function POST(request) {
   try {
     const limit = rateLimit(request, {
@@ -65,7 +72,8 @@ export async function POST(request) {
       return rateLimitResponse("Too many login attempts. Please wait and try again.", limit);
     }
 
-    const { credential } = await request.json();
+    const body = await request.json();
+    const { credential } = body;
 
     if (!credential || typeof credential !== "string") {
       return NextResponse.json(
@@ -195,11 +203,17 @@ export async function POST(request) {
       createdAt: user.createdAt,
     };
 
-    const response = NextResponse.json({
+    const responseBody = {
       success: true,
       message: "Google login successful",
       user: userResponse,
-    });
+    };
+
+    if (isMobileClient(request, body)) {
+      responseBody.token = token;
+    }
+
+    const response = NextResponse.json(responseBody);
 
     setTokenCookie(response, token);
     return response;
