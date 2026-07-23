@@ -20,12 +20,14 @@ class ExpenseTile extends StatelessWidget {
     required this.expense,
     required this.currentUserId,
     required this.onTap,
+    this.showGroupName = true,
     super.key,
   });
 
   final Expense expense;
   final String currentUserId;
   final VoidCallback onTap;
+  final bool showGroupName;
 
   @override
   Widget build(BuildContext context) {
@@ -37,22 +39,68 @@ class ExpenseTile extends StatelessWidget {
       }
     }
     final isPayer = expense.paidById == currentUserId;
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = isPayer ? Colors.green : Colors.red;
+    final cardColor = Color.lerp(scheme.surface, statusColor, 0.10);
+    final iconColor = Color.lerp(scheme.onSurface, statusColor, 0.55);
+    final subtitle = showGroupName
+        ? '${expense.groupName} - paid by ${isPayer ? 'you' : expense.paidByName}'
+        : 'Paid by ${isPayer ? 'you' : expense.paidByName} - ${categoryLabel(expense.category)}';
 
     return Card(
+      color: cardColor,
       child: ListTile(
-        leading: Icon(categoryIcon(expense.category)),
-        title: Text(expense.description),
-        subtitle: Text(
-            '${expense.groupName} - paid by ${isPayer ? 'you' : expense.paidByName}'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(money(expense.amount),
-                style: const TextStyle(fontWeight: FontWeight.w800)),
-            Text(isPayer ? 'you paid' : 'share ${money(myShare?.amount ?? 0)}',
-                style: Theme.of(context).textTheme.labelSmall),
-          ],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: Color.lerp(scheme.surface, statusColor, 0.18),
+          foregroundColor: iconColor,
+          child: Icon(categoryIcon(expense.category)),
+        ),
+        title: Text(
+          expense.description,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        trailing: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 96, maxWidth: 126),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  money(expense.amount),
+                  style: TextStyle(
+                    color: iconColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                isPayer
+                    ? 'you paid'
+                    : 'your share ${money(myShare?.amount ?? 0)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
         ),
         onTap: onTap,
       ),

@@ -510,9 +510,12 @@ class GroupSummaryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final balances = computeBalances(expenses, currentUser?.id ?? '');
     final plan = computeGroupSettlementPlan(group, expenses, settlements);
+    final scheme = Theme.of(context).colorScheme;
     final currentBalance = plan.balances
         .where((row) => row.id == currentUser?.id)
         .fold<double>(0, (sum, row) => sum + row.balance);
+    final total =
+        expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -520,22 +523,42 @@ class GroupSummaryTab extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Card(
+            color: Color.lerp(scheme.surface, scheme.primary, 0.08),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          group.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      _InfoChip(label: group.currency),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Text(group.description.isEmpty
                       ? 'No description'
                       : group.description),
                   const SizedBox(height: 16),
-                  Text('Total expenses',
-                      style: Theme.of(context).textTheme.labelLarge),
-                  Text(money(group.totalExpenses),
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 8),
-                  Text(
-                      '${group.members.length} members - ${group.type} - ${group.currency}'),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _InfoChip(label: '${group.members.length} members'),
+                      _InfoChip(label: group.type),
+                      _InfoChip(label: '${expenses.length} expenses'),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -545,23 +568,52 @@ class GroupSummaryTab extends StatelessWidget {
             children: [
               Expanded(
                 child: _SummaryMetricCard(
-                  label: 'You are owed',
-                  value: money(balances.owed),
-                  color: Colors.greenAccent,
+                  icon: Icons.receipt_long_outlined,
+                  label: 'Total',
+                  value: money(total),
+                  color: scheme.primary,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _SummaryMetricCard(
+                  icon: Icons.south_west_outlined,
+                  label: 'You are owed',
+                  value: money(balances.owed),
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryMetricCard(
+                  icon: Icons.north_east_outlined,
                   label: 'You owe',
                   value: money(balances.owe),
-                  color: Colors.redAccent,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SummaryMetricCard(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Net',
+                  value: money(currentBalance.abs()),
+                  color: currentBalance >= 0 ? Colors.green : Colors.red,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Card(
+            color: Color.lerp(
+              scheme.surface,
+              currentBalance >= 0 ? Colors.green : Colors.red,
+              0.09,
+            ),
             child: ListTile(
               leading: const Icon(Icons.account_balance_wallet_outlined),
               title: const Text('Net balance'),
@@ -571,10 +623,13 @@ class GroupSummaryTab extends StatelessWidget {
               trailing: Text(
                 money(currentBalance.abs()),
                 style: TextStyle(
-                  color: currentBalance >= 0
-                      ? Colors.greenAccent
-                      : Colors.redAccent,
-                  fontWeight: FontWeight.w800,
+                  color: Color.lerp(
+                    scheme.onSurface,
+                    currentBalance >= 0 ? Colors.green : Colors.red,
+                    0.70,
+                  ),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -600,34 +655,67 @@ class GroupSummaryTab extends StatelessWidget {
 
 class _SummaryMetricCard extends StatelessWidget {
   const _SummaryMetricCard({
+    required this.icon,
     required this.label,
     required this.value,
     required this.color,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
+      color: Color.lerp(scheme.surface, color, 0.10),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Icon(icon, color: Color.lerp(scheme.onSurface, color, 0.65)),
+            const SizedBox(height: 10),
             Text(label, style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 6),
             Text(
               value,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: color, fontWeight: FontWeight.w800),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Color.lerp(scheme.onSurface, color, 0.75),
+                    fontWeight: FontWeight.w900,
+                  ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Color.lerp(scheme.surface, scheme.primary, 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context)
+            .textTheme
+            .labelMedium
+            ?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -650,6 +738,7 @@ class GroupSettleUpTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = computeGroupSettlementPlan(group, expenses, settlements);
+    final scheme = Theme.of(context).colorScheme;
     final outstanding = plan.suggestions.fold<double>(
       0,
       (sum, suggestion) => sum + suggestion.amount,
@@ -661,11 +750,17 @@ class GroupSettleUpTab extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Card(
+            color: Color.lerp(scheme.surface, scheme.primary, 0.10),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Icon(Icons.swap_horiz_outlined, size: 32),
+                  CircleAvatar(
+                    backgroundColor:
+                        Color.lerp(scheme.surface, scheme.primary, 0.18),
+                    foregroundColor: scheme.primary,
+                    child: const Icon(Icons.swap_horiz_outlined),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -683,7 +778,8 @@ class GroupSettleUpTab extends ConsumerWidget {
                   Text(
                     money(outstanding),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w900,
                         ),
                   ),
                 ],
@@ -703,14 +799,20 @@ class GroupSettleUpTab extends ConsumerWidget {
           else
             ...plan.suggestions.map(
               (suggestion) => Card(
+                color: Color.lerp(scheme.surface, Colors.red, 0.07),
                 child: ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.payments_outlined),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        Color.lerp(scheme.surface, Colors.red, 0.16),
+                    foregroundColor:
+                        Color.lerp(scheme.onSurface, Colors.red, 0.65),
+                    child: const Icon(Icons.payments_outlined),
                   ),
                   title:
                       Text('${suggestion.fromName} pays ${suggestion.toName}'),
-                  subtitle:
-                      Text('Suggested amount ${money(suggestion.amount)}'),
+                  subtitle: const Text('Suggested settlement'),
                   trailing: FilledButton(
                     onPressed: () async {
                       final changed = await showSettlementSheet(
@@ -723,7 +825,7 @@ class GroupSettleUpTab extends ConsumerWidget {
                         await onRefresh();
                       }
                     },
-                    child: const Text('Settle'),
+                    child: Text(money(suggestion.amount)),
                   ),
                 ),
               ),
@@ -735,9 +837,21 @@ class GroupSettleUpTab extends ConsumerWidget {
           ...plan.balances.map((balance) {
             final neutral = balance.balance.abs() <= 0.01;
             final positive = balance.balance > 0.01;
+            final color = neutral
+                ? scheme.outline
+                : positive
+                    ? Colors.green
+                    : Colors.red;
             return Card(
+              color: Color.lerp(scheme.surface, color, neutral ? 0.04 : 0.08),
               child: ListTile(
-                leading: CircleAvatar(child: Text(initials(balance.name))),
+                leading: CircleAvatar(
+                  backgroundColor:
+                      Color.lerp(scheme.surface, color, neutral ? 0.10 : 0.18),
+                  foregroundColor: Color.lerp(
+                      scheme.onSurface, color, neutral ? 0.25 : 0.65),
+                  child: Text(initials(balance.name)),
+                ),
                 title: Text(balance.name),
                 subtitle: Text(neutral
                     ? 'Settled'
@@ -747,12 +861,12 @@ class GroupSettleUpTab extends ConsumerWidget {
                 trailing: Text(
                   neutral ? money(0) : money(balance.balance.abs()),
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: neutral
-                        ? null
-                        : positive
-                            ? Colors.greenAccent
-                            : Colors.redAccent,
+                    fontWeight: FontWeight.w900,
+                    color: Color.lerp(
+                      scheme.onSurface,
+                      color,
+                      neutral ? 0.25 : 0.75,
+                    ),
                   ),
                 ),
               ),
@@ -765,8 +879,12 @@ class GroupSettleUpTab extends ConsumerWidget {
             const SizedBox(height: 8),
             ...settlements.map(
               (settlement) => Card(
+                color: Color.lerp(scheme.surface, Colors.green, 0.07),
                 child: ListTile(
-                  leading: const Icon(Icons.done_all_outlined),
+                  leading: Icon(
+                    Icons.done_all_outlined,
+                    color: Color.lerp(scheme.onSurface, Colors.green, 0.65),
+                  ),
                   title:
                       Text('${settlement.fromName} paid ${settlement.toName}'),
                   subtitle: Text([
@@ -775,7 +893,10 @@ class GroupSettleUpTab extends ConsumerWidget {
                   ].join(' - ')),
                   trailing: Text(
                     money(settlement.amount),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: Color.lerp(scheme.onSurface, Colors.green, 0.75),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
@@ -984,24 +1105,76 @@ class GroupActivityTab extends ConsumerWidget {
     final sortedExpenses = [...expenses]
       ..sort((a, b) => b.date.compareTo(a.date));
     final sections = _expenseSections(sortedExpenses);
+    final currentUserId = currentUser?.id ?? '';
+    final scheme = Theme.of(context).colorScheme;
+    final total =
+        expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final youPaid = expenses
+        .where((expense) => expense.paidById == currentUserId)
+        .fold<double>(0, (sum, expense) => sum + expense.amount);
+    final othersPaid = (total - youPaid).clamp(0, double.infinity).toDouble();
 
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text('Expenses',
-                    style: Theme.of(context).textTheme.titleLarge),
+          Card(
+            color: Color.lerp(scheme.surface, scheme.primary, 0.08),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Activity',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: onAddExpense,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MiniAmountCard(
+                          label: 'Total',
+                          value: money(total),
+                          color: scheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _MiniAmountCard(
+                          label: 'You paid',
+                          value: money(youPaid),
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _MiniAmountCard(
+                          label: 'Others',
+                          value: money(othersPaid),
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              FilledButton.icon(
-                onPressed: onAddExpense,
-                icon: const Icon(Icons.add),
-                label: const Text('Add'),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           if (sortedExpenses.isEmpty)
@@ -1023,19 +1196,26 @@ class GroupActivityTab extends ConsumerWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(section.label,
-                            style: Theme.of(context).textTheme.titleMedium),
+                        child: Text(
+                          section.label,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
                       ),
-                      Text(
-                          '${section.expenses.length} - ${money(section.total)}',
-                          style: Theme.of(context).textTheme.labelLarge),
+                      _InfoChip(
+                        label:
+                            '${section.expenses.length} - ${money(section.total)}',
+                      ),
                     ],
                   ),
                 ),
                 ...section.expenses.map(
                   (expense) => ExpenseTile(
                     expense: expense,
-                    currentUserId: currentUser?.id ?? '',
+                    currentUserId: currentUserId,
+                    showGroupName: false,
                     onTap: () async {
                       final changed = await showExpenseDetails(
                         context: context,
@@ -1057,14 +1237,66 @@ class GroupActivityTab extends ConsumerWidget {
             const SizedBox(height: 8),
             ...activity.take(8).map(
                   (item) => Card(
+                    color: Color.lerp(scheme.surface, scheme.secondary, 0.06),
                     child: ListTile(
-                      leading: const Icon(Icons.history_outlined),
+                      leading: Icon(
+                        Icons.history_outlined,
+                        color:
+                            Color.lerp(scheme.onSurface, scheme.secondary, 0.6),
+                      ),
                       title: Text(item.message),
                       subtitle: Text(compactDate(item.createdAt)),
                     ),
                   ),
                 ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniAmountCard extends StatelessWidget {
+  const _MiniAmountCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Color.lerp(scheme.surface, color, 0.10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Color.lerp(scheme.onSurface, color, 0.72),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1118,28 +1350,91 @@ class MembersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final admins =
+        group.members.where((member) => member.role == 'admin').length;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
-        if (isAdmin)
-          FilledButton.icon(
-            onPressed: () async {
-              final changed = await showAddMemberDialog(
-                  context: context, ref: ref, group: group);
-              if (changed == true) onChanged();
-            },
-            icon: const Icon(Icons.person_add_alt_1),
-            label: const Text('Add member'),
+        Card(
+          color: Color.lerp(scheme.surface, scheme.primary, 0.08),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor:
+                      Color.lerp(scheme.surface, scheme.primary, 0.16),
+                  foregroundColor: scheme.primary,
+                  child: const Icon(Icons.groups_outlined),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${group.members.length} members',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      Text('$admins admin${admins == 1 ? '' : 's'}'),
+                    ],
+                  ),
+                ),
+                if (isAdmin)
+                  FilledButton.icon(
+                    onPressed: () async {
+                      final changed = await showAddMemberDialog(
+                          context: context, ref: ref, group: group);
+                      if (changed == true) onChanged();
+                    },
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Add'),
+                  ),
+              ],
+            ),
           ),
+        ),
         const SizedBox(height: 12),
+        if (isAdmin)
+          Text('Manage members',
+              style: Theme.of(context).textTheme.titleMedium),
+        if (isAdmin) const SizedBox(height: 8),
         ...group.members.map((member) => Card(
+              color: Color.lerp(
+                scheme.surface,
+                member.role == 'admin' ? scheme.primary : scheme.secondary,
+                member.role == 'admin' ? 0.08 : 0.04,
+              ),
               child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 leading: CircleAvatar(child: Text(initials(member.name))),
-                title: Text(member.name),
-                subtitle: Text(
-                    '${member.email.isEmpty ? member.type : member.email} - ${member.role}'),
-                trailing: isAdmin && member.role != 'admin'
-                    ? IconButton(
+                title: Text(
+                  member.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    member.email.isEmpty ? member.type : member.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _RoleBadge(role: member.role),
+                    if (isAdmin && member.role != 'admin') ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        tooltip: 'Remove member',
                         icon: const Icon(Icons.remove_circle_outline),
                         onPressed: () async {
                           final confirmed = await confirmDestructive(
@@ -1163,10 +1458,39 @@ class MembersTab extends ConsumerWidget {
                           }
                         },
                       )
-                    : null,
+                    ],
+                  ],
+                ),
               ),
             )),
       ],
+    );
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge({required this.role});
+
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isAdmin = role == 'admin';
+    final color = isAdmin ? scheme.primary : scheme.outline;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: Color.lerp(scheme.surface, color, isAdmin ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        role,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Color.lerp(scheme.onSurface, color, isAdmin ? 0.70 : 0.35),
+              fontWeight: FontWeight.w800,
+            ),
+      ),
     );
   }
 }
