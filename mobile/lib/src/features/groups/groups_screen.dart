@@ -523,7 +523,6 @@ class GroupSummaryTab extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Card(
-            color: Color.lerp(scheme.surface, scheme.primary, 0.08),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -609,11 +608,6 @@ class GroupSummaryTab extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Card(
-            color: Color.lerp(
-              scheme.surface,
-              currentBalance >= 0 ? Colors.green : Colors.red,
-              0.09,
-            ),
             child: ListTile(
               leading: const Icon(Icons.account_balance_wallet_outlined),
               title: const Text('Net balance'),
@@ -670,7 +664,6 @@ class _SummaryMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
-      color: Color.lerp(scheme.surface, color, 0.10),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -750,17 +743,11 @@ class GroupSettleUpTab extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Card(
-            color: Color.lerp(scheme.surface, scheme.primary, 0.10),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor:
-                        Color.lerp(scheme.surface, scheme.primary, 0.18),
-                    foregroundColor: scheme.primary,
-                    child: const Icon(Icons.swap_horiz_outlined),
-                  ),
+                  const CircleAvatar(child: Icon(Icons.swap_horiz_outlined)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -799,17 +786,11 @@ class GroupSettleUpTab extends ConsumerWidget {
           else
             ...plan.suggestions.map(
               (suggestion) => Card(
-                color: Color.lerp(scheme.surface, Colors.red, 0.07),
                 child: ListTile(
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        Color.lerp(scheme.surface, Colors.red, 0.16),
-                    foregroundColor:
-                        Color.lerp(scheme.onSurface, Colors.red, 0.65),
-                    child: const Icon(Icons.payments_outlined),
-                  ),
+                  leading:
+                      const CircleAvatar(child: Icon(Icons.payments_outlined)),
                   title:
                       Text('${suggestion.fromName} pays ${suggestion.toName}'),
                   subtitle: const Text('Suggested settlement'),
@@ -843,15 +824,8 @@ class GroupSettleUpTab extends ConsumerWidget {
                     ? Colors.green
                     : Colors.red;
             return Card(
-              color: Color.lerp(scheme.surface, color, neutral ? 0.04 : 0.08),
               child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor:
-                      Color.lerp(scheme.surface, color, neutral ? 0.10 : 0.18),
-                  foregroundColor: Color.lerp(
-                      scheme.onSurface, color, neutral ? 0.25 : 0.65),
-                  child: Text(initials(balance.name)),
-                ),
+                leading: CircleAvatar(child: Text(initials(balance.name))),
                 title: Text(balance.name),
                 subtitle: Text(neutral
                     ? 'Settled'
@@ -879,12 +853,8 @@ class GroupSettleUpTab extends ConsumerWidget {
             const SizedBox(height: 8),
             ...settlements.map(
               (settlement) => Card(
-                color: Color.lerp(scheme.surface, Colors.green, 0.07),
                 child: ListTile(
-                  leading: Icon(
-                    Icons.done_all_outlined,
-                    color: Color.lerp(scheme.onSurface, Colors.green, 0.65),
-                  ),
+                  leading: const Icon(Icons.done_all_outlined),
                   title:
                       Text('${settlement.fromName} paid ${settlement.toName}'),
                   subtitle: Text([
@@ -1120,7 +1090,6 @@ class GroupActivityTab extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Card(
-            color: Color.lerp(scheme.surface, scheme.primary, 0.08),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1350,24 +1319,17 @@ class MembersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
     final admins =
         group.members.where((member) => member.role == 'admin').length;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
         Card(
-          color: Color.lerp(scheme.surface, scheme.primary, 0.08),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor:
-                      Color.lerp(scheme.surface, scheme.primary, 0.16),
-                  foregroundColor: scheme.primary,
-                  child: const Icon(Icons.groups_outlined),
-                ),
+                const CircleAvatar(child: Icon(Icons.groups_outlined)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -1404,11 +1366,6 @@ class MembersTab extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium),
         if (isAdmin) const SizedBox(height: 8),
         ...group.members.map((member) => Card(
-              color: Color.lerp(
-                scheme.surface,
-                member.role == 'admin' ? scheme.primary : scheme.secondary,
-                member.role == 'admin' ? 0.08 : 0.04,
-              ),
               child: ListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
