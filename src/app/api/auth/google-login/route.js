@@ -44,6 +44,18 @@ async function verifyGoogleCredential(credential) {
   return data;
 }
 
+function getDisplayNameFromGoogleProfile(profile) {
+  const name = typeof profile?.name === "string" ? profile.name.trim() : "";
+  if (name) return name.slice(0, 80);
+
+  const givenName = typeof profile?.given_name === "string" ? profile.given_name.trim() : "";
+  const familyName = typeof profile?.family_name === "string" ? profile.family_name.trim() : "";
+  const combinedName = [givenName, familyName].filter(Boolean).join(" ").trim();
+  if (combinedName) return combinedName.slice(0, 80);
+
+  return getDisplayNameFromEmail(profile?.email);
+}
+
 function getAllowedClientIds() {
   return [
     process.env.GOOGLE_CLIENT_ID,
@@ -116,7 +128,7 @@ export async function POST(request) {
 
     const normalizedEmail = googleData.email.toLowerCase().trim();
     const emailLocalPart = getEmailLocalPart(normalizedEmail);
-    const fullNameFromEmail = getDisplayNameFromEmail(normalizedEmail);
+    const fullNameFromGoogle = getDisplayNameFromGoogleProfile(googleData);
 
     let user = await User.findOne({ email: normalizedEmail });
 
@@ -163,8 +175,8 @@ export async function POST(request) {
         shouldSave = true;
       }
 
-      if (!user.fullName && fullNameFromEmail) {
-        user.fullName = fullNameFromEmail;
+      if (!user.fullName && fullNameFromGoogle) {
+        user.fullName = fullNameFromGoogle;
         shouldSave = true;
       }
 

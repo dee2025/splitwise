@@ -12,12 +12,34 @@ const normalizedStaticArticles = staticArticles.map((article) =>
   })
 );
 
+function withTimeout(promise, timeoutMs, label) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
+async function findPublishedArticlesFromDb() {
+  await connectDB();
+  return Article.find({ status: "published" })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .lean();
+}
+
+async function findPublishedArticleBySlugFromDb(slug) {
+  await connectDB();
+  return Article.findOne({ slug, status: "published" }).lean();
+}
+
 export async function getPublishedArticles() {
   try {
-    await connectDB();
-    const dbArticles = await Article.find({ status: "published" })
-      .sort({ publishedAt: -1, createdAt: -1 })
-      .lean();
+    const dbArticles = await withTimeout(
+      findPublishedArticlesFromDb(),
+      8000,
+      "Published article lookup",
+    );
      
     if (dbArticles.length > 0) {
       return dbArticles.map(normalizeArticle);
@@ -31,8 +53,11 @@ export async function getPublishedArticles() {
 
 export async function getPublishedArticleBySlug(slug) {
   try {
-    await connectDB();
-    const dbArticle = await Article.findOne({ slug, status: "published" }).lean();
+    const dbArticle = await withTimeout(
+      findPublishedArticleBySlugFromDb(slug),
+      8000,
+      "Published article lookup",
+    );
     if (dbArticle) return normalizeArticle(dbArticle);
   } catch (error) {
     console.warn("Falling back to static article:", error?.message || error);

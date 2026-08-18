@@ -30,32 +30,32 @@ import { seoPageList } from "@/data/seoPages";
 const FEATURE_CARDS = [
   {
     icon: Users,
-    title: "Group ledgers",
-    desc: "Keep every trip, home, office lunch, and event in a separate record with members, payments, and balances.",
+    title: "Group expense tracker",
+    desc: "Create separate ledgers for trips, roommates, friends, family plans, office lunches, and events.",
     accent: "text-sky-700",
     bg: "bg-sky-50",
     border: "border-sky-100",
   },
   {
     icon: HandCoins,
-    title: "Fast bill splitting",
-    desc: "Add who paid, choose the people included, and Money Split updates the fair share instantly.",
+    title: "Free bill splitter",
+    desc: "Add who paid, choose the members included, and calculate each person's fair share without a spreadsheet.",
     accent: "text-indigo-700",
     bg: "bg-indigo-50",
     border: "border-indigo-100",
   },
   {
     icon: BarChart3,
-    title: "Clear balances",
-    desc: "See who owes and who gets paid back without scrolling through chat messages or spreadsheet formulas.",
+    title: "Simple settlement view",
+    desc: "See who owes, who should be paid back, and what each person needs to settle next.",
     accent: "text-emerald-700",
     bg: "bg-emerald-50",
     border: "border-emerald-100",
   },
   {
     icon: FileText,
-    title: "Readable history",
-    desc: "Review every expense, payer, participant, and activity update whenever a group needs clarity.",
+    title: "Expense history",
+    desc: "Keep a readable record of every amount, payer, participant, and group activity update.",
     accent: "text-rose-700",
     bg: "bg-rose-50",
     border: "border-rose-100",
@@ -86,22 +86,22 @@ const WORKFLOW = [
 ];
 
 const USE_CASES = [
-  { title: "Weekend trips", desc: "Hotels, cabs, fuel, food, tickets, and last-minute group spends.", icon: MapPin },
-  { title: "Shared homes", desc: "Rent, groceries, repairs, deposits, and utilities with roommates.", icon: Users },
-  { title: "Office plans", desc: "Team lunches, birthdays, meetups, and recurring group purchases.", icon: Calendar },
+  { title: "Trip expense splitter", desc: "Track hotels, fuel, taxis, food, tickets, activities, and last-minute travel payments.", icon: MapPin },
+  { title: "Roommate bill splitter", desc: "Organize rent, groceries, repairs, deposits, internet, electricity, and monthly utilities.", icon: Users },
+  { title: "Friends and office groups", desc: "Split dinners, birthday plans, team lunches, events, and recurring group purchases.", icon: Calendar },
 ];
 
 const MOCK_EXPENSES = [
-  { label: "Villa booking", amount: "Rs. 4,500", payer: "Paid by Deepak", tone: "bg-indigo-50 text-indigo-700" },
-  { label: "Groceries", amount: "Rs. 2,800", payer: "Paid by Sarah", tone: "bg-emerald-50 text-emerald-700" },
-  { label: "Cafe & snacks", amount: "Rs. 1,260", payer: "Paid by Amit", tone: "bg-amber-50 text-amber-700" },
+  { label: "Villa booking", amount: "INR 4,500", payer: "Paid by Deepak", tone: "bg-indigo-50 text-indigo-700" },
+  { label: "Groceries", amount: "INR 2,800", payer: "Paid by Sarah", tone: "bg-emerald-50 text-emerald-700" },
+  { label: "Cafe and snacks", amount: "INR 1,260", payer: "Paid by Amit", tone: "bg-amber-50 text-amber-700" },
 ];
 
 const TRUST_POINTS = [
-  "Free to start",
-  "Built for groups",
-  "Works on mobile",
-  "Organized expense records",
+  "Free bill splitting",
+  "Trip and roommate groups",
+  "Mobile-friendly web app",
+  "Clear shared expense records",
 ];
 
 function SectionIntro({ eyebrow, title, description, align = "left" }) {
@@ -167,16 +167,16 @@ function ProductPreview() {
                   Active group
                 </p>
                 <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">Goa Trip</h3>
-                <p className="mt-1 text-sm text-slate-500">4 members · Rs. 8,560 tracked</p>
+                <p className="mt-1 text-sm text-slate-500">4 members - INR 8,560 tracked</p>
               </div>
               <div className="w-fit rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
-                Rs. 2,140 owed to you
+                INR 2,140 owed to you
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                ["Total recorded", "Rs. 8,560"],
+                ["Total recorded", "INR 8,560"],
                 ["Active members", "4"],
                 ["Open balances", "3"],
               ].map(([label, value]) => (
@@ -241,21 +241,21 @@ function TrustBar() {
 
 function Hero() {
   return (
-    <section className="bg-[#f8fafc] px-5 pb-16 pt-16 sm:px-8 sm:pb-20 lg:pt-20">
+    <section className="bg-[#f8fafc] px-5 pb-16 pt-14 sm:px-8 sm:pb-20 lg:pt-20">
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">
             <Sparkles className="h-4 w-4" />
-            Product launch for cleaner shared expenses
+            Free bill splitter for groups, trips, and roommates
           </div>
           <h1 className="text-5xl font-bold leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
             Money Split
           </h1>
           <p className="mt-5 max-w-xl text-xl font-semibold leading-8 text-slate-800 sm:text-2xl">
-            Split bills, manage group expenses, and settle balances without confusion.
+            Split bills, track group expenses, and settle up with less confusion.
           </p>
           <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            A focused expense sharing app for trips, roommates, events, and everyday group costs. Create a group, add expenses, and keep everyone aligned on who owes whom.
+            Create one shared ledger for every plan. Add members, record who paid, split costs fairly, and see who owes whom across trips, roommate bills, dinners, office plans, and family expenses.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -276,12 +276,12 @@ function Hero() {
 
           <div className="mt-10 grid max-w-lg grid-cols-3 gap-4">
             {[
-              ["10K+", "active users"],
-              ["1M+", "tracked"],
-              ["0", "setup cost"],
+              ["Groups", "for every plan"],
+              ["Balances", "shown clearly"],
+              ["Free", "to get started"],
             ].map(([value, label]) => (
               <div key={label} className="border-l border-slate-200 pl-4">
-                <p className="text-2xl font-bold text-slate-950">{value}</p>
+                <p className="text-xl font-bold text-slate-950 sm:text-2xl">{value}</p>
                 <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
               </div>
             ))}
@@ -301,8 +301,8 @@ function FeatureSection() {
         <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <SectionIntro
             eyebrow="Core product"
-            title="Designed for the real moments where shared money gets messy."
-            description="Money Split keeps the workflow simple enough for casual plans while giving every group a clear record they can return to later."
+            title="Everything a shared expense app needs, without extra complexity."
+            description="Money Split is built around high-intent bill splitting use cases: group expenses, trip costs, roommate bills, shared dinners, event payments, and final settlement."
           />
           <Link
             href="/signup"
@@ -346,7 +346,7 @@ function WorkflowSection() {
         <SectionIntro
           eyebrow="How it works"
           title="From first expense to final settlement in four clear steps."
-          description="The homepage now shows the product flow directly, so visitors understand the value before they sign up."
+          description="Visitors can understand the full workflow immediately: create a group, invite people, add expenses, and review the balance before paying back."
           align="center"
         />
 
@@ -386,8 +386,8 @@ function UseCaseSection() {
         <div>
           <SectionIntro
             eyebrow="Use cases"
-            title="One app for every shared expense group."
-            description="Position Money Split as a polished daily utility, not just a calculator. Each use case links back to the product's main reason to exist: shared clarity."
+            title="One expense splitter for the situations people search for most."
+            description="Use Money Split when a simple calculator is not enough and your group needs a shared record everyone can check later."
           />
           <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-5">
             <div className="flex items-center gap-3">
@@ -440,7 +440,7 @@ function SeoLinksSection() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Explore Money Split</p>
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              Built around the ways people actually split costs.
+              Built around the searches that matter: bill splitter, trip expenses, roommate bills, and shared balances.
             </h2>
           </div>
           <Link href="/features" className="inline-flex items-center gap-2 text-sm font-bold text-indigo-700">
@@ -476,8 +476,8 @@ function ArticlesSection({ articles }) {
         <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <SectionIntro
             eyebrow="Expense guides"
-            title="Launch with helpful content, not generic marketing copy."
-            description="Published guides give visitors practical answers about trip, roommate, family, and group expense management."
+            title="Helpful guides for people comparing expense splitting options."
+            description="Practical articles support Google search intent and help visitors solve common shared money problems before they create a group."
           />
           <Link
             href="/articles"
@@ -582,7 +582,7 @@ function FaqSection({ faqs }) {
           <SectionIntro
             eyebrow="Common questions"
             title="Clear answers before anyone adds the first bill."
-            description="Keep the page practical with direct answers for new users and search visitors."
+            description="Direct answers help new users understand the product and give search visitors the information they came for."
           />
           <Link href="/articles" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-indigo-700">
             Read detailed guides

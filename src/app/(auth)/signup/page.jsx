@@ -18,10 +18,10 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
+import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
 
 const inputCls = (hasError) =>
   `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
@@ -59,9 +59,7 @@ export default function SignupPage() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleReady, setGoogleReady] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/home");
-  const googleButtonRef = useRef(null);
 
   useEffect(() => {
     setRedirectPath(getRedirectFromLocation());
@@ -258,39 +256,6 @@ export default function SignupPage() {
     }
   }, [dispatch, redirectPath, router]);
 
-  const initGoogleButton = useCallback(() => {
-    if (!googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) {
-      return;
-    }
-
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleCredential,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-    });
-
-    googleButtonRef.current.innerHTML = "";
-    window.google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: "outline",
-      size: "large",
-      text: "continue_with",
-      shape: "pill",
-      width: 350,
-    });
-    setGoogleReady(true);
-  }, [googleClientId, handleGoogleCredential]);
-
-  useEffect(() => {
-    if (!googleClientId) {
-      return;
-    }
-
-    if (window.google?.accounts?.id) {
-      initGoogleButton();
-    }
-  }, [googleClientId, initGoogleButton]);
-
   if (!checked || authLoading || isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -320,7 +285,7 @@ export default function SignupPage() {
       name: "password",
       label: "Password",
       type: "password",
-      placeholder: "••••••••",
+      placeholder: "********",
       icon: Lock,
       delay: 0.16,
       isPassword: true,
@@ -331,14 +296,6 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
-      {googleClientId ? (
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="afterInteractive"
-          onLoad={initGoogleButton}
-        />
-      ) : null}
-
       <Link
         href="/"
         className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-950 transition-colors text-sm font-medium"
@@ -443,27 +400,14 @@ export default function SignupPage() {
             </motion.div>
           ) : (
             <>
-          {googleClientId ? (
             <div className="mb-5">
-              <div
-                ref={googleButtonRef}
-                className="w-full min-h-11 flex items-center justify-center"
+              <GoogleIdentityButton
+                clientId={googleClientId}
+                onCredential={handleGoogleCredential}
+                context="signup"
+                loading={googleLoading}
+                loadingText="Signing up with Google..."
               />
-              {!googleReady && (
-                <button
-                  type="button"
-                  disabled
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white/90 text-slate-800 opacity-70"
-                >
-                  Continue with Google
-                </button>
-              )}
-              {googleLoading && (
-                <p className="text-xs text-slate-500 text-center mt-2">
-                  Signing up with Google...
-                </p>
-              )}
-
               <div className="my-4 flex items-center gap-3">
                 <div className="flex-1 h-px bg-slate-200" />
                 <span className="text-xs text-slate-500 uppercase tracking-wide">
@@ -472,7 +416,6 @@ export default function SignupPage() {
                 <div className="flex-1 h-px bg-slate-200" />
               </div>
             </div>
-          ) : null}
 
           {/* Form */}
           <form onSubmit={handleSignup} className="space-y-3.5">
@@ -543,7 +486,7 @@ export default function SignupPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Creating…</span>
+                  <span>Creating...</span>
                 </>
               ) : (
                 <>

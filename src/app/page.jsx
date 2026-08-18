@@ -7,7 +7,7 @@ export const revalidate = 3600;
 export const metadata = {
   title: "Money Split - Free Bill Splitter & Group Expense Tracker",
   description:
-    "Split bills, track group expenses, and manage shared balances for friends, trips, roommates, events, and family plans with Money Split.",
+    "Use Money Split to split bills, track group expenses, manage trip costs, organize roommate bills, and settle shared balances clearly.",
   keywords: [
     "bill splitter",
     "free bill splitter",

@@ -16,10 +16,10 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
+import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
 
 const inputCls = (hasError) =>
   `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
@@ -54,9 +54,7 @@ export default function LoginPage() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleReady, setGoogleReady] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/home");
-  const googleButtonRef = useRef(null);
 
   useEffect(() => {
     setRedirectPath(getRedirectFromLocation());
@@ -223,39 +221,6 @@ export default function LoginPage() {
     }
   }, [dispatch, redirectPath, router]);
 
-  const initGoogleButton = useCallback(() => {
-    if (!googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) {
-      return;
-    }
-
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleCredential,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-    });
-
-    googleButtonRef.current.innerHTML = "";
-    window.google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: "outline",
-      size: "large",
-      text: "continue_with",
-      shape: "pill",
-      width: 350,
-    });
-    setGoogleReady(true);
-  }, [googleClientId, handleGoogleCredential]);
-
-  useEffect(() => {
-    if (!googleClientId) {
-      return;
-    }
-
-    if (window.google?.accounts?.id) {
-      initGoogleButton();
-    }
-  }, [googleClientId, initGoogleButton]);
-
   if (!checked || authLoading || isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -266,14 +231,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
-      {googleClientId ? (
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="afterInteractive"
-          onLoad={initGoogleButton}
-        />
-      ) : null}
-
       {/* Back button */}
       <Link
         href="/"
@@ -314,28 +271,19 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {googleClientId ? (
-            <div className="mb-4">
-              <div
-                ref={googleButtonRef}
-                className="w-full min-h-11 flex items-center justify-center"
-              />
-              {!googleReady && (
-                <button
-                  type="button"
-                  disabled
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white/90 text-slate-800 opacity-70"
-                >
-                  Continue with Google
-                </button>
-              )}
-              {googleLoading && (
-                <p className="text-xs text-slate-500 text-center mt-2">
-                  Signing in with Google...
-                </p>
-              )}
+          <div className="mb-5">
+            <GoogleIdentityButton
+              clientId={googleClientId}
+              onCredential={handleGoogleCredential}
+              loading={googleLoading}
+              loadingText="Signing in with Google..."
+            />
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">or</span>
+              <div className="h-px flex-1 bg-slate-200" />
             </div>
-          ) : null}
+          </div>
 
           {unverifiedEmail ? (
             <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-50 p-4 text-sm text-slate-950">
@@ -425,7 +373,7 @@ export default function LoginPage() {
                   value={form.password}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="••••••••"
+                  placeholder="********"
                   className={inputCls(touched.password && errors.password)}
                 />
                 <button
@@ -479,7 +427,7 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Signing in…</span>
+                  <span>Signing in...</span>
                 </>
               ) : (
                 <>
