@@ -73,11 +73,14 @@ export async function POST(req) {
       );
     }
 
-    if (!user.password || user.authProvider === "google") {
+    if (!user.password) {
       return NextResponse.json(
         {
-          error: "This account uses Google sign in",
-          errors: { email: "Use Continue with Google for this account" },
+          success: false,
+          code: "PASSWORD_NOT_SET",
+          email: user.email,
+          error: "This account was created with Google. Continue with Google or set a password first.",
+          errors: { email: "Set a password before using email sign in" },
         },
         { status: 400 }
       );

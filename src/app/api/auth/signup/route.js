@@ -59,8 +59,21 @@ export async function POST(req) {
       );
     }
 
-    const existingEmail = await User.findOne({ email: normalizedEmail }).select("_id");
+    const existingEmail = await User.findOne({ email: normalizedEmail }).select("_id password authProvider");
     if (existingEmail) {
+      if (!existingEmail.password) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "PASSWORD_NOT_SET",
+            email: normalizedEmail,
+            error: "This email is already connected to a Google account. Sign in with Google or set a password from the sign-in page.",
+            errors: { email: "Google account already exists" },
+          },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,

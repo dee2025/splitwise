@@ -78,7 +78,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center">
-          <p className="text-xs text-slate-500">© {new Date().getFullYear()} Money Split. All rights reserved.</p>
+          <p className="text-xs text-slate-500">&copy; {new Date().getFullYear()} Money Split. All rights reserved.</p>
           <p className="text-xs text-slate-500">Made for friends, roommates, teams, and travelers.</p>
         </div>
       </div>

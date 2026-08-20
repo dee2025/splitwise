@@ -5,7 +5,6 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  ChevronLeft,
   CheckCircle,
   Eye,
   EyeOff,
@@ -24,11 +23,67 @@ import { useDispatch, useSelector } from "react-redux";
 import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
 
 const inputCls = (hasError) =>
-  `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
+  `h-[52px] w-full rounded-lg border py-3 pl-12 pr-11 text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
     hasError
-      ? "bg-rose-50 border-rose-300 text-slate-950 placeholder:text-slate-400 focus:ring-rose-500"
-      : "bg-white border-slate-300 text-slate-950 placeholder:text-slate-400 focus:ring-indigo-500"
+      ? "border-rose-300 bg-rose-50 text-slate-950 placeholder:text-slate-400 focus:ring-rose-500"
+      : "border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 focus:ring-emerald-500"
   }`;
+
+function AuthStoryPanel() {
+  return (
+    <section className="relative hidden h-dvh overflow-hidden bg-[linear-gradient(145deg,#f9fffb_0%,#edf8f3_58%,#d9f2e8_100%)] px-[clamp(32px,4vw,72px)] py-[clamp(24px,3vh,40px)] lg:block">
+      <div className="relative z-10 grid h-full grid-rows-[auto_1fr_auto]">
+        <Link href="/" className="inline-flex w-fit items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 shadow-[0_14px_30px_rgba(5,150,105,0.22)]">
+            <Image
+              src="/logo.png"
+              alt="MoneySplit"
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-md"
+              priority
+            />
+          </span>
+          <span>
+            <span className="block text-lg font-semibold tracking-tight text-slate-950 xl:text-xl">MoneySplit</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.34em] text-slate-400">
+              Group expenses
+            </span>
+          </span>
+        </Link>
+
+        <div className="flex items-center">
+          <div className="max-w-[520px]">
+            <p className="mb-5 inline-flex items-center gap-2 rounded-lg bg-emerald-100/80 px-3 py-2 text-xs font-semibold text-emerald-800">
+              <User className="h-4 w-4" />
+              Smart spending starts here.
+            </p>
+            <h1 className="text-[clamp(44px,4.8vw,68px)] font-semibold leading-[1.04] tracking-tight text-slate-950">
+              Create groups.
+              <span className="block text-emerald-600">Split with clarity.</span>
+            </h1>
+            <p className="mt-5 max-w-[390px] text-base leading-7 text-slate-600">
+              Start a shared ledger for trips, roommates, dinners, and every group plan.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative h-[32vh] min-h-[220px] max-h-[320px]">
+          <Image
+            src="/login-banner.png"
+            alt="MoneySplit signup visual"
+            width={560}
+            height={360}
+            className="absolute bottom-0 left-0 h-full w-full object-contain object-left-bottom"
+            priority
+          />
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[38vh] bg-[radial-gradient(circle_at_28%_70%,rgba(16,185,129,0.18),transparent_36%),radial-gradient(circle,#ffffff_1px,transparent_1px)] [background-size:auto,14px_14px] opacity-80" />
+    </section>
+  );
+}
 
 function getRedirectFromLocation() {
   if (typeof window === "undefined") return "/home";
@@ -267,17 +322,17 @@ export default function SignupPage() {
   const fields = [
     {
       name: "fullName",
-      label: "Full Name",
+      label: "Full name",
       type: "text",
-      placeholder: "John Doe",
+      placeholder: "Enter your full name",
       icon: User,
       delay: 0.08,
     },
     {
       name: "email",
-      label: "Email Address",
+      label: "Email address",
       type: "email",
-      placeholder: "you@example.com",
+      placeholder: "Enter your email",
       icon: Mail,
       delay: 0.12,
     },
@@ -285,7 +340,7 @@ export default function SignupPage() {
       name: "password",
       label: "Password",
       type: "password",
-      placeholder: "********",
+      placeholder: "Create a password",
       icon: Lock,
       delay: 0.16,
       isPassword: true,
@@ -295,246 +350,216 @@ export default function SignupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
-      <Link
-        href="/"
-        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-950 transition-colors text-sm font-medium"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Back
-      </Link>
+    <div className="h-dvh overflow-hidden bg-white">
+      <main className="grid h-dvh lg:grid-cols-2">
+        <AuthStoryPanel />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
-      >
-        <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
-          {/* Header */}
-          <div className="text-center mb-7">
-            <Link href="/" className="inline-flex items-center gap-2 mb-5">
-              <Image
-                src="/logo.png"
-                alt="MoneySplit"
-                width={36}
-                height={36}
-                className="h-9 w-9 shrink-0 rounded-lg"
-                priority
-              />
-              <span className="text-lg font-bold text-slate-950 tracking-tight">
-                Money<span className="text-indigo-700">Split</span>
-              </span>
-            </Link>
-            <h1 className="text-2xl font-bold text-slate-950 mb-1.5">
-              Create account
-            </h1>
-            <p className="text-slate-600 text-sm">
-              {verificationEmail
-                ? "Verify your email to activate your account"
-                : "Join thousands splitting expenses smarter"}
-            </p>
-          </div>
-
-          {verificationEmail ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-5 text-center"
-            >
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
-                <CheckCircle className="h-7 w-7" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-950">
-                  Enter the OTP
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  We sent a 6-digit code to{" "}
-                  <span className="font-semibold text-slate-950">
-                    {verificationEmail}
-                  </span>
-                  . It expires in 10 minutes.
-                </p>
-              </div>
-              <input
-                inputMode="numeric"
-                maxLength={6}
-                value={verificationOtp}
-                onChange={(event) => setVerificationOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="000000"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-2xl font-black tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-indigo-500"
-              />
-              <button
-                type="button"
-                onClick={handleVerifyOtp}
-                disabled={isVerifyingOtp}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isVerifyingOtp ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                Verify and continue
-              </button>
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={isResending}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isResending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-                Resend OTP
-              </button>
-              <Link
-                href={redirectPath === "/home" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}
-                className="block text-sm font-semibold text-indigo-400 transition-colors hover:text-indigo-300"
-              >
-                Go to sign in
-              </Link>
-            </motion.div>
-          ) : (
-            <>
-            <div className="mb-5">
-              <GoogleIdentityButton
-                clientId={googleClientId}
-                onCredential={handleGoogleCredential}
-                context="signup"
-                loading={googleLoading}
-                loadingText="Signing up with Google..."
-              />
-              <div className="my-4 flex items-center gap-3">
-                <div className="flex-1 h-px bg-slate-200" />
-                <span className="text-xs text-slate-500 uppercase tracking-wide">
-                  or
+        <section className="flex h-dvh items-center justify-center overflow-hidden px-5 py-6 sm:px-8 lg:px-[clamp(40px,6vw,96px)]">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="w-full max-w-[560px]"
+          >
+            <div className="mb-6 lg:hidden">
+              <Link href="/" className="inline-flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600">
+                  <Image
+                    src="/logo.png"
+                    alt="MoneySplit"
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 rounded-md"
+                    priority
+                  />
                 </span>
-                <div className="flex-1 h-px bg-slate-200" />
-              </div>
+                <span>
+                  <span className="block text-lg font-semibold tracking-tight text-slate-950">MoneySplit</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                    Group expenses
+                  </span>
+                </span>
+              </Link>
             </div>
 
-          {/* Form */}
-          <form onSubmit={handleSignup} className="space-y-3.5">
-            {fields.map((field) => {
-              const IconComponent = field.icon;
-              const hasError = touched[field.name] && errors[field.name];
-              return (
-                <motion.div
-                  key={field.name}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: field.delay }}
-                >
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                    {field.label}
-                  </label>
-                  <div className="relative">
-                    <IconComponent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type={
-                        field.isPassword
-                          ? field.showToggle
-                            ? "text"
-                            : "password"
-                          : field.type
-                      }
-                      name={field.name}
-                      value={form[field.name]}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder={field.placeholder}
-                      className={inputCls(hasError)}
-                    />
-                    {field.isPassword ? (
-                      <button
-                        type="button"
-                        onClick={() => field.setShowToggle(!field.showToggle)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 transition-colors"
-                      >
-                        {field.showToggle ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    ) : null}
+            <div className="mb-6">
+              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-[38px]">
+                {verificationEmail ? "Verify your email" : "Create your account"}
+              </h1>
+              <p className="mt-2 text-base leading-6 text-slate-500">
+                {verificationEmail
+                  ? "Enter the OTP to activate your account"
+                  : "Sign up to start splitting expenses"}
+              </p>
+            </div>
+
+            {verificationEmail ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-5"
+              >
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700">
+                      <CheckCircle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-950">OTP sent</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        We sent a 6-digit code to{" "}
+                        <span className="font-semibold text-slate-950">{verificationEmail}</span>.
+                        It expires in 10 minutes.
+                      </p>
+                    </div>
                   </div>
-                  {hasError && (
-                    <p className="text-rose-400 text-xs mt-1">
-                      {errors[field.name]}
-                    </p>
+                </div>
+                <input
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={verificationOtp}
+                  onChange={(event) => setVerificationOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  className="h-[56px] w-full rounded-lg border border-slate-200 bg-white px-4 text-center text-2xl font-semibold tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={isVerifyingOtp}
+                  className="flex h-[54px] w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 text-base font-semibold text-white shadow-[0_18px_42px_rgba(4,120,87,0.24)] transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isVerifyingOtp ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
                   )}
+                  Verify and continue
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  className="flex h-[48px] w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isResending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Resend OTP
+                </button>
+              </motion.div>
+            ) : (
+              <>
+                <div className="mb-5">
+                  <GoogleIdentityButton
+                    clientId={googleClientId}
+                    onCredential={handleGoogleCredential}
+                    context="signup"
+                    loading={googleLoading}
+                    loadingText="Signing up with Google..."
+                  />
+                  <div className="my-5 flex items-center gap-4">
+                    <div className="h-px flex-1 bg-slate-200" />
+                    <span className="text-sm text-slate-400">or</span>
+                    <div className="h-px flex-1 bg-slate-200" />
+                  </div>
+                </div>
 
-                </motion.div>
-              );
-            })}
+                <form onSubmit={handleSignup} className="space-y-4">
+                  {fields.map((field) => {
+                    const IconComponent = field.icon;
+                    const hasError = touched[field.name] && errors[field.name];
+                    return (
+                      <motion.div
+                        key={field.name}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: field.delay }}
+                      >
+                        <label className="mb-2 block text-xs font-semibold text-slate-950">
+                          {field.label}
+                        </label>
+                        <div className="relative">
+                          <IconComponent className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type={
+                              field.isPassword
+                                ? field.showToggle
+                                  ? "text"
+                                  : "password"
+                                : field.type
+                            }
+                            name={field.name}
+                            value={form[field.name]}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder={field.placeholder}
+                            className={inputCls(hasError)}
+                          />
+                          {field.isPassword ? (
+                            <button
+                              type="button"
+                              onClick={() => field.setShowToggle(!field.showToggle)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-900"
+                              aria-label={field.showToggle ? "Hide password" : "Show password"}
+                            >
+                              {field.showToggle ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          ) : null}
+                        </div>
+                        {hasError && (
+                          <p className="mt-1.5 text-xs text-rose-500">{errors[field.name]}</p>
+                        )}
+                      </motion.div>
+                    );
+                  })}
 
-            {/* Submit */}
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.32 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 shadow-lg shadow-indigo-950/50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <span>Create Account</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </motion.button>
-          </form>
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.32 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="mt-5 flex h-[54px] w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 text-base font-semibold text-white shadow-[0_18px_42px_rgba(4,120,87,0.24)] transition-all hover:bg-emerald-700 hover:shadow-[0_20px_46px_rgba(4,120,87,0.30)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <span>Create account</span>
+                    )}
+                  </motion.button>
+                </form>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-500">
-              Already have an account?
-            </span>
-            <div className="flex-1 h-px bg-slate-200" />
-          </div>
+                <p className="mt-6 text-center text-base text-slate-500">
+                  Already have an account?{" "}
+                  <Link
+                    href={redirectPath === "/home" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}
+                    className="font-semibold text-emerald-700 transition-colors hover:text-emerald-800"
+                  >
+                    Log in
+                  </Link>
+                </p>
 
-          <p className="text-center text-slate-600 text-sm">
-            Sign in{" "}
-            <Link
-              href={redirectPath === "/home" ? "/login" : `/login?redirect=${encodeURIComponent(redirectPath)}`}
-              className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
-            >
-              here
-            </Link>
-          </p>
-            </>
-          )}
-        </div>
-
-        <p className="text-center text-xs text-slate-500 mt-6">
-          By creating an account, you agree to our{" "}
-          <Link
-            href="/terms-of-service"
-            className="hover:text-slate-950 transition-colors"
-          >
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link
-            href="/privacy-policy"
-            className="hover:text-slate-950 transition-colors"
-          >
-            Privacy Policy
-          </Link>
-        </p>
-      </motion.div>
+                <p className="mt-8 flex items-center justify-center gap-2 text-sm text-slate-500">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md border border-emerald-200 text-emerald-700">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                  </span>
+                  Your data is secure and private
+                </p>
+              </>
+            )}
+          </motion.div>
+        </section>
+      </main>
     </div>
   );
 }

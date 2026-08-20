@@ -23,7 +23,7 @@ export default function GoogleIdentityButton({
 
     const updateWidth = () => {
       const width = Math.floor(containerRef.current?.getBoundingClientRect().width || 320);
-      setButtonWidth(Math.max(240, Math.min(width, 400)));
+      setButtonWidth(Math.max(240, Math.min(width, 560)));
     };
 
     updateWidth();
@@ -76,16 +76,16 @@ export default function GoogleIdentityButton({
         onLoad={() => setScriptReady(true)}
         onError={() => setScriptFailed(true)}
       />
-      <div className="relative flex min-h-11 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-white">
+      <div className="relative flex min-h-[52px] w-full items-center justify-center rounded-lg bg-transparent">
         <div ref={buttonRef} className="flex w-full justify-center" />
         {!buttonReady && (
           <button
             type="button"
             disabled
-            className="absolute inset-0 flex w-full items-center justify-center gap-3 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800"
+            className="absolute inset-0 flex h-[52px] w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm"
             aria-label={context === "signup" ? "Sign up with Google" : "Sign in with Google"}
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 text-xs font-bold text-slate-700">
+            <span className="flex h-6 w-6 items-center justify-center text-lg font-bold text-[#4285f4]">
               G
             </span>
             Continue with Google

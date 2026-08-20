@@ -1,32 +1,90 @@
 "use client";
 
 import { loginSuccess } from "@/redux/slices/authSlice";
+import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
 import axios from "axios";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  ChevronLeft,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
   Send,
+  ShieldCheck,
+  Users,
+  X,
 } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
-import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
 
 const inputCls = (hasError) =>
-  `w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
+  `h-[52px] w-full rounded-lg border py-3 pl-12 pr-11 text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
     hasError
-      ? "bg-rose-50 border-rose-300 text-slate-950 placeholder:text-slate-400 focus:ring-rose-500"
-      : "bg-white border-slate-300 text-slate-950 placeholder:text-slate-400 focus:ring-indigo-500"
+      ? "border-rose-300 bg-rose-50 text-slate-950 placeholder:text-slate-400 focus:ring-rose-500"
+      : "border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 focus:ring-emerald-500"
   }`;
+
+function AuthStoryPanel() {
+  return (
+    <section className="relative hidden h-dvh overflow-hidden bg-[linear-gradient(145deg,#f9fffb_0%,#edf8f3_58%,#d9f2e8_100%)] px-[clamp(32px,4vw,72px)] py-[clamp(24px,3vh,40px)] lg:block">
+      <div className="relative z-10 grid h-full grid-rows-[auto_1fr_auto]">
+        <Link href="/" className="inline-flex w-fit items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 shadow-[0_14px_30px_rgba(5,150,105,0.22)]">
+            <Image
+              src="/logo.png"
+              alt="MoneySplit"
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-md"
+              priority
+            />
+          </span>
+          <span>
+            <span className="block text-lg font-semibold tracking-tight text-slate-950 xl:text-xl">MoneySplit</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.34em] text-slate-400">
+              Group expenses
+            </span>
+          </span>
+        </Link>
+
+        <div className="flex items-center">
+          <div className="max-w-[520px]">
+            <p className="mb-5 inline-flex items-center gap-2 rounded-lg bg-emerald-100/80 px-3 py-2 text-xs font-semibold text-emerald-800">
+              <Users className="h-4 w-4" />
+              Smart spending. Better together.
+            </p>
+            <h1 className="text-[clamp(44px,4.8vw,68px)] font-semibold leading-[1.04] tracking-tight text-slate-950">
+              Share expenses.
+              <span className="block text-emerald-600">Stay in sync.</span>
+            </h1>
+            <p className="mt-5 max-w-[390px] text-base leading-7 text-slate-600">
+              Track group expenses, settle up easily, and focus on what matters.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative h-[32vh] min-h-[220px] max-h-[320px]">
+          <Image
+            src="/login-banner.png"
+            alt="MoneySplit login visual"
+            width={560}
+            height={360}
+            className="absolute bottom-0 left-0 h-full w-full object-contain object-left-bottom"
+            priority
+          />
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[38vh] bg-[radial-gradient(circle_at_28%_70%,rgba(16,185,129,0.18),transparent_36%),radial-gradient(circle,#ffffff_1px,transparent_1px)] [background-size:auto,14px_14px] opacity-80" />
+    </section>
+  );
+}
 
 function getRedirectFromLocation() {
   if (typeof window === "undefined") return "/home";
@@ -48,12 +106,19 @@ export default function LoginPage() {
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [verificationOtp, setVerificationOtp] = useState("");
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [passwordSetupEmail, setPasswordSetupEmail] = useState("");
+  const [passwordSetupOtp, setPasswordSetupOtp] = useState("");
+  const [passwordSetupStep, setPasswordSetupStep] = useState("send");
+  const [passwordSetupModalOpen, setPasswordSetupModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isSendingPasswordOtp, setIsSendingPasswordOtp] = useState(false);
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/home");
 
   useEffect(() => {
@@ -71,6 +136,13 @@ export default function LoginPage() {
     if (name === "email" && unverifiedEmail) {
       setUnverifiedEmail("");
       setVerificationOtp("");
+    }
+    if (name === "email" && passwordSetupEmail) {
+      setPasswordSetupEmail("");
+      setPasswordSetupOtp("");
+      setPasswordSetupStep("send");
+      setPasswordSetupModalOpen(false);
+      setNewPassword("");
     }
   };
 
@@ -144,6 +216,13 @@ export default function LoginPage() {
       if (err.response?.data?.code === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(err.response.data.email || form.email.trim());
       }
+      if (err.response?.data?.code === "PASSWORD_NOT_SET") {
+        setPasswordSetupEmail(err.response.data.email || form.email.trim());
+        setPasswordSetupOtp("");
+        setPasswordSetupStep("send");
+        setPasswordSetupModalOpen(true);
+        setNewPassword("");
+      }
       const apiErrors = err.response?.data?.errors;
       if (apiErrors && typeof apiErrors === "object") {
         setErrors((prev) => ({ ...prev, ...apiErrors }));
@@ -197,6 +276,72 @@ export default function LoginPage() {
     }
   };
 
+  const closePasswordSetupModal = () => {
+    if (isSendingPasswordOtp || isSettingPassword) return;
+    setPasswordSetupModalOpen(false);
+  };
+
+  const handlePasswordSetupOtpChange = (value) => {
+    const otp = value.replace(/\D/g, "").slice(0, 6);
+    setPasswordSetupOtp(otp);
+    if (otp.length === 6) {
+      setPasswordSetupStep("password");
+    }
+  };
+
+  const handleSendPasswordSetupOtp = async () => {
+    const email = passwordSetupEmail || form.email.trim();
+    if (!email) {
+      toast.error("Enter your email first");
+      return;
+    }
+
+    setIsSendingPasswordOtp(true);
+    try {
+      const res = await axios.post("/api/auth/request-password-setup", { email });
+      setPasswordSetupEmail(res.data?.email || email);
+      setPasswordSetupStep("otp");
+      setPasswordSetupModalOpen(true);
+      toast.success(res.data?.message || "Password setup OTP sent");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Unable to send setup OTP");
+    } finally {
+      setIsSendingPasswordOtp(false);
+    }
+  };
+
+  const handleSetPasswordWithOtp = async () => {
+    const email = passwordSetupEmail || form.email.trim();
+    if (!email || passwordSetupOtp.trim().length !== 6) {
+      toast.error("Enter the 6-digit OTP");
+      return;
+    }
+    if (!newPassword || newPassword.length < 6 || !/(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword)) {
+      toast.error("Password must be at least 6 characters and include letters and numbers");
+      return;
+    }
+
+    setIsSettingPassword(true);
+    try {
+      const res = await axios.post("/api/auth/set-password-with-otp", {
+        email,
+        otp: passwordSetupOtp,
+        newPassword,
+      });
+      if (res.data?.success) {
+        dispatch(loginSuccess({ user: res.data.user }));
+        toast.success(res.data.message || "Password set successfully");
+        router.replace(redirectPath);
+        return;
+      }
+      toast.error("Unable to set password");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Unable to set password");
+    } finally {
+      setIsSettingPassword(false);
+    }
+  };
+
   const handleGoogleCredential = useCallback(async (googleResponse) => {
     const credential = googleResponse?.credential;
     if (!credential) {
@@ -229,64 +374,65 @@ export default function LoginPage() {
     );
   }
 
+  const passwordSetupStepIndex = {
+    send: 0,
+    otp: 1,
+    password: 2,
+  }[passwordSetupStep] || 0;
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
-      {/* Back button */}
-      <Link
-        href="/"
-        className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-500 hover:text-slate-950 transition-colors text-sm font-medium"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Back
-      </Link>
+    <div className="h-dvh overflow-hidden bg-white">
+      <main className="grid h-dvh lg:grid-cols-2">
+        <AuthStoryPanel />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
-      >
-        {/* Card */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-6">
-              <Image
-                src="/logo.png"
-                alt="MoneySplit"
-                width={36}
-                height={36}
-                className="h-9 w-9 shrink-0 rounded-lg"
-                priority
-              />
-              <span className="text-lg font-bold text-slate-950 tracking-tight">
-                Money<span className="text-indigo-700">Split</span>
-              </span>
-            </Link>
-            <h1 className="text-2xl font-bold text-slate-950 mb-1.5">
-              Welcome back
-            </h1>
-            <p className="text-slate-600 text-sm">
-              Sign in to your account to continue
-            </p>
-          </div>
-
-          <div className="mb-5">
-            <GoogleIdentityButton
-              clientId={googleClientId}
-              onCredential={handleGoogleCredential}
-              loading={googleLoading}
-              loadingText="Signing in with Google..."
-            />
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">or</span>
-              <div className="h-px flex-1 bg-slate-200" />
+        <section className="flex h-dvh items-center justify-center overflow-hidden px-5 py-6 sm:px-8 lg:px-[clamp(40px,6vw,96px)]">
+          <div className="w-full max-w-[560px]">
+            <div className="mb-6 lg:hidden">
+              <Link href="/" className="inline-flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600">
+                  <Image
+                    src="/logo.png"
+                    alt="MoneySplit"
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 rounded-md"
+                    priority
+                  />
+                </span>
+                <span>
+                  <span className="block text-lg font-semibold tracking-tight text-slate-950">MoneySplit</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                    Group expenses
+                  </span>
+                </span>
+              </Link>
             </div>
-          </div>
+
+            <div className="mb-7">
+              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-[38px]">
+                Welcome back
+              </h1>
+              <p className="mt-2 text-base leading-6 text-slate-500 sm:text-lg">
+                Login to your account to continue
+              </p>
+            </div>
+
+            <div className="mb-5">
+                <GoogleIdentityButton
+                  clientId={googleClientId}
+                  onCredential={handleGoogleCredential}
+                  loading={googleLoading}
+                  loadingText="Signing in with Google..."
+                />
+                <div className="my-5 flex items-center gap-4">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <span className="text-sm text-slate-400">or</span>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+            </div>
 
           {unverifiedEmail ? (
-            <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-50 p-4 text-sm text-slate-950">
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-950">
               <p className="font-semibold">Email verification required</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
                 Enter the 6-digit OTP sent to {unverifiedEmail}. It expires in 10 minutes.
@@ -297,13 +443,13 @@ export default function LoginPage() {
                 value={verificationOtp}
                 onChange={(event) => setVerificationOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="000000"
-                className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-xl font-black tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-indigo-500"
+                className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-xl font-semibold tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-emerald-500"
               />
               <button
                 type="button"
                 onClick={handleVerifyOtp}
                 disabled={isVerifyingOtp}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isVerifyingOtp ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -316,7 +462,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleResendVerification}
                 disabled={isResending}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-950 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isResending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -331,49 +477,49 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Email */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Email Address
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-slate-950">
+                Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="you@example.com"
+                  placeholder="Enter your email"
                   className={inputCls(touched.email && errors.email)}
                 />
               </div>
               {touched.email && errors.email && (
                 <p className="text-rose-400 text-xs mt-1.5">{errors.email}</p>
               )}
-            </motion.div>
+            </div>
 
             {/* Password */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-            >
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Password
-              </label>
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="block text-xs font-semibold text-slate-950">
+                  Password
+                </label>
+                <Link
+                  href="#forgot-password"
+                  className="text-xs font-semibold text-emerald-700 transition-colors hover:text-emerald-800"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={form.password}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="********"
+                  placeholder="Enter your password"
                   className={inputCls(touched.password && errors.password)}
                 />
                 <button
@@ -393,36 +539,13 @@ export default function LoginPage() {
                   {errors.password}
                 </p>
               )}
-            </motion.div>
-
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-indigo-500 rounded"
-                />
-                <span className="text-xs text-slate-600">Remember me</span>
-              </label>
-              <Link
-                href="#forgot-password"
-                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             {/* Submit */}
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 shadow-lg shadow-indigo-950/50"
+              className="mt-5 flex h-[54px] w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 text-base font-semibold text-white shadow-[0_18px_42px_rgba(4,120,87,0.24)] transition-all hover:bg-emerald-700 hover:shadow-[0_20px_46px_rgba(4,120,87,0.30)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -431,48 +554,193 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Log in</span>
                 </>
               )}
-            </motion.button>
+            </button>
           </form>
 
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-500">New here?</span>
-            <div className="flex-1 h-px bg-slate-200" />
-          </div>
-
-          <p className="text-center text-slate-600 text-sm">
-            Create an account{" "}
+          <p className="mt-6 text-center text-base text-slate-500">
+            Don&apos;t have an account?{" "}
             <Link
               href={redirectPath === "/home" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirectPath)}`}
-              className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
+              className="font-semibold text-emerald-700 transition-colors hover:text-emerald-800"
             >
-              here
+              Sign up
             </Link>
           </p>
-        </div>
+          </div>
+        </section>
+      </main>
 
-        <p className="text-center text-xs text-slate-500 mt-6">
-          By signing in, you agree to our{" "}
-          <Link
-            href="/terms-of-service"
-            className="hover:text-slate-950 transition-colors"
+      {passwordSetupModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.22 }}
+            className="relative w-full max-w-md overflow-hidden rounded-[24px] border border-white/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.28)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="password-setup-title"
           >
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link
-            href="/privacy-policy"
-            className="hover:text-slate-950 transition-colors"
-          >
-            Privacy Policy
-          </Link>
-        </p>
-      </motion.div>
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+              <div>
+                <p className="text-sm font-medium text-emerald-700">Google account detected</p>
+                <h2 id="password-setup-title" className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
+                  Set email password
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={closePasswordSetupModal}
+                disabled={isSendingPasswordOtp || isSettingPassword}
+                className="rounded-full border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close password setup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="px-6 pt-5">
+              <div className="grid grid-cols-3 gap-2">
+                {["Send OTP", "Verify", "Password"].map((label, index) => (
+                  <div key={label}>
+                    <div className={`h-1.5 rounded-full ${index <= passwordSetupStepIndex ? "bg-emerald-500" : "bg-slate-200"}`} />
+                    <p className={`mt-2 text-[11px] font-medium ${index === passwordSetupStepIndex ? "text-slate-950" : "text-slate-400"}`}>
+                      {label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-hidden px-6 py-6">
+              <div
+                className="flex transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${passwordSetupStepIndex * 100}%)` }}
+              >
+                <section className="w-full shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-slate-950">Confirm this is your email</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    This account was created with Google. We will send a one-time code to{" "}
+                    <span className="font-semibold text-slate-950">{passwordSetupEmail}</span> before letting you add a password.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSendPasswordSetupOtp}
+                    disabled={isSendingPasswordOtp}
+                    className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSendingPasswordOtp ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Send setup OTP
+                  </button>
+                </section>
+
+                <section className="w-full shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <Mail className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-slate-950">Enter the OTP</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Type the 6-digit code sent to {passwordSetupEmail}. The password screen opens automatically after the code is complete.
+                  </p>
+                  <input
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={passwordSetupOtp}
+                    onChange={(event) => handlePasswordSetupOtpChange(event.target.value)}
+                    placeholder="000000"
+                    className="mt-5 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-2xl font-semibold tracking-[0.35em] text-slate-950 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSendPasswordSetupOtp}
+                      disabled={isSendingPasswordOtp}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSendingPasswordOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Resend
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPasswordSetupStep("password")}
+                      disabled={passwordSetupOtp.length !== 6}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Continue
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </section>
+
+                <section className="w-full shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <Lock className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-slate-950">Create your password</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Use at least 6 characters with letters and numbers. After this, you can use either Google or email sign-in.
+                  </p>
+                  <div className="relative mt-5">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
+                      placeholder="New password"
+                      className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-10 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-900"
+                      aria-label={showNewPassword ? "Hide password" : "Show password"}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPasswordSetupStep("otp")}
+                      disabled={isSettingPassword}
+                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSetPasswordWithOtp}
+                      disabled={isSettingPassword}
+                      className="inline-flex flex-[1.4] items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSettingPassword ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4" />
+                      )}
+                      Set password and login
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
     </div>
   );
 }
