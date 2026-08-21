@@ -371,7 +371,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="w-5 h-5 animate-spin text-indigo-700" />
       </div>
-    );
+    );   
   }
 
   const passwordSetupStepIndex = {
