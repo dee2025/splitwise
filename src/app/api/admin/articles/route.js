@@ -5,6 +5,16 @@ import { connectDB } from "@/lib/db";
 import Article from "@/models/Article";
 import { NextResponse } from "next/server";
 
+function validationErrorResponse(error) {
+  if (error?.name !== "ValidationError") return null;
+
+  const errors = Object.fromEntries(
+    Object.entries(error.errors || {}).map(([field, detail]) => [field, detail.message])
+  );
+
+  return NextResponse.json({ error: "Validation failed", errors }, { status: 400 });
+}
+
 export async function GET(req) {
   try {
     const auth = await requireAdmin(req);
@@ -57,6 +67,9 @@ export async function POST(req) {
     return NextResponse.json({ article: normalizeArticle(article) }, { status: 201 });
   } catch (error) {
     console.error("Admin article create error:", error);
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
+
     return NextResponse.json({ error: "Unable to save article" }, { status: 500 });
   }
 }

@@ -1,6 +1,89 @@
 import { ArrowRight, CheckCircle, ChevronDown, Receipt, Users } from "lucide-react";
 import Link from "next/link";
 
+const pageGuides = {
+  "bill-splitter": {
+    scenario:
+      "A friend pays for dinner, another person books a cab, and someone else buys snacks later. A useful bill splitter keeps each payment separate while showing one final balance.",
+    record: [
+      "Final paid amount, including tax, tips, delivery fees or booking charges",
+      "The payer and the people who actually shared that bill",
+      "A short description that makes the expense easy to recognize later",
+      "Settlement status after members pay each other back",
+    ],
+    mistakes: [
+      "Splitting every bill equally when not everyone participated",
+      "Leaving out small fees that were included in the final payment",
+      "Keeping the calculation only in a chat thread or payment screenshot",
+    ],
+    guideHref: "/articles/how-to-split-expenses-with-friends-effectively",
+  },
+  "group-expense-tracker": {
+    scenario:
+      "A group may have many payers and many expense types. The tracker should answer who paid, who was included, what changed, and what balance remains.",
+    record: [
+      "Separate groups for separate plans, homes, teams or events",
+      "Members included in each individual expense",
+      "Expense history that can be checked before settlement",
+      "Clear balances so the group can close outstanding payments",
+    ],
+    mistakes: [
+      "Mixing unrelated plans in the same ledger",
+      "Adding personal purchases to a shared group",
+      "Waiting until the end to reconstruct expenses from memory",
+    ],
+    guideHref: "/articles/how-to-split-expenses-with-friends-effectively",
+  },
+  "trip-expense-splitter": {
+    scenario:
+      "Travel groups usually deal with advance bookings, daily food, taxis, fuel, tickets, refunds and people joining different activities.",
+    record: [
+      "Hotel, transport, food and activity costs as separate entries",
+      "Advance payments and deposits before the trip begins",
+      "Participant-only splits for activities not everyone joined",
+      "Refunds or cancelled bookings as soon as they are confirmed",
+    ],
+    mistakes: [
+      "Charging every traveler for activities they skipped",
+      "Forgetting booking fees, tolls, parking or local transport",
+      "Reviewing balances only after everyone has gone home",
+    ],
+    guideHref: "/articles/planning-a-trip-with-friends-budget-tips",
+  },
+  "roommate-bill-splitter": {
+    scenario:
+      "Roommates need repeatable records for rent, utilities, groceries, household supplies, repairs and move-out adjustments.",
+    record: [
+      "Monthly bills with clear month names",
+      "Shared groceries and household items, separate from personal purchases",
+      "Rent, deposits, repairs and utility payments with payer details",
+      "Member changes when someone moves in or out",
+    ],
+    mistakes: [
+      "Treating personal purchases as household expenses",
+      "Not writing down different room or usage-based rent rules",
+      "Letting several months of bills build up without review",
+    ],
+    guideHref: "/articles/managing-group-expenses-for-shared-living",
+  },
+  "splitwise-alternative": {
+    scenario:
+      "People looking for a Splitwise alternative usually want the core workflow: groups, members, expenses, balances and settlements without unnecessary complexity.",
+    record: [
+      "A dedicated ledger for every friend group, trip, home or event",
+      "Who paid and who was included in each shared cost",
+      "Readable balance summaries before anyone settles",
+      "Expense history that remains available for review",
+    ],
+    mistakes: [
+      "Choosing a tool that is too complex for occasional group spending",
+      "Using spreadsheets that only one person understands",
+      "Relying on memory instead of a shared expense record",
+    ],
+    guideHref: "/articles/how-to-split-expenses-with-friends-effectively",
+  },
+};
+
 function pageJsonLd(page) {
   const url = `https://www.moneysplit.in/${page.slug}`;
 
@@ -158,6 +241,8 @@ function PreviewCard({ page }) {
 }
 
 export default function KeywordLandingPage({ page }) {
+  const guide = pageGuides[page.slug] || pageGuides["group-expense-tracker"];
+
   return (
     <main className="min-h-screen bg-white text-slate-950">
       <script
@@ -235,6 +320,49 @@ export default function KeywordLandingPage({ page }) {
                 <p className="mt-3 text-sm leading-7 text-slate-600">{benefit.text}</p>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-5 py-16 sm:px-8">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.88fr_1.12fr]">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+              How to use {page.shortTitle.toLowerCase()} in a real group
+            </h2>
+            <p className="mt-4 leading-7 text-slate-600">{guide.scenario}</p>
+            <Link
+              href={guide.guideHref}
+              className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-indigo-700 hover:text-indigo-900"
+            >
+              Read the detailed guide
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <h3 className="text-lg font-bold text-slate-950">What to record</h3>
+              <ul className="mt-4 space-y-3">
+                {guide.record.map((item) => (
+                  <li key={item} className="flex gap-3 text-sm leading-6 text-slate-600">
+                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <article className="rounded-lg border border-slate-200 bg-white p-5">
+              <h3 className="text-lg font-bold text-slate-950">Mistakes to avoid</h3>
+              <ul className="mt-4 space-y-3">
+                {guide.mistakes.map((item) => (
+                  <li key={item} className="flex gap-3 text-sm leading-6 text-slate-600">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
           </div>
         </div>
       </section>

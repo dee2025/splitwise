@@ -6,6 +6,16 @@ import Article from "@/models/Article";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
+function validationErrorResponse(error) {
+  if (error?.name !== "ValidationError") return null;
+
+  const errors = Object.fromEntries(
+    Object.entries(error.errors || {}).map(([field, detail]) => [field, detail.message])
+  );
+
+  return NextResponse.json({ error: "Validation failed", errors }, { status: 400 });
+}
+
 function getArticleId(req) {
   const url = new URL(req.url);
   const segments = url.pathname.split("/");
@@ -53,6 +63,9 @@ export async function PATCH(req) {
     return NextResponse.json({ article: normalizeArticle(article) });
   } catch (error) {
     console.error("Admin article update error:", error);
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
+
     return NextResponse.json({ error: "Unable to update article" }, { status: 500 });
   }
 }

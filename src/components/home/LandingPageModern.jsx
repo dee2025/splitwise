@@ -68,7 +68,7 @@ const SEARCH_INTENT_LINKS = [
     icon: MapPin,
   },
   {
-    href: "/roommate-expense-splitter",
+    href: "/roommate-bill-splitter",
     title: "Roommate bill splitter for monthly costs",
     desc: "Track rent, electricity, WiFi, groceries, repairs, and deposits so housemates can see who paid and who still owes.",
     icon: Users,
@@ -244,7 +244,7 @@ function FeatureSection() {
           <SectionIntro
             eyebrow="Product flow"
             title="A cleaner way to move from spending to settling."
-            description="The landing page now shows the real job Money Split performs: create a shared record, add the bills, then close the loop with a suggested settlement."
+            description="Money Split follows the real flow of shared spending: create a group, add each bill with the right participants, then settle from a readable balance summary."
           />
 
           <div className="mt-10 space-y-4">
@@ -546,8 +546,8 @@ function ComparisonSection() {
 
         <div className="mt-8 rounded-lg border border-emerald-100 bg-emerald-50/60 p-5 sm:p-6">
           <p className="max-w-4xl text-sm leading-7 text-slate-700">
-            For Google search visitors, the homepage now explains the core product in plain language: Money Split is a free bill splitter,
-            group expense tracker, trip expense splitter, roommate bill splitter, and simple settle-up app for shared balances.
+            Money Split is a free bill splitter, group expense tracker, trip expense splitter, roommate bill splitter, and simple settle-up app for shared balances.
+            It is built for people who need a durable expense record, not another calculation buried in chat.
           </p>
         </div>
       </div>

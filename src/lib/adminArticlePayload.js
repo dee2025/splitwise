@@ -47,8 +47,10 @@ export function validateArticlePayload(payload) {
   const errors = {};
 
   if (payload.title.length < 12) errors.title = "Use a descriptive title with at least 12 characters.";
+  if (payload.title.length > 140) errors.title = "Title should stay under 140 characters.";
   if (!payload.slug) errors.slug = "Slug is required.";
   if (payload.excerpt.length < 80) errors.excerpt = "Write an excerpt with at least 80 characters.";
+  if (payload.excerpt.length > 260) errors.excerpt = "Excerpt should stay under 260 characters.";
   if (payload.content.length < 650) errors.content = "Article content should be at least 650 characters.";
   if (payload.seoTitle && payload.seoTitle.length > 70) errors.seoTitle = "SEO title should stay under 70 characters.";
   if (payload.seoDescription && payload.seoDescription.length > 170) {
