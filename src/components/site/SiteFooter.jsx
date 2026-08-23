@@ -25,7 +25,7 @@ export default function SiteFooter() {
             </p>
             <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
               <CheckCircle className="h-3.5 w-3.5" />
-              Trusted by groups across India
+              Built for groups across India
             </div>
           </div>
 

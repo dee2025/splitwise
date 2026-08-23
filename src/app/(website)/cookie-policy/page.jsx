@@ -17,15 +17,37 @@ const sections = [
     body: "Help us understand reliability and usage patterns so we can improve product speed and stability.",
   },
   {
-    title: "3. Your Choices",
+    title: "3. Advertising Cookies",
+    body: "If Google AdSense or other advertising services are enabled on public pages, Google and its partners may use cookies or similar technologies to serve ads, limit repeated ads, detect fraud, and measure ad performance.",
+  },
+  {
+    title: "4. Google Data Use",
+    body: (
+      <>
+        Google explains how it uses information from sites and apps that use its
+        services here:{" "}
+        <a
+          href="https://www.google.com/policies/privacy/partners/"
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-indigo-700 hover:text-indigo-900"
+        >
+          Google partner sites and apps
+        </a>
+        .
+      </>
+    ),
+  },
+  {
+    title: "5. Your Choices",
     body: "You can control cookies through browser settings, but disabling required cookies may break core functionality.",
   },
   {
-    title: "4. Policy Updates",
+    title: "6. Policy Updates",
     body: "We may update this policy to reflect platform, legal, or security requirements.",
   },
   {
-    title: "5. Contact",
+    title: "7. Contact",
     body: "deepaksingh@moneysplit.in | +91 8112260346",
   },
 ];

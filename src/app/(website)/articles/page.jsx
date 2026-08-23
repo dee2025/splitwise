@@ -6,7 +6,7 @@ import Link from "next/link";
 export const revalidate = 3600;
 
 export const metadata = {
-  title: "Articles | Money Split - Expert Guides on Expense Sharing",
+  title: "Articles | Money Split - Practical Guides on Expense Sharing",
   description:
     "Learn how to manage expenses with friends, plan trips, and split bills effectively. Professional guides and tips for better financial management.",
   keywords:
@@ -39,7 +39,7 @@ export default async function ArticlesPage() {
             Master expense sharing with practical guides.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            Professional tips for managing shared expenses, planning trips, and keeping every group experience clear.
+            Practical tips for managing shared expenses, planning trips, and keeping every group experience clear.
           </p>
         </div>
       </section>
