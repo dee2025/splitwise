@@ -137,7 +137,7 @@ export async function POST(request) {
       const username = await generateUniqueUsername(usernameSeed);
 
       user = await User.create({
-        fullName: fullNameFromEmail,
+        fullName: fullNameFromGoogle,
         email: normalizedEmail,
         username,
         password: null,

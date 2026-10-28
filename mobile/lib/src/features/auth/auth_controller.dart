@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../shared/api_client.dart';
@@ -171,8 +172,61 @@ class AuthController extends StateNotifier<AuthState> {
       await _completeAuth(json);
     } on ApiException catch (error) {
       state = state.copyWith(submitting: false, error: error.message);
+    } on PlatformException catch (error) {
+      final details = '${error.code} ${error.message ?? ''}'.toLowerCase();
+      final configurationError = details.contains('10') ||
+          details.contains('developer_error') ||
+          details.contains('configuration');
+      state = state.copyWith(
+        submitting: false,
+        error: configurationError
+            ? 'Google Sign-In is not configured for this Play Store build. Add the Play App Signing SHA-1 to the Android OAuth client for in.moneysplit.app.'
+            : 'Google Sign-In failed (${error.code}). Please try again.',
+      );
     } catch (_) {
       state = state.copyWith(submitting: false, error: 'Google sign-in failed');
+    }
+  }
+
+  Future<bool> requestPasswordReset(String email) async {
+    state = state.copyWith(submitting: true, clearError: true);
+    try {
+      await _api.postJson('/api/auth/request-password-reset', {
+        'email': email.trim(),
+      });
+      state = state.copyWith(submitting: false, clearError: true);
+      return true;
+    } on ApiException catch (error) {
+      state = state.copyWith(submitting: false, error: error.message);
+      return false;
+    } catch (_) {
+      state = state.copyWith(
+          submitting: false, error: 'Unable to send password reset code');
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(submitting: true, clearError: true);
+    try {
+      await _api.postJson('/api/auth/reset-password', {
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'newPassword': newPassword,
+      });
+      state = state.copyWith(submitting: false, clearError: true);
+      return true;
+    } on ApiException catch (error) {
+      state = state.copyWith(submitting: false, error: error.message);
+      return false;
+    } catch (_) {
+      state =
+          state.copyWith(submitting: false, error: 'Unable to reset password');
+      return false;
     }
   }
 

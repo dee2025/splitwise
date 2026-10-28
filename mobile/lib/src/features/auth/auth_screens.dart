@@ -92,6 +92,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 return null;
               },
             ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: auth.submitting
+                    ? null
+                    : () => context.go(
+                          '/forgot-password',
+                          extra: _email.text.trim(),
+                        ),
+                child: const Text('Forgot password?'),
+              ),
+            ),
             if (auth.verificationEmail != null) ...[
               const SizedBox(height: 14),
               OtpVerificationPanel(email: auth.verificationEmail!),
@@ -128,6 +140,204 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       ),
     );
+  }
+}
+
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
+  const ForgotPasswordScreen({this.initialEmail = '', super.key});
+
+  final String initialEmail;
+
+  @override
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+  final _emailFormKey = GlobalKey<FormState>();
+  final _resetFormKey = GlobalKey<FormState>();
+  late final TextEditingController _email;
+  final _otp = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  bool _codeSent = false;
+  bool _showPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _email = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _otp.dispose();
+    _password.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(authControllerProvider, (previous, next) {
+      if (next.error != null && next.error != previous?.error) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.error!)));
+      }
+    });
+    final auth = ref.watch(authControllerProvider);
+
+    return AuthScaffold(
+      title: 'Reset password',
+      subtitle: _codeSent
+          ? 'Enter the code from your email and choose a new password'
+          : 'We will email you a secure reset code',
+      child: _codeSent
+          ? Form(
+              key: _resetFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Code sent to ${_email.text.trim()}',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _otp,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      labelText: '6-digit reset code',
+                      counterText: '',
+                      prefixIcon: Icon(Icons.password_outlined),
+                    ),
+                    validator: (value) => (value ?? '').trim().length == 6
+                        ? null
+                        : 'Enter the 6-digit code',
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _password,
+                    obscureText: !_showPassword,
+                    decoration: InputDecoration(
+                      labelText: 'New password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                        icon: Icon(_showPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined),
+                      ),
+                    ),
+                    validator: _validatePassword,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _confirmPassword,
+                    obscureText: !_showPassword,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm new password',
+                      prefixIcon: Icon(Icons.lock_reset_outlined),
+                    ),
+                    validator: (value) => value == _password.text
+                        ? null
+                        : 'Passwords do not match',
+                  ),
+                  const SizedBox(height: 22),
+                  FilledButton(
+                    onPressed: auth.submitting ? null : _submitReset,
+                    child: auth.submitting
+                        ? const ButtonSpinner()
+                        : const Text('Reset password'),
+                  ),
+                  TextButton(
+                    onPressed: auth.submitting ? null : _sendCode,
+                    child: const Text('Resend code'),
+                  ),
+                  TextButton(
+                    onPressed: auth.submitting
+                        ? null
+                        : () => setState(() => _codeSent = false),
+                    child: const Text('Use a different email'),
+                  ),
+                ],
+              ),
+            )
+          : Form(
+              key: _emailFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email address',
+                      prefixIcon: Icon(Icons.mail_outline),
+                    ),
+                    validator: (value) {
+                      final email = value?.trim() ?? '';
+                      if (email.isEmpty) return 'Email is required';
+                      if (!email.contains('@')) return 'Enter a valid email';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 22),
+                  FilledButton(
+                    onPressed: auth.submitting ? null : _sendCode,
+                    child: auth.submitting
+                        ? const ButtonSpinner()
+                        : const Text('Send reset code'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: const Text('Back to login'),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  String? _validatePassword(String? value) {
+    final password = value ?? '';
+    if (password.length < 6) return 'Use at least 6 characters';
+    if (!RegExp(r'(?=.*[a-zA-Z])(?=.*[0-9])').hasMatch(password)) {
+      return 'Use letters and numbers';
+    }
+    return null;
+  }
+
+  Future<void> _sendCode() async {
+    if (!_codeSent && _emailFormKey.currentState?.validate() != true) return;
+    final sent = await ref
+        .read(authControllerProvider.notifier)
+        .requestPasswordReset(_email.text);
+    if (!mounted || !sent) return;
+    setState(() => _codeSent = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('If the account exists, a reset code was sent.')),
+    );
+  }
+
+  Future<void> _submitReset() async {
+    if (_resetFormKey.currentState?.validate() != true) return;
+    final reset = await ref.read(authControllerProvider.notifier).resetPassword(
+          email: _email.text,
+          otp: _otp.text,
+          newPassword: _password.text,
+        );
+    if (!mounted || !reset) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password reset. Sign in to continue.')),
+    );
+    context.go('/login');
   }
 }
 

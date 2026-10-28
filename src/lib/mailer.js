@@ -126,6 +126,44 @@ export async function sendVerificationEmail({ to, fullName, otp }) {
   });
 }
 
+export async function sendPasswordResetEmail({ to, fullName, otp }) {
+  const firstName = escapeHtml(getFirstName(fullName));
+  const safeOtp = escapeHtml(otp);
+  const appUrl = getAppUrl();
+
+  const html = emailShell(
+    `
+      <p style="margin:0 0 8px; font-size:26px; font-weight:700; color:#f1f5f9;">
+        Reset your password, ${firstName}
+      </p>
+      <p style="margin:0 0 24px; font-size:15px; color:#94a3b8; line-height:1.6;">
+        Enter this one-time code in MoneySplit to choose a new password. The code expires in 10 minutes.
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+        <tr>
+          <td align="center">
+            <div style="display:inline-block; background:#0f172a; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px 24px;">
+              <span style="font-size:32px; line-height:1; letter-spacing:0.22em; font-weight:800; color:#f8fafc;">${safeOtp}</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0; font-size:13px; color:#94a3b8; line-height:1.6;">
+        If you did not request a password reset, you can safely ignore this email. Do not share this code.
+      </p>
+    `,
+    `MoneySplit account security<br />This password reset was requested for ${escapeHtml(to)}.`,
+  );
+
+  await getTransporter().sendMail({
+    from: `"Money Split" <${process.env.ZOHO_EMAIL}>`,
+    to,
+    subject: `${otp} is your MoneySplit password reset code`,
+    html,
+    text: `Your MoneySplit password reset code is ${otp}.\n\nEnter it within 10 minutes. If you did not request this, ignore this email.\n\n${appUrl}`,
+  });
+}
+
 export async function sendWelcomeEmail({ to, fullName, username }) {
   const firstName = escapeHtml(getFirstName(fullName));
   const appUrl = getAppUrl();

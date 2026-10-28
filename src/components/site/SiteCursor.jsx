@@ -16,13 +16,14 @@ export default function SiteCursor() {
   const pointer = useRef({ x: 0, y: 0 });
   const ring = useRef({ x: 0, y: 0 });
   const frameRef = useRef(null);
-  const [enabled] = useState(supportsCustomCursor);
+  const [hasMoved, setHasMoved] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!supportsCustomCursor()) return;
 
     const moveCursor = (event) => {
+      setHasMoved(true);
       pointer.current = { x: event.clientX, y: event.clientY };
       if (dotRef.current) {
         dotRef.current.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0) translate(-50%, -50%)`;
@@ -54,12 +55,10 @@ export default function SiteCursor() {
       window.removeEventListener("mouseover", updateHoverState);
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
-  }, [enabled]);
-
-  if (!enabled) return null;
+  }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[100] hidden lg:block" aria-hidden="true">
+    <div className={`pointer-events-none fixed inset-0 z-[100] hidden transition-opacity lg:block ${hasMoved ? "opacity-100" : "opacity-0"}`} aria-hidden="true">
       <div
         ref={ringRef}
         className={`fixed left-0 top-0 h-10 w-10 rounded-full border transition-[height,width,background-color,border-color,opacity] duration-200 ${

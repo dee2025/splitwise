@@ -21,7 +21,8 @@ class MoneySplitApp extends ConsumerWidget {
       initialLocation: '/home',
       redirect: (context, state) {
         final isAuthPath = state.matchedLocation == '/login' ||
-            state.matchedLocation == '/signup';
+            state.matchedLocation == '/signup' ||
+            state.matchedLocation == '/forgot-password';
         if (auth.loading) {
           return state.matchedLocation == '/splash' ? null : '/splash';
         }
@@ -41,6 +42,12 @@ class MoneySplitApp extends ConsumerWidget {
             path: '/login', builder: (context, state) => const LoginScreen()),
         GoRoute(
             path: '/signup', builder: (context, state) => const SignupScreen()),
+        GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => ForgotPasswordScreen(
+            initialEmail: state.extra is String ? state.extra! as String : '',
+          ),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => PanelShell(shell: shell),
           branches: [
