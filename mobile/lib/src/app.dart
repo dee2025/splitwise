@@ -10,16 +10,23 @@ import 'features/panel/panel_shell.dart';
 import 'features/profile/profile_screen.dart';
 import 'shared/providers.dart';
 
-class MoneySplitApp extends ConsumerWidget {
+class MoneySplitApp extends ConsumerStatefulWidget {
   const MoneySplitApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final router = GoRouter(
+  ConsumerState<MoneySplitApp> createState() => _MoneySplitAppState();
+}
+
+class _MoneySplitAppState extends ConsumerState<MoneySplitApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = GoRouter(
       initialLocation: '/home',
       redirect: (context, state) {
+        final auth = ref.read(authControllerProvider);
         final isAuthPath = state.matchedLocation == '/login' ||
             state.matchedLocation == '/signup' ||
             state.matchedLocation == '/forgot-password';
@@ -89,6 +96,24 @@ class MoneySplitApp extends ConsumerWidget {
       ],
     );
 
+    ref.listenManual(authControllerProvider, (previous, next) {
+      if (previous?.loading != next.loading ||
+          previous?.isAuthenticated != next.isAuthenticated) {
+        _router.refresh();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'MoneySplit',
       debugShowCheckedModeBanner: false,
@@ -129,7 +154,7 @@ class MoneySplitApp extends ConsumerWidget {
         ),
       ),
       themeMode: themeMode,
-      routerConfig: router,
+      routerConfig: _router,
     );
   }
 }

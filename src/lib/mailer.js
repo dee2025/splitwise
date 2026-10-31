@@ -217,6 +217,83 @@ export async function sendWelcomeEmail({ to, fullName, username }) {
   });
 }
 
+export async function sendAndroidTestingInvite({ to }) {
+  const appUrl = getAppUrl();
+  const playStoreUrl = "https://play.google.com/store/apps/details?id=in.moneysplit.app";
+  const supportEmail = "deepaksingh@moneysplit.in";
+  const supportPhone = "+91 8112260346";
+
+  const html = emailShell(
+    `
+      <div style="display:inline-block; margin-bottom:18px; padding:7px 12px; border-radius:999px; background:#d9f946; color:#0f2f28; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;">
+        Android early access
+      </div>
+      <p style="margin:0 0 10px; font-size:28px; font-weight:800; color:#f1f5f9; line-height:1.2;">
+        You are invited to test MoneySplit!
+      </p>
+      <p style="margin:0 0 26px; font-size:15px; color:#cbd5e1; line-height:1.7;">
+        Be among the first to try the official MoneySplit Android app on Google Play. Your real-world feedback over the next 15 days will help us improve the experience and prepare the app for its public Play Store release.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px; background:#0f172a; border:1px solid rgba(255,255,255,.07); border-radius:14px;">
+        <tr>
+          <td style="padding:22px;">
+            <p style="margin:0 0 14px; color:#f1f5f9; font-size:14px; font-weight:800;">What to test</p>
+            <p style="margin:0 0 10px; color:#cbd5e1; font-size:14px; line-height:1.55;">✓ Create a group for friends, roommates, or a trip</p>
+            <p style="margin:0 0 10px; color:#cbd5e1; font-size:14px; line-height:1.55;">✓ Add expenses and try different group splits</p>
+            <p style="margin:0 0 10px; color:#cbd5e1; font-size:14px; line-height:1.55;">✓ Check balances, settlements, and expense calculations</p>
+            <p style="margin:0; color:#cbd5e1; font-size:14px; line-height:1.55;">✓ Report bugs, confusing screens, or features that could work better</p>
+          </td>
+        </tr>
+      </table>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+        <tr>
+          <td align="center">
+            <a href="${playStoreUrl}" style="display:inline-block; background:#22c55e; color:#052e16; font-size:15px; font-weight:800; padding:15px 30px; border-radius:12px; text-decoration:none;">
+              Install MoneySplit on Android
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0 0 22px; padding:14px 16px; border-left:3px solid #818cf8; background:rgba(129,140,248,.08); color:#cbd5e1; font-size:13px; line-height:1.6;">
+        Please open Google Play with the same Google account that was added to the test. If the install option does not appear, reply to this email and we will help.
+      </p>
+      <p style="margin:0 0 6px; color:#f1f5f9; font-size:14px; font-weight:700;">Android is available for testing now.</p>
+      <p style="margin:0 0 24px; color:#94a3b8; font-size:13px; line-height:1.6;">The MoneySplit iOS app is coming soon.</p>
+      <p style="margin:0; color:#94a3b8; font-size:13px; line-height:1.7;">
+        Questions or feedback?<br />
+        <a href="mailto:${supportEmail}" style="color:#a5b4fc; text-decoration:none;">${supportEmail}</a><br />
+        <a href="tel:+918112260346" style="color:#a5b4fc; text-decoration:none;">${supportPhone}</a>
+      </p>
+    `,
+    `Thank you for helping improve MoneySplit.<br />Official website: <a href="${appUrl}" style="color:#818cf8; text-decoration:none;">moneysplit.in</a><br />This testing invitation was sent to ${escapeHtml(to)}.`,
+  );
+
+  await getTransporter().sendMail({
+    from: `"Money Split" <${process.env.ZOHO_EMAIL}>`,
+    to,
+    replyTo: supportEmail,
+    subject: "You're invited: Test the MoneySplit Android app for 15 days",
+    html,
+    text: [
+      "You're invited to test MoneySplit on Android!",
+      "",
+      "Be among the first to try the official MoneySplit Android app on Google Play. Please install it and use it over the next 15 days to help us find bugs and prepare for public release.",
+      "",
+      "Try creating groups, adding expenses, splitting costs, checking balances, and recording settlements. Please report any bugs, confusing screens, or suggestions.",
+      "",
+      `Install from Google Play: ${playStoreUrl}`,
+      "",
+      "Open Google Play with the same Google account that was added to the test. Android is available now; iOS is coming soon.",
+      "",
+      `Feedback and support: ${supportEmail} | ${supportPhone}`,
+      `Official website: ${appUrl}`,
+    ].join("\n"),
+  });
+}
+
 export async function sendContactEnquiryEmail({
   name,
   email,

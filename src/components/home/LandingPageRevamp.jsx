@@ -17,6 +17,7 @@ import {
   Plus,
   ReceiptText,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Users,
   WalletCards,
@@ -130,6 +131,44 @@ function TrustStrip() {
         <span className="flex items-center justify-center gap-2 sm:border-x sm:border-[#08251e]/15"><ReceiptText className="h-4 w-4" /> Accurate shared balances</span>
         <span className="flex items-center justify-center gap-2"><LockKeyhole className="h-4 w-4" /> Clear, private group records</span>
       </div>
+    </section>
+  );
+}
+
+function MobileAppAnnouncement() {
+  return (
+    <section className="bg-white px-5 py-8 sm:px-8 sm:py-10" aria-labelledby="mobile-app-heading">
+      <motion.div
+        {...fadeUp}
+        className="relative mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[24px] border border-emerald-950/10 bg-[#e9fff5] px-6 py-7 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
+      >
+        <div className="absolute -right-14 -top-20 h-48 w-48 rounded-full border-[34px] border-emerald-700/5" />
+        <div className="relative flex items-start gap-4 sm:items-center">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#08251e] text-emerald-300 shadow-[0_14px_30px_rgba(8,37,30,.16)]">
+            <Smartphone className="h-6 w-6" />
+          </span>
+          <div>
+            <div className="mb-2 inline-flex items-center rounded-full bg-[#f7ff6b] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.15em] text-[#08251e]">
+              Coming soon
+            </div>
+            <h2 id="mobile-app-heading" className="text-2xl font-semibold tracking-[-.03em] text-[#08251e] sm:text-3xl">
+              The MoneySplit mobile app is on the way.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              Split expenses and check group balances wherever the plan takes you. MoneySplit for Android and iOS is coming soon.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative mt-6 flex flex-wrap gap-2 lg:mt-0 lg:shrink-0">
+          {["Android app", "iOS app"].map((platform) => (
+            <span key={platform} className="inline-flex items-center gap-2 rounded-full border border-emerald-950/10 bg-white px-4 py-2.5 text-xs font-bold text-[#08251e] shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              {platform} · Coming soon
+            </span>
+          ))}
+        </div>
+      </motion.div>
     </section>
   );
 }
@@ -253,6 +292,7 @@ export default function LandingPageRevamp({ articles = [], faqs = [] }) {
     <main className="min-h-screen bg-white text-slate-950">
       <Hero />
       <TrustStrip />
+      <MobileAppAnnouncement />
       <ProductTour />
       <LifestyleSection />
       <HowItWorks />
