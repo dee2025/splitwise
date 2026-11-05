@@ -1,5 +1,122 @@
 export const articles = [
   {
+    slug: "split-electric-car-charging-costs-road-trip",
+    title: "How to Split Electric Car Charging Costs on a Road Trip",
+    excerpt:
+      "A fair, practical way to divide EV charging, tolls, parking, and other shared road-trip costs without making the journey feel like an accounting exercise.",
+    date: "2026-11-05",
+    readTime: 9,
+    thumbnail: "/images/articles/ev-road-trip-charging-costs.webp",
+    category: "EV Road Trips",
+    content: `
+# How to Split Electric Car Charging Costs on a Road Trip
+
+An electric-car road trip is easy to enjoy and surprisingly easy to miscalculate. One person may pay at the first fast charger, another may cover tolls, and the car owner may begin the trip with a full battery charged at home. By the end, the group has several small payments, different charging prices, and no single record of what the journey actually cost.
+
+The simplest solution is to agree on the shared-cost rule before departure, record each payment when it happens, and settle once after the trip.
+
+## Decide which EV costs are shared
+
+For most trips, these costs can go into one Money Split group:
+
+- Public charging sessions used during the shared journey
+- Home charging used specifically to prepare the car for departure
+- Highway tolls and parking fees
+- Route-related entry fees
+- Shared car cleaning required after the trip
+
+Personal food, shopping, fines, and optional purchases should stay outside the vehicle-cost group. Keeping the scope clear makes the final balance easier for everyone to trust.
+
+## Use the amount actually paid
+
+Charging networks may price sessions differently, and a receipt can include taxes, parking, or other fees. Add the final amount shown on the payment receipt instead of estimating from the charger power or the car's battery size.
+
+For every charging stop, record:
+
+1. The person who paid
+2. The final paid amount
+3. The travelers sharing that leg of the trip
+4. The station or town in the note
+5. A receipt screenshot when the group needs a detailed record
+
+## Plan charging stops before the group leaves
+
+A cost plan works better when it is also a route plan. Look for chargers near meal stops or rest breaks, keep a backup location in mind, and confirm the connector, access rules, and current status with the charging operator before relying on a station.
+
+You can use [ElectriView's EV guides and charging-station directory](https://electriview.com/?utm_source=moneysplit&utm_medium=referral&utm_campaign=ev_road_trip_guide) to research charging locations for the route. Station details can change, so verify important trip information with the operator before departure.
+
+## Choose a fair split method
+
+### Equal split among travelers
+
+This is the easiest option when the same people are in the car for the whole trip. Add all shared vehicle costs, divide them equally, and let the group balance account for who paid at each stop.
+
+### Split by trip leg
+
+Use participant-only splits when someone joins late or leaves early. A charging session used for the Jaipur-to-Ajmer leg, for example, should be shared only by the people traveling in the car for that part of the route.
+
+### Driver or car-owner contribution
+
+Some groups exclude the car owner from charging costs because they provided the vehicle. Others split everything equally. Either approach can work; agree before the first payment and write the rule in the group description.
+
+## Do not forget the starting charge
+
+If the car begins at 100 percent after being charged at the owner's home, the group can include the energy added specifically for the trip. Use the actual electricity consumed and the applicable home tariff when it is easy to calculate. If it is not, agree on a simple fixed contribution rather than creating false precision.
+
+Do not charge the group for energy that was already in the battery from the owner's normal personal use unless everyone agrees.
+
+## Example: four friends on an EV weekend trip
+
+Four friends take a weekend road trip. Their shared vehicle payments are:
+
+- Aditi pays INR 850 at the first fast charger
+- Rohan pays INR 620 at the return-route charger
+- Neha pays INR 480 in tolls
+- Kabir pays INR 200 for parking
+
+The shared total is INR 2,150, so an equal split is INR 537.50 per person. Because each payment is recorded with its payer, Money Split can show the net settlement instead of asking the group to repay every charging and toll transaction separately.
+
+## EV road-trip expense checklist
+
+- Create the trip group before departure
+- Agree whether the car owner shares charging costs
+- Record the final amount from each receipt
+- Add the travelers included in each trip leg
+- Track tolls and parking alongside charging
+- Plan a primary and backup charging stop
+- Review the expense list before the group separates
+
+## Keep route planning and expense tracking separate but connected
+
+Use ElectriView to research EV travel information and potential charging stops, then use Money Split to record what the group actually paid. That gives the trip two clear records: where you planned to charge and how the final shared cost was divided.
+    `,
+    keywords:
+      "split EV charging costs, electric car road trip costs, EV charging expenses India, split road trip costs, electric vehicle trip budget",
+    sources: [
+      {
+        label: "ElectriView - EV guides and charging-station research",
+        url: "https://electriview.com/?utm_source=moneysplit&utm_medium=referral&utm_campaign=ev_road_trip_guide",
+      },
+    ],
+    faqs: [
+      {
+        question: "Should the EV owner pay a smaller share of charging costs?",
+        answer:
+          "That is a group decision. Some groups split every vehicle cost equally, while others reduce or remove the owner's share because they supplied the car. Agree before departure.",
+      },
+      {
+        question: "How should friends split charging when someone joins midway?",
+        answer:
+          "Split each charging session across the travelers who benefited from that leg of the journey instead of charging every group member equally.",
+      },
+      {
+        question: "Should tolls and parking be included with charging costs?",
+        answer:
+          "Yes, when they are shared trip costs. Keeping charging, tolls, and parking in one trip group makes the final vehicle-cost settlement easier.",
+      },
+    ],
+  },
+  {
     slug: "how-to-split-expenses-with-friends-effectively",
     title: "How to Split Expenses with Friends Without Awkward Follow-Ups",
     excerpt:

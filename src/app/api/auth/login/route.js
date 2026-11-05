@@ -1,5 +1,6 @@
 // app/api/auth/login/route.js
 import { generateToken } from "@/lib/auth";
+import { getEmailValidationError, isMobileClientRequest, normalizeEmail } from "@/lib/authValidation";
 import { connectDB } from "@/lib/db";
 import { applyEmailVerificationOtp, canSendEmailVerificationOtp } from "@/lib/emailVerification";
 import { sendVerificationEmail } from "@/lib/mailer";
@@ -7,13 +8,6 @@ import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-
-function isMobileClient(req, body = {}) {
-  return (
-    req.headers.get("x-moneysplit-client")?.toLowerCase() === "flutter" ||
-    String(body?.client || "").toLowerCase() === "flutter"
-  );
-}
 
 export async function POST(req) {
   try {
@@ -28,18 +22,17 @@ export async function POST(req) {
 
     await connectDB();
     const body = await req.json();
-    const { email, password } = body;
+    const email = normalizeEmail(body?.email);
+    const password = String(body?.password || "");
 
     const errors = {};
-
-    if (!email?.trim()) {
-      errors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Please enter a valid email address";
-    }
+    const emailError = getEmailValidationError(email);
+    if (emailError) errors.email = emailError;
 
     if (!password) {
       errors.password = "Password is required";
+    } else if (password.length > 256) {
+      errors.password = "Password is too long";
     }
 
     if (Object.keys(errors).length > 0) {
@@ -52,14 +45,14 @@ export async function POST(req) {
       );
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json(
         {
-          error: "No account found with this email address",
-          errors: { email: "Email not registered" },
+          error: "Email or password is incorrect",
+          errors: { password: "Check your credentials and try again" },
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
@@ -79,8 +72,8 @@ export async function POST(req) {
           success: false,
           code: "PASSWORD_NOT_SET",
           email: user.email,
-          error: "This account was created with Google. Continue with Google or set a password first.",
-          errors: { email: "Set a password before using email sign in" },
+          error: "This account uses Google sign-in. Continue with Google or securely set a password.",
+          errors: { email: "Use Google or set an email password" },
         },
         { status: 400 }
       );
@@ -90,10 +83,10 @@ export async function POST(req) {
     if (!isPasswordValid) {
       return NextResponse.json(
         {
-          error: "Invalid password",
-          errors: { password: "Incorrect password" },
+          error: "Email or password is incorrect",
+          errors: { password: "Check your credentials and try again" },
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
@@ -146,7 +139,7 @@ export async function POST(req) {
       user: userResponse,
     };
 
-    if (isMobileClient(req, body)) {
+    if (isMobileClientRequest(req, body)) {
       responseBody.token = token;
     }
 
@@ -155,7 +148,7 @@ export async function POST(req) {
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60,
       path: "/",
     });

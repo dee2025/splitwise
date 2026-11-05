@@ -1,4 +1,4 @@
-import { CheckCircle, Mail, Phone } from "lucide-react";
+import { CheckCircle, ExternalLink, Mail, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -72,6 +72,23 @@ export default function SiteFooter() {
               >
                 <Phone className="h-4 w-4 text-indigo-700" />
                 +91 8112260346
+              </a>
+            </div>
+
+            <div className="mt-7 border-t border-slate-200 pt-5">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Our other project</p>
+              <a
+                href="https://electriview.com/?utm_source=moneysplit&utm_medium=referral&utm_campaign=other_projects"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-start gap-2 text-sm font-semibold text-slate-700 transition-colors hover:text-emerald-700"
+                aria-label="Visit ElectriView electric car guides and tools (opens in a new tab)"
+              >
+                <span>
+                  <span className="block text-slate-950 group-hover:text-emerald-700">ElectriView</span>
+                  <span className="mt-0.5 block text-xs font-medium leading-5 text-slate-500">Electric car guides & charging tools</span>
+                </span>
+                <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               </a>
             </div>
           </div>

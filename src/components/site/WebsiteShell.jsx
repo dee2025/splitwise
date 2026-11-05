@@ -16,6 +16,7 @@ const PANEL_PREFIXES = [
   "/offline",
   "/login",
   "/signup",
+  "/forgot-password",
 ];
 
 export default function WebsiteShell({ children }) {

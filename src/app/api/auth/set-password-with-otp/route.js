@@ -1,8 +1,9 @@
 import { generateToken, setTokenCookie } from "@/lib/auth";
+import { getEmailValidationError, getPasswordValidationError, normalizeEmail } from "@/lib/authValidation";
 import { connectDB } from "@/lib/db";
 import {
   EMAIL_VERIFICATION_MAX_ATTEMPTS,
-  hashEmailVerificationOtp,
+  matchesEmailVerificationOtp,
   normalizeEmailVerificationOtp,
 } from "@/lib/emailVerification";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
@@ -22,24 +23,18 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const email = String(body?.email || "").toLowerCase().trim();
+    const email = normalizeEmail(body?.email);
     const otp = normalizeEmailVerificationOtp(body?.otp || body?.code);
     const newPassword = String(body?.newPassword || "");
 
     const errors = {};
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Valid email is required";
-    }
+    const emailError = getEmailValidationError(email);
+    if (emailError) errors.email = emailError;
     if (otp.length !== 6) {
       errors.otp = "Enter the 6-digit OTP";
     }
-    if (!newPassword) {
-      errors.newPassword = "New password is required";
-    } else if (newPassword.length < 6) {
-      errors.newPassword = "Password must be at least 6 characters";
-    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword)) {
-      errors.newPassword = "Password must include letters and numbers";
-    }
+    const passwordError = getPasswordValidationError(newPassword, { requiredLabel: "New password" });
+    if (passwordError) errors.newPassword = passwordError;
 
     if (Object.keys(errors).length > 0) {
       return NextResponse.json(
@@ -97,8 +92,7 @@ export async function POST(request) {
       );
     }
 
-    const otpHash = hashEmailVerificationOtp(email, otp);
-    if (otpHash !== user.emailVerificationOtpHash) {
+    if (!matchesEmailVerificationOtp(email, otp, user.emailVerificationOtpHash)) {
       user.emailVerificationOtpAttempts = Number(user.emailVerificationOtpAttempts || 0) + 1;
       await user.save();
       return NextResponse.json(

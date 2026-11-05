@@ -4,6 +4,15 @@ const EMAIL_VERIFICATION_OTP_EXPIRY_MS = 10 * 60 * 1000;
 export const EMAIL_VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
 export const EMAIL_VERIFICATION_MAX_ATTEMPTS = 5;
 
+function getOtpSecret() {
+  const secret = process.env.EMAIL_VERIFICATION_SECRET || process.env.JWT_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("EMAIL_VERIFICATION_SECRET or JWT_SECRET is required in production");
+  }
+  return "development-only-email-verification-secret";
+}
+
 export function normalizeEmailVerificationOtp(otp) {
   return String(otp || "").replace(/\D/g, "").slice(0, 6);
 }
@@ -11,7 +20,25 @@ export function normalizeEmailVerificationOtp(otp) {
 export function hashEmailVerificationOtp(email, otp) {
   const normalizedEmail = String(email || "").toLowerCase().trim();
   const normalizedOtp = normalizeEmailVerificationOtp(otp);
-  return crypto.createHash("sha256").update(`${normalizedEmail}:${normalizedOtp}`).digest("hex");
+  return crypto
+    .createHmac("sha256", getOtpSecret())
+    .update(`${normalizedEmail}:${normalizedOtp}`)
+    .digest("hex");
+}
+
+export function matchesEmailVerificationOtp(email, otp, storedHash) {
+  if (!storedHash) return false;
+  const normalizedEmail = String(email || "").toLowerCase().trim();
+  const normalizedOtp = normalizeEmailVerificationOtp(otp);
+  const candidates = [
+    hashEmailVerificationOtp(normalizedEmail, normalizedOtp),
+    crypto.createHash("sha256").update(`${normalizedEmail}:${normalizedOtp}`).digest("hex"),
+  ];
+  return candidates.some((candidate) => {
+    const left = Buffer.from(candidate, "hex");
+    const right = Buffer.from(String(storedHash), "hex");
+    return left.length === right.length && crypto.timingSafeEqual(left, right);
+  });
 }
 
 export function createEmailVerificationOtp(email) {

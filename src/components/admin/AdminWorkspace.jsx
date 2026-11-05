@@ -4,13 +4,16 @@ import { slugify } from "@/lib/articleUtils";
 import Image from "next/image";
 import {
   Activity,
+  ArrowUpRight,
   Ban,
   BarChart3,
   Calendar,
   CheckCircle2,
   CircleDollarSign,
+  CircleHelp,
   FileText,
   Eye,
+  Globe2,
   ImageIcon,
   Layers3,
   LogOut,
@@ -21,6 +24,8 @@ import {
   Save,
   Search,
   Shield,
+  Smartphone,
+  Sparkles,
   Trash2,
   TrendingUp,
   Undo2,
@@ -134,22 +139,26 @@ function FieldError({ errors, name }) {
 
 function InfoItem({ label, value }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-slate-950 px-3 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm font-medium text-slate-200">{value || "Not provided"}</p>
+    <div className="rounded-2xl border border-white/[0.07] bg-slate-950/65 px-4 py-3.5 shadow-inner shadow-black/10">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-1.5 break-words text-sm font-semibold text-slate-200">{value || "Not provided"}</p>
     </div>
   );
 }
 
 function MetricCard({ label, value, detail, icon: Icon, tone }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
-      <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${tone}`}>
-        <Icon className="h-4 w-4" />
+    <div className="group relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-gradient-to-br from-slate-900 to-slate-900/70 p-5 shadow-[0_18px_50px_rgba(2,6,23,.22)] transition duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]">
+      <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/[0.025] blur-xl" />
+      <div className="relative flex items-start justify-between gap-4">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <ArrowUpRight className="h-4 w-4 text-slate-700 transition group-hover:text-slate-500" />
       </div>
-      <p className="text-2xl font-bold text-slate-100">{value}</p>
-      <p className="mt-1 text-xs font-semibold text-slate-400">{label}</p>
-      {detail && <p className="mt-2 text-xs text-slate-500">{detail}</p>}
+      <p className="relative mt-5 text-[28px] font-bold tracking-[-0.035em] text-white">{value}</p>
+      <p className="relative mt-1 text-xs font-bold uppercase tracking-[0.1em] text-slate-400">{label}</p>
+      {detail && <p className="relative mt-3 border-t border-white/[0.06] pt-3 text-xs text-slate-500">{detail}</p>}
     </div>
   );
 }
@@ -158,7 +167,7 @@ function DailyBars({ title, subtitle, data = [], valueKey = "count", valueFormat
   const maxValue = Math.max(...data.map((item) => Number(item[valueKey]) || 0), 1);
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+    <div className="rounded-[22px] border border-white/[0.08] bg-slate-900/80 p-5 shadow-[0_18px_50px_rgba(2,6,23,.18)]">
       <div className="mb-4">
         <h2 className="text-sm font-bold text-slate-100">{title}</h2>
         <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
@@ -192,7 +201,7 @@ function BreakdownBars({ title, subtitle, data = [], valueKey = "count", valueFo
   const items = data.length ? data : [{ label: "No data", count: 0, amount: 0 }];
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+    <div className="rounded-[22px] border border-white/[0.08] bg-slate-900/80 p-5 shadow-[0_18px_50px_rgba(2,6,23,.18)]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-slate-100">{title}</h2>
@@ -223,7 +232,7 @@ function BreakdownBars({ title, subtitle, data = [], valueKey = "count", valueFo
   );
 }
 
-function DashboardView({ dashboard }) {
+function DashboardView({ dashboard, userSourceStats }) {
   const summary = dashboard?.summary || {};
   const charts = dashboard?.charts || {};
   const recentActivity = dashboard?.recentActivity || [];
@@ -298,19 +307,19 @@ function DashboardView({ dashboard }) {
             tone="bg-emerald-400"
           />
         </div>
-        <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+        <div className="rounded-[22px] border border-white/[0.08] bg-slate-900/80 p-5 shadow-[0_18px_50px_rgba(2,6,23,.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-100">Platform mix</h2>
-              <p className="mt-1 text-xs text-slate-500">Account and publishing health</p>
+              <h2 className="text-sm font-bold text-slate-100">Acquisition & access</h2>
+              <p className="mt-1 text-xs text-slate-500">Where customers join and how they sign in</p>
             </div>
             <TrendingUp className="h-4 w-4 text-slate-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <InfoItem label="Web signups" value={formatNumber(userSourceStats?.web)} />
+            <InfoItem label="Android signups" value={formatNumber(userSourceStats?.android)} />
             <InfoItem label="Google users" value={formatNumber(summary.googleUsers)} />
             <InfoItem label="Local users" value={formatNumber(summary.localUsers)} />
-            <InfoItem label="Active groups" value={formatNumber(summary.activeGroups)} />
-            <InfoItem label="Draft articles" value={formatNumber(summary.draftArticles)} />
           </div>
         </div>
       </div>
@@ -343,7 +352,7 @@ function DashboardView({ dashboard }) {
           subtitle="Number of groups by type"
           data={charts.groupsByType || []}
         />
-        <div className="rounded-2xl border border-white/8 bg-slate-900 p-4">
+        <div className="rounded-[22px] border border-white/[0.08] bg-slate-900/80 p-5 shadow-[0_18px_50px_rgba(2,6,23,.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-bold text-slate-100">Recent activity</h2>
@@ -397,12 +406,12 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
       .slice(0, 2) || "U";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/60">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/8 bg-slate-900 px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-md">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[26px] border border-white/10 bg-[#0b1120] shadow-[0_35px_100px_rgba(0,0,0,.65)]">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/[0.07] bg-[#0b1120]/95 px-6 py-5 backdrop-blur-xl">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300">User details</p>
-            <h2 className="mt-1 text-xl font-bold text-slate-100">{user.fullName || "Unnamed user"}</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-300">Customer profile</p>
+            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-white">{user.fullName || "Unnamed user"}</h2>
           </div>
           <button
             type="button"
@@ -414,7 +423,7 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               {user.avatar ? (
@@ -436,6 +445,9 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
                   </span>
                   <span className="rounded-full bg-white/6 px-2.5 py-1 text-xs font-semibold text-slate-300">
                     {user.authProvider || "local"}
+                  </span>
+                  <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold capitalize text-indigo-300">
+                    {user.signupSource || "unknown"} signup
                   </span>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                     user.isBlocked ? "bg-rose-500/10 text-rose-300" : "bg-emerald-500/10 text-emerald-300"
@@ -472,7 +484,8 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="mb-3 mt-7 flex items-center gap-3"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Account information</span><span className="h-px flex-1 bg-white/[0.06]" /></div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <InfoItem label="User ID" value={user.id} />
             <InfoItem label="Username" value={user.username} />
             <InfoItem label="Full name" value={user.fullName} />
@@ -481,6 +494,7 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
             <InfoItem label="Bio" value={user.bio} />
             <InfoItem label="Role" value={user.role} />
             <InfoItem label="Auth provider" value={user.authProvider} />
+            <InfoItem label="Signup source" value={user.signupSource || "unknown"} />
             <InfoItem label="Google ID" value={user.googleId} />
             <InfoItem label="Avatar URL" value={user.avatar} />
             <InfoItem label="Created at" value={user.createdAt ? new Date(user.createdAt).toLocaleString() : ""} />
@@ -496,33 +510,39 @@ function UserDetailsModal({ user, onClose, onToggleBlock, onDelete, busy }) {
 
 function AdminFrame({ activeTab, admin, onLogout, children }) {
   const navItems = [
-    { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
-    { key: "articles", label: "Articles", href: "/admin/articles", icon: FileText },
-    { key: "users", label: "Users", href: "/admin/users", icon: Users },
-    { key: "admins", label: "Admins", href: "/admin/admins", icon: Shield },
+    { key: "dashboard", label: "Overview", caption: "Business health", href: "/admin/dashboard", icon: BarChart3 },
+    { key: "users", label: "Customers", caption: "Accounts & access", href: "/admin/users", icon: Users },
+    { key: "articles", label: "Content", caption: "Articles & SEO", href: "/admin/articles", icon: FileText },
+    { key: "admins", label: "Team access", caption: "Admin permissions", href: "/admin/admins", icon: Shield },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-white/8 bg-slate-950">
-        <div className="px-5 py-5 border-b border-white/8">
+    <div className="admin-workspace min-h-screen bg-[#070b14] text-slate-100 selection:bg-indigo-500/30">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_75%_-10%,rgba(99,102,241,.10),transparent_30%),radial-gradient(circle_at_15%_90%,rgba(16,185,129,.055),transparent_28%)]" />
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r border-white/[0.07] bg-[#090e19]/95 shadow-[24px_0_70px_rgba(0,0,0,.18)] backdrop-blur-xl lg:flex">
+        <div className="px-5 pb-5 pt-6">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="MoneySplit"
-              width={40}
-              height={40}
-              className="h-10 w-10 shrink-0 rounded-xl"
-              priority
-            />
-            <div>
-              <p className="text-sm font-bold">Money Split</p>
-              <p className="text-xs text-slate-500">Admin panel</p>
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_12px_30px_rgba(99,102,241,.28)]">
+              <Image src="/logo.png" alt="MoneySplit" width={30} height={30} className="h-7 w-7 rounded-lg" priority />
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#090e19] bg-emerald-400" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-bold tracking-tight text-white">MoneySplit</p>
+              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-300">Operations</p>
             </div>
           </Link>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <div className="mx-4 rounded-2xl border border-indigo-400/10 bg-gradient-to-br from-indigo-500/[0.10] to-violet-500/[0.04] p-3.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-200">
+            <Sparkles className="h-3.5 w-3.5" />
+            Control center
+          </div>
+          <p className="mt-1.5 text-[11px] leading-5 text-slate-500">Monitor growth, content and account health from one workspace.</p>
+        </div>
+
+        <p className="px-6 pb-2 pt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">Workspace</p>
+        <nav className="flex-1 space-y-1.5 px-3">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.key;
@@ -530,48 +550,63 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
               <Link
                 key={item.key}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                  active ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-white/6 hover:text-slate-100"
+                className={`group flex items-center gap-3 rounded-2xl px-3 py-3 transition-all ${
+                  active
+                    ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_12px_28px_rgba(79,70,229,.22)]"
+                    : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-100"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                {item.label}
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-white/15" : "bg-white/[0.04] group-hover:bg-white/[0.07]"}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{item.label}</span>
+                  <span className={`mt-0.5 block text-[10px] ${active ? "text-indigo-100/70" : "text-slate-600"}`}>{item.caption}</span>
+                </span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-white/8 p-3">
-          <div className="rounded-xl bg-white/[0.03] px-3 py-3">
-            <p className="truncate text-xs font-semibold text-slate-200">{admin?.email}</p>
+        <div className="border-t border-white/[0.07] p-4">
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-xs font-bold text-emerald-300">
+                {admin?.email?.[0]?.toUpperCase() || "A"}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-slate-200">Signed in as admin</span>
+                <span className="mt-0.5 block truncate text-[10px] text-slate-500">{admin?.email}</span>
+              </span>
+            </div>
             <button
               type="button"
               onClick={onLogout}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/8 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/8"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              Logout
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
             </button>
           </div>
         </div>
       </aside>
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-white/8 bg-slate-950/90 backdrop-blur lg:hidden">
-          <div className="flex items-center justify-between px-4 py-3">
-            <Link href="/admin/articles" className="flex items-center gap-2 text-sm font-bold">
-              <Shield className="w-4 h-4 text-indigo-300" />
-              Admin
+      <div className="relative lg:pl-[280px]">
+        <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#070b14]/90 backdrop-blur-xl lg:hidden">
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <Link href="/admin/dashboard" className="flex items-center gap-2.5 text-sm font-bold">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600"><Shield className="h-4 w-4" /></span>
+              MoneySplit Admin
             </Link>
             <button
               type="button"
               onClick={onLogout}
-              className="rounded-lg border border-white/8 px-3 py-2 text-xs font-semibold text-slate-300"
+              className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-semibold text-slate-300"
             >
-              Logout
+              Sign out
             </button>
           </div>
-          <div className="grid grid-cols-4 border-t border-white/8">
+          <div className="grid grid-cols-4 border-t border-white/[0.06] px-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.key;
@@ -579,11 +614,11 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`flex items-center justify-center gap-2 px-3 py-3 text-xs font-semibold ${
-                    active ? "text-indigo-300" : "text-slate-500"
+                  className={`flex flex-col items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-[10px] font-semibold transition ${
+                    active ? "border-indigo-400 text-indigo-300" : "border-transparent text-slate-600"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               );
@@ -591,8 +626,8 @@ function AdminFrame({ activeTab, admin, onLogout, children }) {
           </div>
         </header>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main className="relative px-4 py-6 sm:px-6 lg:px-8 lg:py-8 xl:px-10">
+          <div className="mx-auto max-w-[1500px]">{children}</div>
         </main>
       </div>
     </div>
@@ -614,6 +649,7 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
   const [adminErrors, setAdminErrors] = useState({});
   const [query, setQuery] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState("all");
+  const [userSourceFilter, setUserSourceFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -690,8 +726,10 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
         (userStatusFilter === "active" && !item.isBlocked) ||
         (userStatusFilter === "blocked" && item.isBlocked) ||
         (userStatusFilter === "admin" && item.role === "admin");
+      const matchesSource =
+        userSourceFilter === "all" || item.signupSource === userSourceFilter;
 
-      if (!matchesStatus) return false;
+      if (!matchesStatus || !matchesSource) return false;
       if (!term) return true;
 
       return [
@@ -700,6 +738,7 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
         item.email,
         item.role,
         item.authProvider,
+        item.signupSource,
         item.isBlocked ? "blocked" : "active",
         item.blockedReason,
       ]
@@ -707,7 +746,16 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
         .toLowerCase()
         .includes(term);
     });
-  }, [query, userStatusFilter, users]);
+  }, [query, userSourceFilter, userStatusFilter, users]);
+
+  const userSourceStats = useMemo(() => {
+    const totals = { web: 0, android: 0, ios: 0, unknown: 0 };
+    users.forEach((user) => {
+      const source = Object.hasOwn(totals, user.signupSource) ? user.signupSource : "unknown";
+      totals[source] += 1;
+    });
+    return totals;
+  }, [users]);
 
   const filteredArticles = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -1026,20 +1074,24 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
 
   const pageCopy = {
     dashboard: {
-      title: "Dashboard",
-      description: "Track spending volume, user growth, groups, and platform activity.",
+      eyebrow: "Business overview",
+      title: "Good to see you, Admin",
+      description: "A live view of MoneySplit growth, usage and operational health.",
     },
     articles: {
-      title: "Users and publishing",
-      description: "Manage members and publish substantial Money Split articles.",
+      eyebrow: "Content studio",
+      title: "Articles & publishing",
+      description: "Create useful guidance, manage drafts and monitor content performance.",
     },
     users: {
-      title: "Users",
-      description: "Review accounts, auth providers, status, and moderation actions.",
+      eyebrow: "Customer intelligence",
+      title: "Users & acquisition",
+      description: "Understand where customers come from and manage account access.",
     },
     admins: {
-      title: "Admins",
-      description: "Create admin accounts, update access, and block panel users.",
+      eyebrow: "Workspace security",
+      title: "Team access",
+      description: "Control who can manage MoneySplit and review administrator status.",
     },
   }[activeTab] || {
     title: "Admin workspace",
@@ -1049,34 +1101,35 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
   return (
     <AdminFrame activeTab={activeTab} admin={admin} onLogout={handleLogout}>
       <div className="space-y-5 pb-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative overflow-hidden rounded-[26px] border border-white/[0.07] bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/40 px-5 py-6 shadow-[0_22px_60px_rgba(2,6,23,.22)] sm:px-7 sm:py-7 lg:flex lg:items-center lg:justify-between">
+          <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border-[42px] border-indigo-400/[0.035]" />
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
-              <Shield className="w-4 h-4" />
-              Admin workspace
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,.8)]" />
+              {pageCopy.eyebrow || "Admin workspace"}
             </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-100">
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-white sm:text-4xl">
               {pageCopy.title}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
               {pageCopy.description}
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-300">
-              {admin?.email?.[0]?.toUpperCase() || "A"}
+          <div className="relative mt-5 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-black/15 px-4 py-3 backdrop-blur lg:mt-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-lg shadow-indigo-950/40">
+              {admin?.name?.[0]?.toUpperCase() || admin?.email?.[0]?.toUpperCase() || "A"}
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-200">Admin</p>
-              <p className="text-[11px] text-slate-500">{admin?.email}</p>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-100">{admin?.name || "Administrator"}</p>
+              <p className="mt-0.5 truncate text-[11px] text-slate-500">{admin?.email}</p>
             </div>
+            <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300">Online</span>
           </div>
         </div>
 
-        {activeTab !== "dashboard" && (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {activeTab === "articles" && (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
-              { label: "Users", value: stats.users, icon: Users, tone: "text-sky-300 bg-sky-500/10" },
               { label: "Articles", value: stats.articles, icon: FileText, tone: "text-indigo-300 bg-indigo-500/10" },
               { label: "Published", value: stats.published, icon: CheckCircle2, tone: "text-emerald-300 bg-emerald-500/10" },
               { label: "Drafts", value: stats.drafts, icon: PenLine, tone: "text-amber-300 bg-amber-500/10" },
@@ -1084,8 +1137,8 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.label} className="rounded-2xl border border-white/8 bg-slate-900 p-4">
-                  <div className={`w-8 h-8 rounded-lg ${item.tone} flex items-center justify-center mb-3`}>
+                <div key={item.label} className="rounded-[20px] border border-white/[0.07] bg-slate-900/75 p-4 shadow-[0_14px_35px_rgba(2,6,23,.15)]">
+                  <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${item.tone}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <p className="text-2xl font-bold text-slate-100">{item.value}</p>
@@ -1096,8 +1149,8 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex w-full lg:w-auto rounded-xl border border-white/8 bg-slate-900 p-1">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
+          <div className="flex w-full rounded-xl border border-white/8 bg-slate-900 p-1 lg:hidden">
             {[
               { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
               { key: "articles", label: "Articles", href: "/admin/articles", icon: FileText },
@@ -1123,16 +1176,29 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
 
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
             {activeTab === "users" && (
-              <select
-                value={userStatusFilter}
-                onChange={(event) => setUserStatusFilter(event.target.value)}
-                className="rounded-xl border border-white/8 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-indigo-400/50"
-              >
-                <option value="all">All statuses</option>
-                <option value="active">Active users</option>
-                <option value="blocked">Blocked users</option>
-                <option value="admin">Admins</option>
-              </select>
+              <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
+                <select
+                  value={userSourceFilter}
+                  onChange={(event) => setUserSourceFilter(event.target.value)}
+                  className="w-full rounded-xl border border-white/8 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-indigo-400/50"
+                >
+                  <option value="all">All sources</option>
+                  <option value="web">Website</option>
+                  <option value="android">Android</option>
+                  <option value="ios">iOS</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+                <select
+                  value={userStatusFilter}
+                  onChange={(event) => setUserStatusFilter(event.target.value)}
+                  className="w-full rounded-xl border border-white/8 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-slate-200 outline-none focus:border-indigo-400/50"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="active">Active users</option>
+                  <option value="blocked">Blocked users</option>
+                  <option value="admin">Admins</option>
+                </select>
+              </div>
             )}
             {activeTab !== "dashboard" && (
               <div className="relative w-full sm:w-80">
@@ -1149,28 +1215,63 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
         </div>
 
         {activeTab === "dashboard" ? (
-          <DashboardView dashboard={dashboard} />
+          <DashboardView dashboard={dashboard} userSourceStats={userSourceStats} />
         ) : activeTab === "users" ? (
-          <div className="rounded-2xl border border-white/8 bg-slate-900 overflow-hidden">
-            <div className="grid grid-cols-12 gap-3 border-b border-white/8 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { label: "Website", value: userSourceStats.web, tone: "bg-sky-500/10 text-sky-300", icon: Globe2 },
+                { label: "Android", value: userSourceStats.android, tone: "bg-emerald-500/10 text-emerald-300", icon: Smartphone },
+                { label: "iOS", value: userSourceStats.ios, tone: "bg-violet-500/10 text-violet-300", icon: Smartphone },
+                { label: "Unknown / existing", value: userSourceStats.unknown, tone: "bg-slate-500/10 text-slate-300", icon: CircleHelp },
+              ].map((source) => {
+                const Icon = source.icon;
+                const share = stats.users ? Math.round((source.value / stats.users) * 100) : 0;
+                return (
+                  <div key={source.label} className="relative overflow-hidden rounded-[20px] border border-white/[0.07] bg-slate-900/80 p-4 shadow-[0_14px_35px_rgba(2,6,23,.15)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${source.tone}`}><Icon className="h-4 w-4" /></span>
+                      <span className="rounded-full bg-white/[0.04] px-2 py-1 text-[10px] font-bold text-slate-500">{share}%</span>
+                    </div>
+                    <p className="mt-4 text-2xl font-bold tracking-tight text-white">{formatNumber(source.value)}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{source.label} signups</p>
+                    <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-indigo-400" style={{ width: `${share}%` }} /></div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="overflow-hidden rounded-[22px] border border-white/[0.07] bg-slate-900/75 shadow-[0_18px_50px_rgba(2,6,23,.18)]">
+            <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
+              <div><h2 className="text-sm font-bold text-white">Customer directory</h2><p className="mt-1 text-xs text-slate-500">{filteredUsers.length} of {users.length} accounts shown</p></div>
+              <span className="rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Live data</span>
+            </div>
+            <div className="grid grid-cols-12 gap-3 border-b border-white/[0.06] bg-black/10 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
               <span className="col-span-5">User</span>
               <span className="col-span-2 hidden lg:block">Auth</span>
               <span className="col-span-2 hidden md:block">Status</span>
               <span className="col-span-3 text-right">Actions</span>
             </div>
-            <div className="divide-y divide-white/6">
+            <div className="divide-y divide-white/[0.05]">
               {filteredUsers.map((item) => (
-                <div key={item.id} className="grid grid-cols-12 gap-3 px-4 py-4 text-sm">
+                <div key={item.id} className="grid grid-cols-12 gap-3 px-5 py-4 text-sm transition hover:bg-white/[0.025]">
                   <div className="col-span-9 md:col-span-5 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-100 truncate">{item.fullName}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/10 text-xs font-bold text-indigo-200">
+                        {item.avatar ? <Image src={item.avatar} alt="" width={40} height={40} unoptimized className="h-full w-full object-cover" /> : (item.fullName?.[0] || item.email?.[0] || "U").toUpperCase()}
+                      </span>
+                      <span className="min-w-0">
+                      <span className="flex items-center gap-2">
+                      <span className="truncate font-semibold text-slate-100">{item.fullName}</span>
                       {item.role === "admin" && (
                         <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
                           admin
                         </span>
                       )}
+                      </span>
+                      <span className="block truncate text-xs text-slate-500">{item.email}</span>
+                      <span className="mt-1 block text-[10px] font-semibold capitalize text-indigo-300 md:hidden">{item.signupSource || "unknown"} · {item.authProvider}</span>
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-500 truncate">{item.email}</p>
                     {item.isBlocked && item.blockedReason && (
                       <p className="mt-1 line-clamp-1 text-xs text-rose-300">
                         {item.blockedReason}
@@ -1178,7 +1279,7 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
                     )}
                   </div>
                   <div className="col-span-2 hidden lg:flex items-center text-slate-400">
-                    {item.authProvider}
+                    <div><p className="font-semibold capitalize text-slate-300">{item.authProvider}</p><p className="mt-1 text-[10px] capitalize text-slate-600">{item.signupSource || "unknown"} signup</p></div>
                   </div>
                   <div className="col-span-2 hidden md:flex items-center">
                     <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
@@ -1232,6 +1333,7 @@ export default function AdminWorkspace({ initialTab = "articles" }) {
                 </div>
               ))}
             </div>
+          </div>
           </div>
         ) : activeTab === "admins" ? (
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">

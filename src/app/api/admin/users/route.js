@@ -13,7 +13,7 @@ export async function GET(req) {
     await connectDB();
 
     const users = await User.find({})
-      .select("fullName username email contact role authProvider googleId avatar bio isBlocked blockedAt blockedReason createdAt updatedAt")
+      .select("fullName username email contact role authProvider signupSource googleId avatar bio isBlocked blockedAt blockedReason createdAt updatedAt")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -26,6 +26,7 @@ export async function GET(req) {
         contact: user.contact || "",
         role: user.role || "user",
         authProvider: user.authProvider || "local",
+        signupSource: user.signupSource || "unknown",
         googleId: user.googleId || "",
         avatar: user.avatar || null,
         bio: user.bio || "",

@@ -1,4 +1,5 @@
 import { connectDB } from "@/lib/db";
+import { getEmailValidationError, normalizeEmail } from "@/lib/authValidation";
 import { sendPasswordResetEmail } from "@/lib/mailer";
 import { applyPasswordResetOtp, canSendPasswordResetOtp } from "@/lib/passwordReset";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
@@ -23,8 +24,8 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const email = String(body?.email || "").toLowerCase().trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const email = normalizeEmail(body?.email);
+    if (getEmailValidationError(email)) {
       return NextResponse.json(
         { success: false, error: "Valid email is required" },
         { status: 400 },

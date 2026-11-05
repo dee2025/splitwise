@@ -2,6 +2,7 @@
 
 import { loginSuccess } from "@/redux/slices/authSlice";
 import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
+import { getEmailValidationError, getPasswordValidationError } from "@/lib/authValidation";
 import axios from "axios";
 import { motion } from "framer-motion";
 import {
@@ -155,10 +156,8 @@ export default function LoginPage() {
   const validateField = (name, value) => {
     const next = { ...errors };
     if (name === "email") {
-      if (!value.trim()) next.email = "Email is required";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-        next.email = "Invalid email address";
-      else delete next.email;
+      next.email = getEmailValidationError(value);
+      if (!next.email) delete next.email;
     }
     if (name === "password") {
       if (!value) next.password = "Password is required";
@@ -172,11 +171,8 @@ export default function LoginPage() {
   const validateForm = () => {
     const nextErrors = {};
 
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = "Invalid email address";
-    }
+    const emailError = getEmailValidationError(form.email);
+    if (emailError) nextErrors.email = emailError;
 
     if (!form.password) {
       nextErrors.password = "Password is required";
@@ -316,8 +312,9 @@ export default function LoginPage() {
       toast.error("Enter the 6-digit OTP");
       return;
     }
-    if (!newPassword || newPassword.length < 6 || !/(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword)) {
-      toast.error("Password must be at least 6 characters and include letters and numbers");
+    const passwordError = getPasswordValidationError(newPassword, { requiredLabel: "New password" });
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 
@@ -505,7 +502,7 @@ export default function LoginPage() {
                   Password
                 </label>
                 <Link
-                  href="#forgot-password"
+                  href="/forgot-password"
                   className="text-xs font-semibold text-emerald-700 transition-colors hover:text-emerald-800"
                 >
                   Forgot password?
@@ -688,7 +685,7 @@ export default function LoginPage() {
                   </div>
                   <h3 className="mt-5 text-lg font-semibold text-slate-950">Create your password</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Use at least 6 characters with letters and numbers. After this, you can use either Google or email sign-in.
+                    Use at least 8 characters with a letter and number. After this, you can use either Google or email sign-in.
                   </p>
                   <div className="relative mt-5">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />

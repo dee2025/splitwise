@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 function renderInline(text) {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+  return text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\((?:https?:\/\/|\/)[^)]+\))/g).map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong key={index} className="font-semibold text-slate-950">
@@ -15,6 +15,23 @@ function renderInline(text) {
         </strong>
       );
     }
+
+    const linkMatch = part.match(/^\[([^\]]+)\]\(((?:https?:\/\/|\/)[^)]+)\)$/);
+    if (linkMatch) {
+      const [, label, href] = linkMatch;
+      const isExternal = href.startsWith("http");
+      return (
+        <a
+          key={index}
+          href={href}
+          {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          className="font-semibold text-indigo-700 underline decoration-indigo-200 underline-offset-4 transition-colors hover:text-indigo-900 hover:decoration-indigo-500"
+        >
+          {label}
+        </a>
+      );
+    }
+
     return part;
   });
 }

@@ -1,9 +1,59 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/api_client.dart';
 import '../../shared/providers.dart';
+
+final _emailPattern = RegExp(
+  r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$",
+);
+
+String? validateEmailAddress(String? value) {
+  final email = (value ?? '').trim();
+  if (email.isEmpty) return 'Email is required';
+  if (email.length > 254 ||
+      email.contains('..') ||
+      !_emailPattern.hasMatch(email)) {
+    return 'Enter a valid email address';
+  }
+  return null;
+}
+
+String? validateNewPassword(String? value) {
+  final password = value ?? '';
+  if (password.isEmpty) return 'Password is required';
+  if (password.length < 8) return 'Use at least 8 characters';
+  if (password.length > 72) return 'Use no more than 72 characters';
+  if (!RegExp(r'[a-zA-Z]').hasMatch(password) ||
+      !RegExp(r'[0-9]').hasMatch(password)) {
+    return 'Include at least one letter and one number';
+  }
+  const commonPasswords = {
+    'password',
+    'password1',
+    'password123',
+    '12345678',
+    '123456789',
+    'qwerty123',
+    'admin123',
+    'moneysplit',
+  };
+  if (commonPasswords.contains(password.toLowerCase())) {
+    return 'Choose a less common password';
+  }
+  return null;
+}
+
+String? validateLoginPassword(String? value) {
+  final password = value ?? '';
+  if (password.isEmpty) return 'Password is required';
+  if (password.length > 256) return 'Password is too long';
+  return null;
+}
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -57,20 +107,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              autocorrect: false,
+              enableSuggestions: false,
               decoration: const InputDecoration(
                   labelText: 'Email address',
+                  hintText: 'you@example.com',
                   prefixIcon: Icon(Icons.mail_outline)),
-              validator: (value) {
-                final email = value?.trim() ?? '';
-                if (email.isEmpty) return 'Email is required';
-                if (!email.contains('@')) return 'Enter a valid email';
-                return null;
-              },
+              validator: validateEmailAddress,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _password,
               obscureText: !_showPassword,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              enableSuggestions: false,
+              autocorrect: false,
               decoration: InputDecoration(
                 labelText: 'Password',
                 prefixIcon: const Icon(Icons.lock_outline),
@@ -82,15 +136,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : Icons.visibility_outlined),
                 ),
               ),
-              validator: (value) {
-                if ((value ?? '').isEmpty) {
-                  return 'Password is required';
-                }
-                if ((value ?? '').length < 6) {
-                  return 'Password must be at least 6 characters';
-                }
-                return null;
-              },
+              validator: validateLoginPassword,
+              onFieldSubmitted: (_) => _submitLogin(auth.submitting),
             ),
             Align(
               alignment: Alignment.centerRight,
@@ -113,14 +160,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onPressed: auth.submitting
                   ? null
                   : () {
-                      if (_formKey.currentState?.validate() != true) return;
-                      ref.read(authControllerProvider.notifier).login(
-                            email: _email.text,
-                            password: _password.text,
-                          );
+                      _submitLogin(false);
                     },
-              child:
-                  auth.submitting ? const ButtonSpinner() : const Text('Login'),
+              child: auth.submitting
+                  ? const ButtonSpinner()
+                  : const Text('Sign in securely'),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -140,6 +184,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       ),
     );
+  }
+
+  void _submitLogin(bool submitting) {
+    if (submitting || _formKey.currentState?.validate() != true) return;
+    FocusScope.of(context).unfocus();
+    ref.read(authControllerProvider.notifier).login(
+          email: _email.text,
+          password: _password.text,
+        );
   }
 }
 
@@ -162,6 +215,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _confirmPassword = TextEditingController();
   bool _codeSent = false;
   bool _showPassword = false;
+  int _resendSeconds = 0;
+  Timer? _resendTimer;
 
   @override
   void initState() {
@@ -175,6 +230,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     _otp.dispose();
     _password.dispose();
     _confirmPassword.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
@@ -208,6 +264,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   TextFormField(
                     controller: _otp,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     maxLength: 6,
                     textAlign: TextAlign.center,
                     decoration: const InputDecoration(
@@ -223,6 +280,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   TextFormField(
                     controller: _password,
                     obscureText: !_showPassword,
+                    autofillHints: const [AutofillHints.newPassword],
+                    enableSuggestions: false,
+                    autocorrect: false,
                     decoration: InputDecoration(
                       labelText: 'New password',
                       prefixIcon: const Icon(Icons.lock_outline),
@@ -234,19 +294,24 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                             : Icons.visibility_outlined),
                       ),
                     ),
-                    validator: _validatePassword,
+                    validator: validateNewPassword,
                   ),
+                  const SizedBox(height: 10),
+                  PasswordRequirements(password: _password),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _confirmPassword,
                     obscureText: !_showPassword,
+                    autofillHints: const [AutofillHints.newPassword],
                     decoration: const InputDecoration(
                       labelText: 'Confirm new password',
                       prefixIcon: Icon(Icons.lock_reset_outlined),
                     ),
                     validator: (value) => value == _password.text
                         ? null
-                        : 'Passwords do not match',
+                        : (value ?? '').isEmpty
+                            ? 'Confirm your new password'
+                            : 'Passwords do not match',
                   ),
                   const SizedBox(height: 22),
                   FilledButton(
@@ -256,8 +321,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         : const Text('Reset password'),
                   ),
                   TextButton(
-                    onPressed: auth.submitting ? null : _sendCode,
-                    child: const Text('Resend code'),
+                    onPressed: auth.submitting || _resendSeconds > 0
+                        ? null
+                        : _sendCode,
+                    child: Text(_resendSeconds > 0
+                        ? 'Resend code in ${_resendSeconds}s'
+                        : 'Resend code'),
                   ),
                   TextButton(
                     onPressed: auth.submitting
@@ -276,16 +345,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   TextFormField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    autocorrect: false,
+                    enableSuggestions: false,
                     decoration: const InputDecoration(
                       labelText: 'Email address',
                       prefixIcon: Icon(Icons.mail_outline),
                     ),
-                    validator: (value) {
-                      final email = value?.trim() ?? '';
-                      if (email.isEmpty) return 'Email is required';
-                      if (!email.contains('@')) return 'Enter a valid email';
-                      return null;
-                    },
+                    validator: validateEmailAddress,
                   ),
                   const SizedBox(height: 22),
                   FilledButton(
@@ -304,15 +371,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     );
   }
 
-  String? _validatePassword(String? value) {
-    final password = value ?? '';
-    if (password.length < 6) return 'Use at least 6 characters';
-    if (!RegExp(r'(?=.*[a-zA-Z])(?=.*[0-9])').hasMatch(password)) {
-      return 'Use letters and numbers';
-    }
-    return null;
-  }
-
   Future<void> _sendCode() async {
     if (!_codeSent && _emailFormKey.currentState?.validate() != true) return;
     final sent = await ref
@@ -320,10 +378,24 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         .requestPasswordReset(_email.text);
     if (!mounted || !sent) return;
     setState(() => _codeSent = true);
+    _startResendCooldown();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
           content: Text('If the account exists, a reset code was sent.')),
     );
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    setState(() => _resendSeconds = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _resendSeconds <= 1) {
+        timer.cancel();
+        if (mounted) setState(() => _resendSeconds = 0);
+        return;
+      }
+      setState(() => _resendSeconds -= 1);
+    });
   }
 
   Future<void> _submitReset() async {
@@ -353,6 +425,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   bool _showPassword = false;
 
   @override
@@ -360,6 +433,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _name.dispose();
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -387,13 +461,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   TextFormField(
                     controller: _name,
                     textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.name],
+                    textCapitalization: TextCapitalization.words,
                     decoration: const InputDecoration(
                         labelText: 'Full name',
                         prefixIcon: Icon(Icons.person_outline)),
                     validator: (value) {
-                      if ((value ?? '').trim().length < 2) {
+                      final name = (value ?? '').trim();
+                      if (name.length < 2) {
                         return 'Enter your full name';
                       }
+                      if (name.length > 80) return 'Use 80 characters or fewer';
                       return null;
                     },
                   ),
@@ -402,20 +480,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
+                    autocorrect: false,
+                    enableSuggestions: false,
                     decoration: const InputDecoration(
                         labelText: 'Email address',
                         prefixIcon: Icon(Icons.mail_outline)),
-                    validator: (value) {
-                      final email = value?.trim() ?? '';
-                      if (email.isEmpty) return 'Email is required';
-                      if (!email.contains('@')) return 'Enter a valid email';
-                      return null;
-                    },
+                    validator: validateEmailAddress,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _password,
                     obscureText: !_showPassword,
+                    autofillHints: const [AutofillHints.newPassword],
+                    enableSuggestions: false,
+                    autocorrect: false,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline),
@@ -427,35 +506,39 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             : Icons.visibility_outlined),
                       ),
                     ),
+                    validator: validateNewPassword,
+                  ),
+                  const SizedBox(height: 10),
+                  PasswordRequirements(password: _password),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _confirmPassword,
+                    obscureText: !_showPassword,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm password',
+                      prefixIcon: Icon(Icons.lock_reset_outlined),
+                    ),
                     validator: (value) {
-                      final password = value ?? '';
-                      if (password.length < 6) {
-                        return 'Use at least 6 characters';
-                      }
-                      if (!RegExp(r'(?=.*[a-zA-Z])(?=.*[0-9])')
-                          .hasMatch(password)) {
-                        return 'Use letters and numbers';
+                      if ((value ?? '').isEmpty) return 'Confirm your password';
+                      if (value != _password.text) {
+                        return 'Passwords do not match';
                       }
                       return null;
                     },
+                    onFieldSubmitted: (_) => _submitSignup(auth.submitting),
                   ),
                   const SizedBox(height: 22),
                   FilledButton(
                     onPressed: auth.submitting
                         ? null
                         : () {
-                            if (_formKey.currentState?.validate() != true) {
-                              return;
-                            }
-                            ref.read(authControllerProvider.notifier).signup(
-                                  fullName: _name.text,
-                                  email: _email.text,
-                                  password: _password.text,
-                                );
+                            _submitSignup(false);
                           },
                     child: auth.submitting
                         ? const ButtonSpinner()
-                        : const Text('Sign up'),
+                        : const Text('Create secure account'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
@@ -476,6 +559,74 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
     );
   }
+
+  void _submitSignup(bool submitting) {
+    if (submitting || _formKey.currentState?.validate() != true) return;
+    FocusScope.of(context).unfocus();
+    ref.read(authControllerProvider.notifier).signup(
+          fullName: _name.text,
+          email: _email.text,
+          password: _password.text,
+        );
+  }
+}
+
+class PasswordRequirements extends StatelessWidget {
+  const PasswordRequirements({required this.password, super.key});
+
+  final TextEditingController password;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: password,
+      builder: (context, value, _) {
+        final checks = [
+          ('8+ characters', value.text.length >= 8),
+          ('One letter', RegExp(r'[a-zA-Z]').hasMatch(value.text)),
+          ('One number', RegExp(r'[0-9]').hasMatch(value.text)),
+        ];
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: checks.map((check) {
+            final passed = check.$2;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              decoration: BoxDecoration(
+                color:
+                    passed ? const Color(0xffecfdf5) : const Color(0xfff8fafc),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                    color: passed
+                        ? const Color(0xffa7f3d0)
+                        : const Color(0xffe2e8f0)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(passed ? Icons.check_circle : Icons.circle_outlined,
+                      size: 13,
+                      color: passed
+                          ? const Color(0xff059669)
+                          : const Color(0xff94a3b8)),
+                  const SizedBox(width: 5),
+                  Text(check.$1,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: passed
+                              ? const Color(0xff047857)
+                              : const Color(0xff64748b))),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 }
 
 class AuthScaffold extends StatelessWidget {
@@ -492,39 +643,169 @@ class AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Color(0xff4f46e5),
-                        backgroundImage: NetworkImage('$apiBaseUrl/logo.png'),
+    final authTheme = ThemeData(
+      useMaterial3: true,
+      fontFamily: 'Roboto',
+      colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xff059669), brightness: Brightness.light),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xfff8fafc),
+        labelStyle: const TextStyle(
+            color: Color(0xff475569), fontWeight: FontWeight.w600),
+        hintStyle: const TextStyle(color: Color(0xff94a3b8)),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xffe2e8f0))),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xffe2e8f0))),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xff10b981), width: 1.5)),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xfff43f5e))),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(54),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              textStyle: const TextStyle(
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15))),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              side: const BorderSide(color: Color(0xffe2e8f0)),
+              textStyle: const TextStyle(
+                  fontFamily: 'Roboto', fontWeight: FontWeight.w700))),
+    );
+
+    return Theme(
+      data: authTheme,
+      child: Scaffold(
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xff061b17),
+                  Color(0xff0b2f27),
+                  Color(0xff07111d)
+                ]),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                  top: -90,
+                  right: -70,
+                  child: Container(
+                      width: 240,
+                      height: 240,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: const Color(0xff34d399)
+                                  .withValues(alpha: .08),
+                              width: 38)))),
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Column(
+                        children: [
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircleAvatar(
+                                    radius: 23,
+                                    backgroundColor: Color(0xff10b981),
+                                    backgroundImage:
+                                        NetworkImage('$apiBaseUrl/logo.png')),
+                                const SizedBox(width: 12),
+                                const Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('MoneySplit',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w800)),
+                                      Text('SECURE ACCESS',
+                                          style: TextStyle(
+                                              color: Color(0xff6ee7b7),
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 1.5))
+                                    ]),
+                              ]),
+                          const SizedBox(height: 28),
+                          Text(title,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -1)),
+                          const SizedBox(height: 8),
+                          Text(subtitle,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: Color(0xffa7c4bc),
+                                  fontSize: 14,
+                                  height: 1.5)),
+                          const SizedBox(height: 24),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(22),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(26),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: .8)),
+                                boxShadow: const [
+                                  BoxShadow(
+                                      color: Color(0x40000000),
+                                      blurRadius: 45,
+                                      offset: Offset(0, 22))
+                                ]),
+                            child: child,
+                          ),
+                          const SizedBox(height: 18),
+                          const Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 7,
+                            runSpacing: 4,
+                            children: [
+                              Icon(Icons.verified_user_outlined,
+                                  size: 15, color: Color(0xff6ee7b7)),
+                              Text('Protected with encrypted authentication',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: Color(0xff94a3b8),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 18),
-                      Text(title,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 6),
-                      Text(subtitle,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium),
-                      const SizedBox(height: 24),
-                      child,
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -591,6 +872,7 @@ class _OtpVerificationPanelState extends ConsumerState<OtpVerificationPanel> {
             TextField(
               controller: _otp,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               maxLength: 6,
               textAlign: TextAlign.center,
               style: Theme.of(context)

@@ -50,8 +50,7 @@ therefore sign in locally but fail after installation from an internal, closed,
 open, or early-access testing track.
 
 1. In Play Console, open **Setup > App integrity > App signing key certificate**.
-2. Copy the **SHA-1 certificate fingerprint** (Google Sign-In uses SHA-1; this is
-   separate from the SHA-256 used by Digital Asset Links/TWA verification).
+2. Copy the **SHA-1 certificate fingerprint** used by Google Sign-In.
 3. In Google Cloud Console, open **APIs & Services > Credentials** and create or
    update the Android OAuth 2.0 client for package `in.moneysplit.app` with that
    Play App Signing SHA-1.

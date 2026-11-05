@@ -93,6 +93,12 @@ const UserSchema = new mongoose.Schema(
       enum: ["local", "google"],
       default: "local",
     },
+    signupSource: {
+      type: String,
+      enum: ["web", "android", "ios", "unknown"],
+      default: "unknown",
+      index: true,
+    },
     googleId: {
       type: String,
       unique: true,

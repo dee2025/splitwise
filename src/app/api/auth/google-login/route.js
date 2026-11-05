@@ -1,6 +1,8 @@
 import { connectDB } from "@/lib/db";
 import { generateToken, setTokenCookie } from "@/lib/auth";
+import { isMobileClientRequest } from "@/lib/authValidation";
 import { generateUniqueUsername } from "@/lib/username";
+import { getSignupSource } from "@/lib/signupSource";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
@@ -66,13 +68,6 @@ function getAllowedClientIds() {
   ].filter(Boolean);
 }
 
-function isMobileClient(request, body = {}) {
-  return (
-    request.headers.get("x-moneysplit-client")?.toLowerCase() === "flutter" ||
-    String(body?.client || "").toLowerCase() === "flutter"
-  );
-}
-
 export async function POST(request) {
   try {
     const limit = rateLimit(request, {
@@ -86,6 +81,7 @@ export async function POST(request) {
 
     const body = await request.json();
     const { credential } = body;
+    const signupSource = getSignupSource(request, body);
 
     if (!credential || typeof credential !== "string") {
       return NextResponse.json(
@@ -143,6 +139,7 @@ export async function POST(request) {
         password: null,
         avatar: googleData.picture || null,
         authProvider: "google",
+        signupSource,
         googleId: googleData.sub,
         emailVerified: true,
         emailVerifiedAt: new Date(),
@@ -223,7 +220,7 @@ export async function POST(request) {
       user: userResponse,
     };
 
-    if (isMobileClient(request, body)) {
+    if (isMobileClientRequest(request, body)) {
       responseBody.token = token;
     }
 

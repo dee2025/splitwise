@@ -1,21 +1,15 @@
 import { generateToken, setTokenCookie } from "@/lib/auth";
+import { isMobileClientRequest } from "@/lib/authValidation";
 import { connectDB } from "@/lib/db";
 import {
   EMAIL_VERIFICATION_MAX_ATTEMPTS,
-  hashEmailVerificationOtp,
+  matchesEmailVerificationOtp,
   normalizeEmailVerificationOtp,
 } from "@/lib/emailVerification";
 import { sendWelcomeEmail } from "@/lib/mailer";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
-
-function isMobileClient(request, body = {}) {
-  return (
-    request.headers.get("x-moneysplit-client")?.toLowerCase() === "flutter" ||
-    String(body?.client || "").toLowerCase() === "flutter"
-  );
-}
 
 export async function POST(request) {
   try {
@@ -76,7 +70,7 @@ export async function POST(request) {
           createdAt: user.createdAt,
         },
       };
-      if (isMobileClient(request, body)) {
+      if (isMobileClientRequest(request, body)) {
         responseBody.token = token;
       }
       const response = NextResponse.json(responseBody);
@@ -109,8 +103,7 @@ export async function POST(request) {
       );
     }
 
-    const otpHash = hashEmailVerificationOtp(email, otp);
-    if (otpHash !== user.emailVerificationOtpHash) {
+    if (!matchesEmailVerificationOtp(email, otp, user.emailVerificationOtpHash)) {
       user.emailVerificationOtpAttempts = Number(user.emailVerificationOtpAttempts || 0) + 1;
       await user.save();
       return NextResponse.json(
@@ -156,7 +149,7 @@ export async function POST(request) {
       user: userResponse,
     };
 
-    if (isMobileClient(request, body)) {
+    if (isMobileClientRequest(request, body)) {
       responseBody.token = token;
     }
 

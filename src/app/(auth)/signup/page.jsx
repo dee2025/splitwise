@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import GoogleIdentityButton from "@/components/auth/GoogleIdentityButton";
+import { getEmailValidationError, getPasswordValidationError } from "@/lib/authValidation";
 
 const inputCls = (hasError) =>
   `h-[52px] w-full rounded-lg border py-3 pl-12 pr-11 text-sm transition-all focus:outline-none focus:ring-2 focus:border-transparent ${
@@ -104,6 +105,7 @@ export default function SignupPage() {
     fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -146,17 +148,17 @@ export default function SignupPage() {
         else delete next.fullName;
         break;
       case "email":
-        if (!value.trim()) next.email = "Email is required";
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-          next.email = "Invalid email address";
-        else delete next.email;
+        next.email = getEmailValidationError(value);
+        if (!next.email) delete next.email;
         break;
       case "password":
-        if (!value) next.password = "Password is required";
-        else if (value.length < 6) next.password = "At least 6 characters";
-        else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(value))
-          next.password = "Must contain letters and numbers";
-        else delete next.password;
+        next.password = getPasswordValidationError(value);
+        if (!next.password) delete next.password;
+        break;
+      case "confirmPassword":
+        if (!value) next.confirmPassword = "Confirm your password";
+        else if (value !== form.password) next.confirmPassword = "Passwords do not match";
+        else delete next.confirmPassword;
         break;
     }
     setErrors(next);
@@ -173,24 +175,19 @@ export default function SignupPage() {
       nextErrors.fullName = "Must be at least 2 characters";
     }
 
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = "Invalid email address";
-    }
+    const emailError = getEmailValidationError(form.email);
+    if (emailError) nextErrors.email = emailError;
 
-    if (!form.password) {
-      nextErrors.password = "Password is required";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "At least 6 characters";
-    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(form.password)) {
-      nextErrors.password = "Must contain letters and numbers";
-    }
+    const passwordError = getPasswordValidationError(form.password);
+    if (passwordError) nextErrors.password = passwordError;
+    if (!form.confirmPassword) nextErrors.confirmPassword = "Confirm your password";
+    else if (form.confirmPassword !== form.password) nextErrors.confirmPassword = "Passwords do not match";
 
     setTouched({
       fullName: true,
       email: true,
       password: true,
+      confirmPassword: true,
     });
     setErrors(nextErrors);
 
@@ -347,14 +344,25 @@ export default function SignupPage() {
       showToggle: showPassword,
       setShowToggle: setShowPassword,
     },
+    {
+      name: "confirmPassword",
+      label: "Confirm password",
+      type: "password",
+      placeholder: "Re-enter your password",
+      icon: Lock,
+      delay: 0.2,
+      isPassword: true,
+      showToggle: showPassword,
+      setShowToggle: setShowPassword,
+    },
   ];
 
   return (
-    <div className="h-dvh overflow-hidden bg-white">
-      <main className="grid h-dvh lg:grid-cols-2">
+    <div className="min-h-dvh bg-white">
+      <main className="grid min-h-dvh lg:grid-cols-2">
         <AuthStoryPanel />
 
-        <section className="flex h-dvh items-center justify-center overflow-hidden px-5 py-6 sm:px-8 lg:px-[clamp(40px,6vw,96px)]">
+        <section className="flex min-h-dvh items-center justify-center overflow-y-auto px-5 py-8 sm:px-8 lg:max-h-dvh lg:px-[clamp(40px,6vw,96px)]">
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -514,6 +522,19 @@ export default function SignupPage() {
                         </div>
                         {hasError && (
                           <p className="mt-1.5 text-xs text-rose-500">{errors[field.name]}</p>
+                        )}
+                        {field.name === "password" && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {[
+                              ["8+ characters", form.password.length >= 8],
+                              ["One letter", /[a-zA-Z]/.test(form.password)],
+                              ["One number", /[0-9]/.test(form.password)],
+                            ].map(([label, passed]) => (
+                              <span key={label} className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold ${passed ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+                                <CheckCircle className="h-3 w-3" /> {label}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </motion.div>
                     );

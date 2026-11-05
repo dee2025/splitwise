@@ -37,9 +37,13 @@ class MoneySplitApi {
             baseUrl: apiBaseUrl,
             connectTimeout: const Duration(seconds: 20),
             receiveTimeout: const Duration(seconds: 30),
-            headers: const {
+            headers: {
               'Accept': 'application/json',
-              'X-MoneySplit-Client': 'flutter',
+              'X-MoneySplit-Client': Platform.isAndroid
+                  ? 'android'
+                  : Platform.isIOS
+                      ? 'ios'
+                      : 'flutter',
             },
           ),
         ) {

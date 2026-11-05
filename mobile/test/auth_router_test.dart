@@ -44,7 +44,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Sign in securely'), findsOneWidget);
     await tester.tap(find.text('Forgot password?'));
     await tester.pumpAndSettle();
     expect(find.text('Reset password'), findsOneWidget);

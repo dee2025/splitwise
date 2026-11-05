@@ -1,7 +1,9 @@
 import { connectDB } from "@/lib/db";
+import { getEmailValidationError, getPasswordValidationError, normalizeEmail } from "@/lib/authValidation";
 import { applyEmailVerificationOtp } from "@/lib/emailVerification";
 import { sendVerificationEmail } from "@/lib/mailer";
 import { rateLimit, rateLimitResponse } from "@/lib/rateLimit";
+import { getSignupSource } from "@/lib/signupSource";
 import { generateUniqueUsername } from "@/lib/username";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
@@ -22,9 +24,10 @@ export async function POST(req) {
     const body = await req.json();
 
     const { fullName, email, password } = body;
+    const signupSource = getSignupSource(req, body);
 
-    const normalizedFullName = fullName?.trim() || "";
-    const normalizedEmail = email?.toLowerCase().trim() || "";
+    const normalizedFullName = String(fullName || "").trim().replace(/\s+/g, " ");
+    const normalizedEmail = normalizeEmail(email);
 
     const errors = {};
 
@@ -32,21 +35,17 @@ export async function POST(req) {
       errors.fullName = "Full name is required";
     } else if (normalizedFullName.length < 2) {
       errors.fullName = "Full name must be at least 2 characters";
+    } else if (normalizedFullName.length > 80) {
+      errors.fullName = "Full name must be 80 characters or fewer";
+    } else if (!/^[\p{L}\p{M}][\p{L}\p{M}\s.'-]*$/u.test(normalizedFullName)) {
+      errors.fullName = "Enter a valid full name";
     }
 
-    if (!normalizedEmail) {
-      errors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      errors.email = "Please enter a valid email address";
-    }
+    const emailError = getEmailValidationError(normalizedEmail);
+    if (emailError) errors.email = emailError;
 
-    if (!password) {
-      errors.password = "Password is required";
-    } else if (password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
-    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(password)) {
-      errors.password = "Password must include letters and numbers";
-    }
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) errors.password = passwordError;
 
     if (Object.keys(errors).length > 0) {
       return NextResponse.json(
@@ -94,6 +93,7 @@ export async function POST(req) {
       contact: "",
       password: hashedPassword,
       authProvider: "local",
+      signupSource,
       emailVerified: false,
       emailVerifiedAt: null,
     });
